@@ -4,9 +4,18 @@ import os
 import sqlite3
 from datetime import datetime, date
 from io import BytesIO
+import plotly.express as px
 
 # Configuração da página corporativa
 st.set_page_config(page_title="Controle de Amostras LIMS", layout="wide", page_icon="🔬")
+
+# --- ESTILIZAÇÃO CUSTOMIZADA EM CSS ---
+st.markdown("""
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
 
 # ==================== CONFIGURAÇÃO DE SEGURANÇA ====================
 SENHA_CORRETA = "lab123" 
@@ -28,9 +37,9 @@ if not st.session_state["autenticado"]:
                     st.error("❌ Senha incorreta!")
     st.stop()
 
-# ==================== BANCO DE DADOS FIXADO NO DESKTOP ====================
-DESKTOP_PATH = os.path.join(os.path.expanduser("~"), "Desktop")
-DB_FILE = os.path.join(DESKTOP_PATH, "biobanco_laboratorio.db")
+# ==================== BANCO DE DADOS ADAPTADO PARA A NUVEM ====================
+# CORREÇÃO PARA FILTRAR O ERRO DO SERVIDOR LINUX
+DB_FILE = "biobanco_laboratorio.db"
 
 def inicializar_banco():
     conexao = sqlite3.connect(DB_FILE)
@@ -70,7 +79,7 @@ def carregar_dados():
                 "PIGMENT", "GRAM STAIN", "CATALASE", "KOH", "OXIDASE", 
                 "OUTSOURCED METHOD", "IDENTIFICATION", "REPORT", "COMPANY", "END DATE"
             ]
-            return df[colunas_oficiais]
+            return df
     except Exception:
         pass
         
@@ -82,22 +91,50 @@ df = carregar_dados()
 st.markdown("<h1 style='margin-bottom: 0px;'>🔬 Rastreabilidade de Amostras e Monitoramento</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Abas horizontais
+# Abas horizontais oficiais mantidas estáveis
 aba_dash, aba_cadastro, aba_visualizacao, aba_identificacao, aba_suporte = st.tabs([
-    "📊 DASHBOARD", "📝 REGISTER (CADASTRAR)", "📋 LIST / ESTOQUE GERAL", "🧫 IDENTIFICATION (LAB)", "🔧 SUPORTE"
+    "📊 DASHBOARD", "📝 REGISTER (CADASTRAR/EDITAR)", "📋 LIST / ESTOQUE GERAL", "🧫 IDENTIFICATION (LAB)", "🔧 SUPORTE"
 ])
 
 # --- ABA 1: DASHBOARD ---
 with aba_dash:
-    st.metric(label="Total de Amostras Registradas", value=len(df))
-    st.info("ℹ️ Sistema ativo. Preencha os registros na aba de cadastro.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if not df.empty and "RESULTADO FINAL" in df.columns:
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric(label="Total de Amostras Registradas", value=len(df))
+        
+        qtd_positives = len(df[df["RESULTADO FINAL"] == "Positive"])
+        qtd_negatives = len(df[df["RESULTADO FINAL"] == "Negative"])
+        col_m2.metric(label="Total de Casos Positivos", value=qtd_positives)
+        col_m3.metric(label="Total de Casos Negativos", value=qtd_negatives)
+        
+        st.markdown("---")
+        col_g1, col_g2 = st.columns(2)
+        
+        with col_g1:
+            st.markdown("##### 📊 Amostras Monitoradas por Área")
+            df_area_grafico = df["AREA"].value_counts().reset_index()
+            df_area_grafico.columns = ["AREA", "Quantidade"]
+            fig_barras = px.bar(df_area_grafico, x="AREA", y="Quantidade", template="plotly_dark", color="AREA", text_auto=True)
+            st.plotly_chart(fig_barras, use_container_width=True)
+            
+        with col_g2:
+            st.markdown("##### 🧫 Proporção de Resultados (Positive / Negative / Sem results)")
+            df_pie = df["RESULTADO FINAL"].replace("", "Sem results").fillna("Sem results").value_counts().reset_index()
+            df_pie.columns = ["Resultado", "Quantidade"]
+            fig_pizza = px.pie(df_pie, values="Quantidade", names="Resultado", template="plotly_dark", hole=0.4, color_discrete_map={"Positive":"#ef4444", "Negative":"#10b981", "Sem results":"#64748b"})
+            st.plotly_chart(fig_pizza, use_container_width=True)
+    else:
+        st.info("ℹ️ Nenhuma amostra cadastrada no sistema para renderizar os gráficos.")
 
-# --- ABA 2: REGISTER (CADASTRAR) ---
+# --- ABA 2: REGISTER (CADASTRAR OU EDITAR) ---
 with aba_cadastro:
     st.markdown("<br>", unsafe_allow_html=True)
+    st.info("💡 DICA DE EDIÇÃO: Para alterar uma amostra existente, basta digitar o mesmo CODE dela, modificar as informações desejadas e clicar no botão de salvar!")
+
     with st.form(key="form_lims_corporativo"):
-        st.markdown("##### ⬇️ Preencha os campos abaixo e clique no botão para salvar:")
-        botao_salvar = st.form_submit_button(label="💾 SALVAR REGISTRO DE AMOSTRA", type="primary", use_container_width=True)
+        st.markdown("##### ⬇️ Preencha os campos abaixo e clique no botão para salvar/atualizar:")
+        botao_salvar = st.form_submit_button(label="💾 SALVAR OU ATUALIZAR REGISTRO", type="primary", use_container_width=True)
         
         st.markdown("---")
         col1, col2, col3 = st.columns(3)
@@ -129,63 +166,33 @@ with aba_cadastro:
         else:
             conexao = sqlite3.connect(DB_FILE)
             cursor = conexao.cursor()
-            cursor.execute("DELETE FROM monitoramento WHERE code=?", (code,))
+            
+            cursor.execute("SELECT pigment, gram_stain, catalase, koh, oxidase, outsourced_method, identification, report, company, end_date FROM monitoramento WHERE code=?", (code.strip(),))
+            dados_antigos = cursor.fetchone()
+            
+            pig, gram, cat, k, ox, out, iden, rep, comp, dt_end = "", "", "", "", "", "", "", "", "", ""
+            if dados_antigos:
+                pig, gram, cat, k, ox, out, iden, rep, comp, dt_end = dados_antigos
+            
+            cursor.execute("DELETE FROM monitoramento WHERE code=?", (code.strip(),))
             cursor.execute("""
                 INSERT INTO monitoramento (code, ponto, origin, area, sample, collection_point, sampling, method, frequencia, analista, data_coleta, resultado_final, form, affirmation, margin, pigment, gram_stain, catalase, koh, oxidase, outsourced_method, identification, report, company, end_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', '', '', '', '', '')
-            """, (code, ponto, origin, area, sample, collection_point, sampling, method, frequencia, analista, str(data_coleta), resultado_final, form, affirmation, margin))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (code.strip(), ponto, origin, area, sample, collection_point, sampling, method, frequencia, analista, str(data_coleta), resultado_final, form, affirmation, margin, pig, gram, cat, k, ox, out, iden, rep, comp, dt_end))
+            
             conexao.commit()
             conexao.close()
-            st.success("✅ Registro inserido com sucesso!")
+            st.success("✅ Registro processado e atualizado no estoque com sucesso!")
             st.rerun()
 
 # --- ABA 3: LISTA / ESTOQUE GERAL ---
 with aba_visualizacao:
     st.markdown("<br>", unsafe_allow_html=True)
-    busca_estoque = st.text_input("🔍 Sistema de Filtro e Busca Rápida (Digite o CODE ou AREA):", placeholder="Ex: L5-26-150...")
     
-    if not df.empty:
-        df_filtrado_estoque = df[df["CODE"].astype(str).str.contains(busca_estoque, case=False, na=False) | df["AREA"].astype(str).str.contains(busca_estoque, case=False, na=False)] if busca_estoque else df
-        st.dataframe(df_filtrado_estoque, use_container_width=True, hide_index=True)
-    else:
-        st.info("ℹ️ Nenhuma amostra cadastrada no banco de dados até o momento.")
-
-# --- ABA 4: IDENTIFICATION ---
-with aba_identificacao:
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🧫 Laudos Microbiológicos das Amostras Registradas")
+    col_b, col_del = st.columns(2)
+    with col_b:
+        busca_estoque = st.text_input("🔍 Sistema de Filtro e Busca Rápida (Digite o CODE ou AREA):", placeholder="Ex: L5-26-150...", key="busca_view")
     
-    colunas_imagem = ["CODE", "AREA", "COLLECTION POINT", "DATA", "FORM", "MARGIN", "PIGMENT", "GRAM STAIN", "CATALASE", "KOH", "OXIDASE", "OUTSOURCED METHOD", "IDENTIFICATION", "REPORT", "COMPANY", "END DATE"]
-    st.dataframe(df[colunas_imagem], use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    st.markdown("##### 🧪 Preencher Análise de Identificação de Amostra")
-    
-    code_selecionado = st.text_input("Digite o CODE da amostra para lançar o laudo (Ex: L5-26-150):")
-
-    with st.form(key="form_id_final_novo"):
-        col_id1, col_id2, col_id3 = st.columns(3)
-        with col_id1:
-            pigment = st.selectbox("PIGMENT", ["", "Cream", "Yellow", "White", "Pink", "Orange", "N/A"])
-            gram_stain = st.selectbox("GRAM STAIN", ["", "Gram-positive", "Gram-negative", "N/A"])
-            catalase = st.selectbox("CATALASE", ["", "Positive", "Negative", "N/A"])
-        with col_id2:
-            koh = st.selectbox("KOH", ["", "Positive", "Negative", "N/A"])
-            oxidase = st.selectbox("OXIDASE", ["", "Positive", "Negative", "N/A"])
-            outsourced_method = st.text_input("OUTSOURCED METHOD")
-        with col_id3:
-            identification = st.text_input("IDENTIFICATION")
-            report = st.text_input("REPORT")
-            company = st.text_input("COMPANY")
-            end_date = st.date_input("END DATE", value=date.today(), key="data_end")
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-        botao_salvar_id = st.form_submit_button(label="💾 CONCLUIR E ATUALIZAR INFORMAÇÕES", type="primary", use_container_width=True)
-        
-    # CORREÇÃO CRÍTICA DO SINTAXE: Comando SQL reestruturado em linha única contínua para evitar falhas do Bloco de Notas
-    if botao_salvar_id and code_selecionado.strip() != "":
-        conexao = sqlite3.connect(DB_FILE)
-        cursor = conexao.cursor()
-        cursor.execute("UPDATE monitoramento SET pigment=?, gram_stain=?, catalase=?, koh=?, oxidase=?, outsourced_method=?, identification=?, report=?, company=?, end_date=? WHERE code=?", (pigment, gram_stain, catalase, koh, oxidase, outsourced_method, identification, report, company, str(end_date), code_selecionado.strip()))
-        conexao.commit()
-        conexao.close()
+    with col_del:
+        with st.container(border=True):
+            st.markdown("<small>🗑️ Central de Exclusão Definitiva</small>", unsafe_allow_html=True)
