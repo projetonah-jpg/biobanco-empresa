@@ -12,111 +12,25 @@ import streamlit as st
 # ============================================================
 
 st.set_page_config(
-    page_title="Natalia - Monitoramento Microbiológico",
+    page_title="Monitoramento Microbiológico",
     page_icon="🧫",
     layout="wide",
 )
 
-CAMINHO_BANCO = Path(__file__).parent / "monitoramento.db"
-
-
-# ============================================================
-# INTERFACE VISUAL
-# ============================================================
+DB_PATH = Path(__file__).parent / "monitoramento.db"
 
 st.markdown(
     """
     <style>
-    :root {
-        --navy: #12343b;
-        --teal: #13877c;
-        --mint: #eaf5f2;
-    }
-
-    .stApp {
-        background: linear-gradient(
-            135deg,
-            #f8fcfb,
-            #edf6f4
-        );
+    [data-testid="stMetric"] {
+        background-color: #f2f8f7;
+        border-left: 5px solid #16857a;
+        padding: 15px;
+        border-radius: 8px;
     }
 
     .block-container {
-        padding-top: 1.4rem;
-        max-width: 1280px;
-    }
-
-    [data-testid="stSidebar"] {
-        background: linear-gradient(
-            180deg,
-            #12343b,
-            #0d5c58
-        );
-    }
-
-    [data-testid="stSidebar"] * {
-        color: white;
-    }
-
-    [data-testid="stMetric"] {
-        background: white;
-        border: 1px solid #dcebe7;
-        border-left: 5px solid #13877c;
-        padding: 16px;
-        border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(18, 52, 59, 0.07);
-    }
-
-    .stButton > button,
-    .stFormSubmitButton > button {
-        border-radius: 10px;
-        border: 0;
-        background: #13877c;
-        color: white;
-        font-weight: 700;
-    }
-
-    .stButton > button:hover,
-    .stFormSubmitButton > button:hover {
-        background: #0f6f67;
-        color: white;
-    }
-
-    .cabecalho {
-        padding: 20px 24px;
-        background: linear-gradient(
-            120deg,
-            #12343b,
-            #13877c
-        );
-        color: white;
-        border-radius: 18px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 30px rgba(18, 52, 59, 0.14);
-    }
-
-    .cabecalho h1 {
-        margin: 0;
-        font-size: 29px;
-    }
-
-    .cabecalho p {
-        margin: 5px 0 0;
-        color: #d8efeb;
-    }
-
-    .logo-menu {
-        text-align: center;
-        padding: 12px 0 20px;
-        font-weight: 700;
-        font-size: 18px;
-    }
-
-    .logo-menu span {
-        display: block;
-        font-size: 12px;
-        font-weight: 400;
-        color: #cbe5e1;
+        padding-top: 1.5rem;
     }
     </style>
     """,
@@ -126,6 +40,7 @@ st.markdown(
 
 # ============================================================
 # LISTAS DE VALIDAÇÃO
+# Equivalente à aba Listas_Validacao
 # ============================================================
 
 LISTAS = {
@@ -228,14 +143,14 @@ LISTAS = {
 
 
 # ============================================================
-# DADOS INICIAIS
+# DADOS INICIAIS MIGRADOS DA PLANILHA
 # ============================================================
 
 AMOSTRAS_INICIAIS = [
     {
         "code": "B4-001",
         "ponto": "",
-        "origin": "Storage Tanks",
+        "origin": "Environmental Monitoring",
         "area": "Laboratory",
         "sample": "",
         "collection_point": "",
@@ -303,6 +218,7 @@ AMOSTRAS_INICIAIS = [
         "resultado_final": "Não Conforme",
     },
 ]
+
 
 IDENTIFICACOES_INICIAIS = [
     {
@@ -384,50 +300,13 @@ IDENTIFICACOES_INICIAIS = [
 
 
 # ============================================================
-# COLUNAS DO BANCO
-# ============================================================
-
-COLUNAS_AMOSTRA = [
-    "code",
-    "ponto",
-    "origin",
-    "area",
-    "sample",
-    "collection_point",
-    "sampling",
-    "method",
-    "frequencia",
-    "analista",
-    "data",
-    "resultado_final",
-]
-
-COLUNAS_IDENTIFICACAO = [
-    "code",
-    "form",
-    "margin",
-    "pigment",
-    "gram_stain",
-    "catalase",
-    "koh",
-    "oxidase",
-    "outsourced_method",
-    "identification",
-    "report",
-    "company",
-    "end_date",
-]
-
-
-# ============================================================
-# BANCO SQLITE
+# BANCO DE DADOS SQLITE
 # ============================================================
 
 def conectar():
-    conexao = sqlite3.connect(CAMINHO_BANCO)
+    conexao = sqlite3.connect(DB_PATH)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
-
     return conexao
 
 
@@ -484,67 +363,70 @@ def criar_banco():
 
 
 def inserir_dados_iniciais(conexao):
+    colunas_amostras = list(AMOSTRAS_INICIAIS[0].keys())
+    marcadores = ",".join("?" for _ in colunas_amostras)
+
+    sql_amostras = f"""
+        INSERT OR IGNORE INTO amostras
+        ({",".join(colunas_amostras)})
+        VALUES ({marcadores})
+    """
+
     for registro in AMOSTRAS_INICIAIS:
-        marcadores = ",".join(
-            "?" for _ in COLUNAS_AMOSTRA
+        conexao.execute(
+            sql_amostras,
+            [registro[coluna] for coluna in colunas_amostras],
         )
 
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO amostras
-            ({",".join(COLUNAS_AMOSTRA)})
-            VALUES ({marcadores})
-            """,
-            [
-                registro.get(coluna, "")
-                for coluna in COLUNAS_AMOSTRA
-            ],
-        )
+    colunas_identificacao = list(IDENTIFICACOES_INICIAIS[0].keys())
+    marcadores = ",".join("?" for _ in colunas_identificacao)
+
+    sql_identificacao = f"""
+        INSERT OR IGNORE INTO identificacoes
+        ({",".join(colunas_identificacao)})
+        VALUES ({marcadores})
+    """
 
     for registro in IDENTIFICACOES_INICIAIS:
-        marcadores = ",".join(
-            "?" for _ in COLUNAS_IDENTIFICACAO
-        )
-
         conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO identificacoes
-            ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES ({marcadores})
-            """,
-            [
-                registro.get(coluna, "")
-                for coluna in COLUNAS_IDENTIFICACAO
-            ],
+            sql_identificacao,
+            [registro[coluna] for coluna in colunas_identificacao],
         )
 
 
 def consultar(sql, parametros=()):
     with conectar() as conexao:
-        linhas = conexao.execute(
-            sql,
-            parametros,
-        ).fetchall()
-
+        linhas = conexao.execute(sql, parametros).fetchall()
         return [dict(linha) for linha in linhas]
 
 
 def salvar_amostra(registro):
-    marcadores = ",".join(
-        "?" for _ in COLUNAS_AMOSTRA
-    )
+    colunas = [
+        "code",
+        "ponto",
+        "origin",
+        "area",
+        "sample",
+        "collection_point",
+        "sampling",
+        "method",
+        "frequencia",
+        "analista",
+        "data",
+        "resultado_final",
+    ]
+
+    marcadores = ",".join("?" for _ in colunas)
 
     atualizacoes = ",".join(
         f"{coluna}=excluded.{coluna}"
-        for coluna in COLUNAS_AMOSTRA
+        for coluna in colunas
         if coluna != "code"
     )
 
     sql = f"""
-        INSERT INTO amostras
-        ({",".join(COLUNAS_AMOSTRA)})
+        INSERT INTO amostras ({",".join(colunas)})
         VALUES ({marcadores})
-
         ON CONFLICT(code) DO UPDATE SET
             {atualizacoes},
             atualizado_em=CURRENT_TIMESTAMP
@@ -553,29 +435,38 @@ def salvar_amostra(registro):
     with conectar() as conexao:
         conexao.execute(
             sql,
-            [
-                registro.get(coluna, "")
-                for coluna in COLUNAS_AMOSTRA
-            ],
+            [registro.get(coluna, "") for coluna in colunas],
         )
 
 
 def salvar_identificacao(registro):
-    marcadores = ",".join(
-        "?" for _ in COLUNAS_IDENTIFICACAO
-    )
+    colunas = [
+        "code",
+        "form",
+        "margin",
+        "pigment",
+        "gram_stain",
+        "catalase",
+        "koh",
+        "oxidase",
+        "outsourced_method",
+        "identification",
+        "report",
+        "company",
+        "end_date",
+    ]
+
+    marcadores = ",".join("?" for _ in colunas)
 
     atualizacoes = ",".join(
         f"{coluna}=excluded.{coluna}"
-        for coluna in COLUNAS_IDENTIFICACAO
+        for coluna in colunas
         if coluna != "code"
     )
 
     sql = f"""
-        INSERT INTO identificacoes
-        ({",".join(COLUNAS_IDENTIFICACAO)})
+        INSERT INTO identificacoes ({",".join(colunas)})
         VALUES ({marcadores})
-
         ON CONFLICT(code) DO UPDATE SET
             {atualizacoes},
             atualizado_em=CURRENT_TIMESTAMP
@@ -584,10 +475,7 @@ def salvar_identificacao(registro):
     with conectar() as conexao:
         conexao.execute(
             sql,
-            [
-                registro.get(coluna, "")
-                for coluna in COLUNAS_IDENTIFICACAO
-            ],
+            [registro.get(coluna, "") for coluna in colunas],
         )
 
 
@@ -599,20 +487,8 @@ def excluir_amostra(code):
         )
 
 
-def substituir_dados(amostras, identificacoes):
-    with conectar() as conexao:
-        conexao.execute("DELETE FROM identificacoes")
-        conexao.execute("DELETE FROM amostras")
-
-    for registro in amostras:
-        salvar_amostra(registro)
-
-    for registro in identificacoes:
-        salvar_identificacao(registro)
-
-
 # ============================================================
-# CONSULTAS
+# LEITURA DOS DADOS
 # ============================================================
 
 def obter_amostras():
@@ -660,10 +536,8 @@ def obter_identificacoes():
             i.company,
             i.end_date
         FROM amostras a
-
         LEFT JOIN identificacoes i
             ON i.code = a.code
-
         ORDER BY a.code
         """
     )
@@ -671,24 +545,16 @@ def obter_identificacoes():
     return pd.DataFrame(dados)
 
 
-def campo_selecao(
-    titulo,
-    nome_lista,
-    valor_atual="",
-):
-    opcoes = [""] + LISTAS.get(nome_lista, [])
+def selecao(label, lista, valor_atual=""):
+    opcoes = [""] + LISTAS[lista]
 
     if valor_atual and valor_atual not in opcoes:
         opcoes.append(valor_atual)
 
-    indice = (
-        opcoes.index(valor_atual)
-        if valor_atual in opcoes
-        else 0
-    )
+    indice = opcoes.index(valor_atual) if valor_atual in opcoes else 0
 
     return st.selectbox(
-        titulo,
+        label,
         opcoes,
         index=indice,
     )
@@ -696,20 +562,21 @@ def campo_selecao(
 
 # ============================================================
 # DASHBOARD
+# Equivalente à aba Dashboard
 # ============================================================
 
 def pagina_dashboard():
-    st.title("Dashboard")
+    st.title("🧫 Dashboard de Monitoramento Microbiológico")
 
     df = obter_amostras()
 
     if df.empty:
-        st.info("Cadastre a primeira amostra.")
+        st.info("Nenhuma amostra cadastrada.")
         return
 
-    total = len(df)
+    total_amostras = len(df)
 
-    pendentes = (
+    coletas_pendentes = (
         df["resultado_final"]
         .fillna("")
         .str.strip()
@@ -717,7 +584,7 @@ def pagina_dashboard():
         .sum()
     )
 
-    mensais = (
+    frequencias_mensais = (
         df["frequencia"] == "Mensal"
     ).sum()
 
@@ -729,17 +596,17 @@ def pagina_dashboard():
 
     coluna1.metric(
         "Total de amostras",
-        total,
+        total_amostras,
     )
 
     coluna2.metric(
         "Coletas pendentes",
-        int(pendentes),
+        int(coletas_pendentes),
     )
 
     coluna3.metric(
         "Frequências mensais",
-        int(mensais),
+        int(frequencias_mensais),
     )
 
     coluna4.metric(
@@ -747,7 +614,7 @@ def pagina_dashboard():
         int(nao_conformes),
     )
 
-    esquerda, direita = st.columns(2)
+    grafico1, grafico2 = st.columns(2)
 
     frequencias = (
         df["frequencia"]
@@ -757,7 +624,7 @@ def pagina_dashboard():
         .reset_index(name="Amostras")
     )
 
-    grafico_frequencia = px.bar(
+    figura_frequencias = px.bar(
         frequencias,
         x="Frequência",
         y="Amostras",
@@ -766,8 +633,8 @@ def pagina_dashboard():
         title="Distribuição por frequência",
     )
 
-    esquerda.plotly_chart(
-        grafico_frequencia,
+    grafico1.plotly_chart(
+        figura_frequencias,
         use_container_width=True,
     )
 
@@ -779,7 +646,7 @@ def pagina_dashboard():
         .reset_index(name="Amostras")
     )
 
-    grafico_status = px.pie(
+    figura_status = px.pie(
         status,
         names="Status",
         values="Amostras",
@@ -787,8 +654,8 @@ def pagina_dashboard():
         title="Status das coletas",
     )
 
-    direita.plotly_chart(
-        grafico_status,
+    grafico2.plotly_chart(
+        figura_status,
         use_container_width=True,
     )
 
@@ -814,7 +681,7 @@ def pagina_dashboard():
             .reset_index(name="Amostras")
         )
 
-        grafico_tendencia = px.line(
+        figura_tendencia = px.line(
             resumo_mensal,
             x="Mês",
             y="Amostras",
@@ -823,11 +690,11 @@ def pagina_dashboard():
         )
 
         st.plotly_chart(
-            grafico_tendencia,
+            figura_tendencia,
             use_container_width=True,
         )
 
-    st.subheader("Registros recentes")
+    st.subheader("Registros")
 
     st.dataframe(
         df,
@@ -838,10 +705,11 @@ def pagina_dashboard():
 
 # ============================================================
 # REGISTRO
+# Equivalente à aba Registro
 # ============================================================
 
 def pagina_registro():
-    st.title("Registro de Monitoramento")
+    st.title("Registro de Monitoramento Microbiológico")
 
     df = obter_amostras()
 
@@ -851,29 +719,26 @@ def pagina_registro():
         else []
     )
 
-    modo = st.radio(
+    acao = st.radio(
         "Ação",
-        [
-            "Novo registro",
-            "Editar registro",
-        ],
+        ["Novo registro", "Editar registro"],
         horizontal=True,
     )
 
     registro_atual = {}
 
-    if modo == "Editar registro":
+    if acao == "Editar registro":
         if not codigos:
-            st.info("Não existem registros para editar.")
+            st.info("Não há registros para editar.")
             return
 
-        codigo_selecionado = st.selectbox(
+        codigo_escolhido = st.selectbox(
             "Selecione o CODE",
             codigos,
         )
 
         registro_atual = (
-            df[df["code"] == codigo_selecionado]
+            df[df["code"] == codigo_escolhido]
             .iloc[0]
             .fillna("")
             .to_dict()
@@ -885,7 +750,7 @@ def pagina_registro():
         code = coluna1.text_input(
             "CODE *",
             registro_atual.get("code", ""),
-            disabled=modo == "Editar registro",
+            disabled=acao == "Editar registro",
         )
 
         ponto = coluna2.text_input(
@@ -901,42 +766,39 @@ def pagina_registro():
         coluna1, coluna2, coluna3 = st.columns(3)
 
         with coluna1:
-            origin = campo_selecao(
+            origin = selecao(
                 "ORIGIN",
                 "ORIGIN",
                 registro_atual.get("origin", ""),
             )
 
-            area = campo_selecao(
+            area = selecao(
                 "AREA",
                 "AREA",
                 registro_atual.get("area", ""),
             )
 
         with coluna2:
-            sample = campo_selecao(
+            sample = selecao(
                 "SAMPLE",
                 "SAMPLE",
                 registro_atual.get("sample", ""),
             )
 
-            collection_point = campo_selecao(
+            collection_point = selecao(
                 "COLLECTION POINT",
                 "COLLECTION POINT",
-                registro_atual.get(
-                    "collection_point",
-                    "",
-                ),
+                registro_atual.get("collection_point", ""),
             )
 
         with coluna3:
-            sampling = campo_selecao(
+            sampling = selecao(
                 "SAMPLING",
                 "SAMPLING",
                 registro_atual.get("sampling", ""),
             )
 
-            method = campo_selecao(
+            method = selecao(
                 "METHOD",
                 "METHOD",
                 registro_atual.get("method", ""),
@@ -945,7 +807,7 @@ def pagina_registro():
         coluna1, coluna2, coluna3 = st.columns(3)
 
         with coluna1:
-            frequencia = campo_selecao(
+            frequencia = selecao(
                 "FREQUÊNCIA",
                 "FREQUÊNCIA",
                 registro_atual.get("frequencia", ""),
@@ -968,13 +830,10 @@ def pagina_registro():
             )
 
         with coluna3:
-            resultado_final = campo_selecao(
+            resultado_final = selecao(
                 "RESULTADO FINAL",
                 "RESULTADO_FINAL",
-                registro_atual.get(
-                    "resultado_final",
-                    "",
-                ),
+                registro_atual.get("resultado_final", ""),
             )
 
         enviado = st.form_submit_button(
@@ -987,11 +846,8 @@ def pagina_registro():
         if not code.strip():
             st.error("O campo CODE é obrigatório.")
 
-        elif (
-            modo == "Novo registro"
-            and code.strip() in codigos
-        ):
-            st.error("Este CODE já está cadastrado.")
+        elif acao == "Novo registro" and code.strip() in codigos:
+            st.error("Já existe um registro com esse CODE.")
 
         else:
             salvar_amostra(
@@ -1006,19 +862,12 @@ def pagina_registro():
                     "method": method,
                     "frequencia": frequencia,
                     "analista": analista,
-                    "data": (
-                        data.isoformat()
-                        if data
-                        else ""
-                    ),
+                    "data": data.isoformat() if data else "",
                     "resultado_final": resultado_final,
                 }
             )
 
-            st.success(
-                f"Registro {code} salvo com sucesso."
-            )
-
+            st.success(f"Registro {code} salvo.")
             st.rerun()
 
     if codigos:
@@ -1030,19 +879,18 @@ def pagina_registro():
             )
 
             confirmar = st.checkbox(
-                "Confirmo a exclusão da amostra "
-                "e da identificação vinculada"
+                "Confirmo a exclusão da amostra e da identificação"
             )
 
             if st.button(
-                "Excluir",
+                "Excluir registro",
                 disabled=not confirmar,
             ):
                 excluir_amostra(codigo_exclusao)
                 st.success("Registro excluído.")
                 st.rerun()
 
-    st.subheader("Amostras cadastradas")
+    st.subheader("Registros cadastrados")
 
     st.dataframe(
         df,
@@ -1053,6 +901,7 @@ def pagina_registro():
 
 # ============================================================
 # IDENTIFICAÇÃO
+# Equivalente à aba Identification
 # ============================================================
 
 def pagina_identificacao():
@@ -1061,10 +910,7 @@ def pagina_identificacao():
     df = obter_identificacoes()
 
     if df.empty:
-        st.info(
-            "Cadastre uma amostra antes "
-            "de preencher a identificação."
-        )
+        st.info("Cadastre uma amostra antes da identificação.")
         return
 
     code = st.selectbox(
@@ -1081,8 +927,7 @@ def pagina_identificacao():
 
     st.info(
         f"Área: {registro['area'] or '—'} | "
-        f"Ponto: "
-        f"{registro['collection_point'] or '—'} | "
+        f"Ponto: {registro['collection_point'] or '—'} | "
         f"Data: {registro['data'] or '—'}"
     )
 
@@ -1090,13 +935,13 @@ def pagina_identificacao():
         coluna1, coluna2, coluna3 = st.columns(3)
 
         with coluna1:
-            form = campo_selecao(
+            form = selecao(
                 "FORM",
                 "FORM",
                 registro.get("form", ""),
             )
 
-            margin = campo_selecao(
+            margin = selecao(
                 "MARGIN",
                 "MARGIN",
                 registro.get("margin", ""),
@@ -1108,26 +953,26 @@ def pagina_identificacao():
             )
 
         with coluna2:
-            gram_stain = campo_selecao(
+            gram_stain = selecao(
                 "GRAM STAIN",
                 "AFFIRMATION",
                 registro.get("gram_stain", ""),
             )
 
-            catalase = campo_selecao(
+            catalase = selecao(
                 "CATALASE",
                 "AFFIRMATION",
                 registro.get("catalase", ""),
             )
 
-            koh = campo_selecao(
+            koh = selecao(
                 "KOH",
                 "AFFIRMATION",
                 registro.get("koh", ""),
             )
 
         with coluna3:
-            oxidase = campo_selecao(
+            oxidase = selecao(
                 "OXIDASE",
                 "AFFIRMATION",
                 registro.get("oxidase", ""),
@@ -1135,18 +980,12 @@ def pagina_identificacao():
 
             outsourced_method = st.text_input(
                 "OUTSOURCED METHOD",
-                registro.get(
-                    "outsourced_method",
-                    "",
-                ),
+                registro.get("outsourced_method", ""),
             )
 
             identification = st.text_input(
                 "IDENTIFICATION",
-                registro.get(
-                    "identification",
-                    "",
-                ),
+                registro.get("identification", ""),
             )
 
         coluna1, coluna2, coluna3 = st.columns(3)
@@ -1197,18 +1036,11 @@ def pagina_identificacao():
                 "identification": identification,
                 "report": report,
                 "company": company,
-                "end_date": (
-                    end_date.isoformat()
-                    if end_date
-                    else ""
-                ),
+                "end_date": end_date.isoformat() if end_date else "",
             }
         )
 
-        st.success(
-            f"Identificação de {code} salva."
-        )
-
+        st.success(f"Identificação de {code} salva.")
         st.rerun()
 
     st.subheader("Identificações cadastradas")
@@ -1222,12 +1054,11 @@ def pagina_identificacao():
 
 # ============================================================
 # ARMAZENAMENTO
+# Equivalente à aba Storage
 # ============================================================
 
 def pagina_armazenamento():
-    st.title(
-        "Armazenamento de Isolados Identificados"
-    )
+    st.title("Armazenamento de Isolados Identificados")
 
     df = obter_identificacoes()
 
@@ -1267,9 +1098,7 @@ def pagina_armazenamento():
     st.subheader("Resumo de contaminantes")
 
     if resumo.empty:
-        st.info(
-            "Ainda não existem identificações preenchidas."
-        )
+        st.info("Ainda não existem identificações preenchidas.")
         return
 
     coluna1, coluna2 = st.columns([1, 2])
@@ -1280,7 +1109,7 @@ def pagina_armazenamento():
         hide_index=True,
     )
 
-    grafico = px.bar(
+    figura = px.bar(
         resumo,
         x="OCORRÊNCIAS",
         y="IDENTIFICAÇÃO",
@@ -1290,13 +1119,13 @@ def pagina_armazenamento():
     )
 
     coluna2.plotly_chart(
-        grafico,
+        figura,
         use_container_width=True,
     )
 
 
 # ============================================================
-# EXPORTAÇÃO
+# EXPORTAÇÃO PARA EXCEL
 # ============================================================
 
 def gerar_excel():
@@ -1309,7 +1138,7 @@ def gerar_excel():
             "gram_stain",
             "identification",
         ]
-    ].copy()
+    ]
 
     arquivo = BytesIO()
 
@@ -1345,56 +1174,18 @@ def gerar_excel():
                     for celula in coluna
                 )
 
+                largura = min(maior_tamanho + 2, 40)
+
                 planilha.column_dimensions[
                     coluna[0].column_letter
-                ].width = min(
-                    maior_tamanho + 2,
-                    38,
-                )
+                ].width = largura
 
     return arquivo.getvalue()
 
 
 # ============================================================
-# IMPORTAÇÃO
+# IMPORTAÇÃO DO EXCEL
 # ============================================================
-
-def normalizar_coluna(nome):
-    conversoes = {
-        "CODE": "code",
-        "PONTO": "ponto",
-        "ORIGIN": "origin",
-        "AREA": "area",
-        "SAMPLE": "sample",
-        "COLLECTION POINT": "collection_point",
-        "SAMPLING": "sampling",
-        "METHOD": "method",
-        "FREQUÊNCIA": "frequencia",
-        "FREQUENCIA": "frequencia",
-        "ANALISTA": "analista",
-        "DATA": "data",
-        "RESULTADO FINAL": "resultado_final",
-        "FORM": "form",
-        "MARGIN": "margin",
-        "PIGMENT": "pigment",
-        "GRAM STAIN": "gram_stain",
-        "CATALASE": "catalase",
-        "KOH": "koh",
-        "OXIDASE": "oxidase",
-        "OUTSOURCED METHOD": "outsourced_method",
-        "IDENTIFICATION": "identification",
-        "REPORT": "report",
-        "COMPANY": "company",
-        "END DATE": "end_date",
-    }
-
-    nome = str(nome).strip()
-
-    return conversoes.get(
-        nome.upper(),
-        nome.lower().replace(" ", "_"),
-    )
-
 
 def importar_excel(arquivo):
     registro = pd.read_excel(
@@ -1410,67 +1201,30 @@ def importar_excel(arquivo):
     )
 
     registro.columns = [
-        normalizar_coluna(coluna)
+        str(coluna).strip().lower().replace(" ", "_")
         for coluna in registro.columns
     ]
 
     identificacao.columns = [
-        normalizar_coluna(coluna)
+        str(coluna).strip().lower().replace(" ", "_")
         for coluna in identificacao.columns
     ]
 
-    for coluna in COLUNAS_AMOSTRA:
-        if coluna not in registro.columns:
-            registro[coluna] = ""
+    with conectar() as conexao:
+        conexao.execute("DELETE FROM identificacoes")
+        conexao.execute("DELETE FROM amostras")
 
-    for coluna in COLUNAS_IDENTIFICACAO:
-        if coluna not in identificacao.columns:
-            identificacao[coluna] = ""
+    for _, linha in registro.fillna("").iterrows():
+        registro_dict = linha.to_dict()
 
-    registro = registro[
-        COLUNAS_AMOSTRA
-    ].fillna("")
+        if registro_dict.get("code"):
+            salvar_amostra(registro_dict)
 
-    identificacao = identificacao[
-        COLUNAS_IDENTIFICACAO
-    ].fillna("")
+    for _, linha in identificacao.fillna("").iterrows():
+        registro_dict = linha.to_dict()
 
-    registro = registro[
-        registro["code"]
-        .astype(str)
-        .str.strip()
-        .ne("")
-    ]
-
-    identificacao = identificacao[
-        identificacao["code"]
-        .astype(str)
-        .str.strip()
-        .ne("")
-    ]
-
-    registro["data"] = (
-        pd.to_datetime(
-            registro["data"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-        .fillna("")
-    )
-
-    identificacao["end_date"] = (
-        pd.to_datetime(
-            identificacao["end_date"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-        .fillna("")
-    )
-
-    substituir_dados(
-        registro.to_dict("records"),
-        identificacao.to_dict("records"),
-    )
+        if registro_dict.get("code"):
+            salvar_identificacao(registro_dict)
 
 
 def pagina_dados():
@@ -1492,62 +1246,38 @@ def pagina_dados():
     st.subheader("Importar arquivo Excel")
 
     st.warning(
-        "A importação substituirá os registros atuais. "
-        "Exporte um backup antes de continuar."
+        "A importação substitui os registros atuais. "
+        "Faça uma exportação antes."
     )
 
     arquivo = st.file_uploader(
-        "Selecione o arquivo Excel",
+        "Selecione o arquivo",
         type=["xlsx"],
     )
 
     confirmar = st.checkbox(
-        "Confirmo a substituição dos dados atuais"
+        "Confirmo a substituição dos dados"
     )
 
     if (
         arquivo is not None
         and confirmar
-        and st.button(
-            "Importar dados",
-            type="primary",
-        )
+        and st.button("Importar dados", type="primary")
     ):
         try:
             importar_excel(arquivo)
-
-            st.success(
-                "Dados importados com sucesso."
-            )
-
+            st.success("Dados importados.")
             st.rerun()
 
         except Exception as erro:
-            st.error(
-                f"Erro durante a importação: {erro}"
-            )
+            st.error(f"Erro durante a importação: {erro}")
 
 
 # ============================================================
-# INICIALIZAÇÃO
+# EXECUÇÃO
 # ============================================================
 
 criar_banco()
-
-
-# ============================================================
-# MENU LATERAL
-# ============================================================
-
-st.sidebar.markdown(
-    """
-    <div class="logo-menu">
-        🧫 Natalia
-        <span>Monitoramento Microbiológico</span>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 pagina = st.sidebar.radio(
     "Navegação",
@@ -1560,36 +1290,9 @@ pagina = st.sidebar.radio(
     ],
 )
 
-st.sidebar.divider()
-
 st.sidebar.caption(
-    "Banco SQLite • dados persistentes"
+    "Banco de dados SQLite • dados persistentes"
 )
-
-
-# ============================================================
-# CABEÇALHO
-# ============================================================
-
-st.markdown(
-    """
-    <div class="cabecalho">
-        <h1>
-            Natalia - Monitoramento Microbiológico
-        </h1>
-        <p>
-            Gestão integrada de amostras, identificação
-            e armazenamento de isolados.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# ============================================================
-# NAVEGAÇÃO
-# ============================================================
 
 if pagina == "Dashboard":
     pagina_dashboard()
