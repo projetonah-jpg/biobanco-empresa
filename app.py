@@ -1,5 +1,3 @@
-import hmac
-import os
 import sqlite3
 from io import BytesIO
 from pathlib import Path
@@ -10,7 +8,7 @@ import streamlit as st
 
 
 # ============================================================
-# CONFIGURAÇÃO GERAL
+# CONFIGURAÇÃO
 # ============================================================
 
 st.set_page_config(
@@ -19,15 +17,11 @@ st.set_page_config(
     layout="wide",
 )
 
-PASTA_APP = Path(__file__).resolve().parent
-CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
-
-USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
-SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
+CAMINHO_BANCO = Path(__file__).parent / "monitoramento.db"
 
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL
+# INTERFACE VISUAL
 # ============================================================
 
 st.markdown(
@@ -37,19 +31,18 @@ st.markdown(
         --navy: #12343b;
         --teal: #13877c;
         --mint: #eaf5f2;
-        --white: #ffffff;
     }
 
     .stApp {
         background: linear-gradient(
             135deg,
-            #f8fcfb 0%,
-            #edf6f4 100%
+            #f8fcfb,
+            #edf6f4
         );
     }
 
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 1.4rem;
         max-width: 1280px;
     }
 
@@ -66,7 +59,7 @@ st.markdown(
     }
 
     [data-testid="stMetric"] {
-        background-color: white;
+        background: white;
         border: 1px solid #dcebe7;
         border-left: 5px solid #13877c;
         padding: 16px;
@@ -78,56 +71,15 @@ st.markdown(
     .stFormSubmitButton > button {
         border-radius: 10px;
         border: 0;
-        background-color: #13877c;
+        background: #13877c;
         color: white;
         font-weight: 700;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #0f6f67;
+        background: #0f6f67;
         color: white;
-    }
-
-    .logo-login {
-        text-align: center;
-        color: #12343b;
-        margin: 3vh auto 18px auto;
-    }
-
-    .logo-login h1 {
-        font-size: 34px;
-        margin: 10px 0 0 0;
-    }
-
-    .logo-login p {
-        color: #5e7776;
-        margin-top: 4px;
-    }
-
-    .logo-icone {
-        width: 96px;
-        height: 96px;
-        margin: auto;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(
-            145deg,
-            #13877c,
-            #12343b
-        );
-        color: white;
-        font-size: 48px;
-        box-shadow: 0 12px 28px rgba(19, 135, 124, 0.28);
-    }
-
-    .caixa-login {
-        background-color: white;
-        padding: 28px 34px 20px 34px;
-        border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(18, 52, 59, 0.14);
-        border: 1px solid #dfefeb;
     }
 
     .cabecalho {
@@ -149,13 +101,13 @@ st.markdown(
     }
 
     .cabecalho p {
-        margin: 5px 0 0 0;
+        margin: 5px 0 0;
         color: #d8efeb;
     }
 
     .logo-menu {
         text-align: center;
-        padding: 10px 0 18px 0;
+        padding: 12px 0 20px;
         font-weight: 700;
         font-size: 18px;
     }
@@ -276,7 +228,7 @@ LISTAS = {
 
 
 # ============================================================
-# DADOS ATUAIS DA PLANILHA
+# DADOS INICIAIS
 # ============================================================
 
 AMOSTRAS_INICIAIS = [
@@ -351,7 +303,6 @@ AMOSTRAS_INICIAIS = [
         "resultado_final": "Não Conforme",
     },
 ]
-
 
 IDENTIFICACOES_INICIAIS = [
     {
@@ -433,7 +384,7 @@ IDENTIFICACOES_INICIAIS = [
 
 
 # ============================================================
-# BANCO DE DADOS
+# COLUNAS DO BANCO
 # ============================================================
 
 COLUNAS_AMOSTRA = [
@@ -467,6 +418,10 @@ COLUNAS_IDENTIFICACAO = [
     "end_date",
 ]
 
+
+# ============================================================
+# BANCO SQLITE
+# ============================================================
 
 def conectar():
     conexao = sqlite3.connect(CAMINHO_BANCO)
@@ -529,36 +484,38 @@ def criar_banco():
 
 
 def inserir_dados_iniciais(conexao):
-    for amostra in AMOSTRAS_INICIAIS:
-        valores = [
-            amostra.get(coluna, "")
-            for coluna in COLUNAS_AMOSTRA
-        ]
+    for registro in AMOSTRAS_INICIAIS:
+        marcadores = ",".join(
+            "?" for _ in COLUNAS_AMOSTRA
+        )
 
         conexao.execute(
             f"""
             INSERT OR IGNORE INTO amostras
             ({",".join(COLUNAS_AMOSTRA)})
-            VALUES ({",".join("?" for _ in COLUNAS_AMOSTRA)})
+            VALUES ({marcadores})
             """,
-            valores,
+            [
+                registro.get(coluna, "")
+                for coluna in COLUNAS_AMOSTRA
+            ],
         )
 
-    for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [
-            identificacao.get(coluna, "")
-            for coluna in COLUNAS_IDENTIFICACAO
-        ]
+    for registro in IDENTIFICACOES_INICIAIS:
+        marcadores = ",".join(
+            "?" for _ in COLUNAS_IDENTIFICACAO
+        )
 
         conexao.execute(
             f"""
             INSERT OR IGNORE INTO identificacoes
             ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES (
-                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
-            )
+            VALUES ({marcadores})
             """,
-            valores,
+            [
+                registro.get(coluna, "")
+                for coluna in COLUNAS_IDENTIFICACAO
+            ],
         )
 
 
@@ -593,13 +550,14 @@ def salvar_amostra(registro):
             atualizado_em=CURRENT_TIMESTAMP
     """
 
-    valores = [
-        registro.get(coluna, "")
-        for coluna in COLUNAS_AMOSTRA
-    ]
-
     with conectar() as conexao:
-        conexao.execute(sql, valores)
+        conexao.execute(
+            sql,
+            [
+                registro.get(coluna, "")
+                for coluna in COLUNAS_AMOSTRA
+            ],
+        )
 
 
 def salvar_identificacao(registro):
@@ -623,13 +581,14 @@ def salvar_identificacao(registro):
             atualizado_em=CURRENT_TIMESTAMP
     """
 
-    valores = [
-        registro.get(coluna, "")
-        for coluna in COLUNAS_IDENTIFICACAO
-    ]
-
     with conectar() as conexao:
-        conexao.execute(sql, valores)
+        conexao.execute(
+            sql,
+            [
+                registro.get(coluna, "")
+                for coluna in COLUNAS_IDENTIFICACAO
+            ],
+        )
 
 
 def excluir_amostra(code):
@@ -642,101 +601,18 @@ def excluir_amostra(code):
 
 def substituir_dados(amostras, identificacoes):
     with conectar() as conexao:
-        conexao.execute(
-            "DELETE FROM identificacoes"
-        )
+        conexao.execute("DELETE FROM identificacoes")
+        conexao.execute("DELETE FROM amostras")
 
-        conexao.execute(
-            "DELETE FROM amostras"
-        )
+    for registro in amostras:
+        salvar_amostra(registro)
 
-    for amostra in amostras:
-        salvar_amostra(amostra)
-
-    for identificacao in identificacoes:
-        salvar_identificacao(identificacao)
+    for registro in identificacoes:
+        salvar_identificacao(registro)
 
 
 # ============================================================
-# LOGIN
-# ============================================================
-
-def mostrar_login():
-    if st.session_state.get("autenticado"):
-        return True
-
-    st.markdown(
-        """
-        <div class="logo-login">
-            <div class="logo-icone">🧫</div>
-            <h1>Natalia</h1>
-            <p>Monitoramento Microbiológico</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    esquerda, centro, direita = st.columns(
-        [1.15, 1, 1.15]
-    )
-
-    with centro:
-        st.markdown(
-            '<div class="caixa-login">',
-            unsafe_allow_html=True,
-        )
-
-        with st.form("formulario_login"):
-            usuario = st.text_input(
-                "Usuário",
-                placeholder="Digite seu usuário",
-            )
-
-            senha = st.text_input(
-                "Senha",
-                type="password",
-                placeholder="Digite sua senha",
-            )
-
-            entrar = st.form_submit_button(
-                "Entrar",
-                type="primary",
-                use_container_width=True,
-            )
-
-        st.caption(
-            "Acesso restrito ao laboratório de microbiologia."
-        )
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
-        if entrar:
-            usuario_correto = hmac.compare_digest(
-                usuario.strip(),
-                USUARIO_PADRAO,
-            )
-
-            senha_correta = hmac.compare_digest(
-                senha,
-                SENHA_PADRAO,
-            )
-
-            if usuario_correto and senha_correta:
-                st.session_state.autenticado = True
-                st.session_state.usuario = USUARIO_PADRAO
-                st.rerun()
-
-            else:
-                st.error("Usuário ou senha inválidos.")
-
-    return False
-
-
-# ============================================================
-# FUNÇÕES DOS DADOS
+# CONSULTAS
 # ============================================================
 
 def obter_amostras():
@@ -961,7 +837,7 @@ def pagina_dashboard():
 
 
 # ============================================================
-# REGISTRO DE AMOSTRAS
+# REGISTRO
 # ============================================================
 
 def pagina_registro():
@@ -977,7 +853,10 @@ def pagina_registro():
 
     modo = st.radio(
         "Ação",
-        ["Novo registro", "Editar registro"],
+        [
+            "Novo registro",
+            "Editar registro",
+        ],
         horizontal=True,
     )
 
@@ -1173,7 +1052,7 @@ def pagina_registro():
 
 
 # ============================================================
-# IDENTIFICAÇÃO MICROBIOLÓGICA
+# IDENTIFICAÇÃO
 # ============================================================
 
 def pagina_identificacao():
@@ -1417,7 +1296,7 @@ def pagina_armazenamento():
 
 
 # ============================================================
-# EXPORTAÇÃO PARA EXCEL
+# EXPORTAÇÃO
 # ============================================================
 
 def gerar_excel():
@@ -1477,7 +1356,7 @@ def gerar_excel():
 
 
 # ============================================================
-# IMPORTAÇÃO DE EXCEL
+# IMPORTAÇÃO
 # ============================================================
 
 def normalizar_coluna(nome):
@@ -1557,11 +1436,17 @@ def importar_excel(arquivo):
     ].fillna("")
 
     registro = registro[
-        registro["code"].astype(str).str.strip() != ""
+        registro["code"]
+        .astype(str)
+        .str.strip()
+        .ne("")
     ]
 
     identificacao = identificacao[
-        identificacao["code"].astype(str).str.strip() != ""
+        identificacao["code"]
+        .astype(str)
+        .str.strip()
+        .ne("")
     ]
 
     registro["data"] = (
@@ -1644,11 +1529,8 @@ def pagina_dados():
 
 
 # ============================================================
-# INICIALIZAÇÃO DO SISTEMA
+# INICIALIZAÇÃO
 # ============================================================
-
-if not mostrar_login():
-    st.stop()
 
 criar_banco()
 
@@ -1667,11 +1549,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-st.sidebar.caption(
-    f"Conectado como "
-    f"{st.session_state.get('usuario', 'Natalia')}"
-)
-
 pagina = st.sidebar.radio(
     "Navegação",
     [
@@ -1684,14 +1561,6 @@ pagina = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-
-if st.sidebar.button(
-    "Sair",
-    use_container_width=True,
-):
-    st.session_state.autenticado = False
-    st.session_state.pop("usuario", None)
-    st.rerun()
 
 st.sidebar.caption(
     "Banco SQLite • dados persistentes"
@@ -1719,7 +1588,7 @@ st.markdown(
 
 
 # ============================================================
-# ABERTURA DAS PÁGINAS
+# NAVEGAÇÃO
 # ============================================================
 
 if pagina == "Dashboard":
