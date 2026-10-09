@@ -256,12 +256,12 @@ LISTAS = {
         "Petrifilm YM",
     ],
     "FORM": [
-        "Punctiform",
-        "Circular",
-        "Filamentous",
-        "Irregular",
-        "Rhizoid",
-        "Fusiform",
+        "Cocos",
+        "Bacilos",
+        "Strepto",
+        "Staphylo",
+        "Cocobacilos",
+        "Vibrio",
     ],
     "AFFIRMATION": [
         "Positive",
