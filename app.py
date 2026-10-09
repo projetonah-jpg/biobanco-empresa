@@ -1717,11 +1717,11 @@ st.markdown(
     """
     <div class="cabecalho">
         <h1>
-            Natalia - Monitoramento Microbiológico
+            BIO BANCO - NATALIA
         </h1>
         <p>
-            Gestão integrada de amostras, identificação
-            e armazenamento de isolados.
+            Gestão integrada de cepas, identificação
+            e armazenamento.
         </p>
     </div>
     """,
