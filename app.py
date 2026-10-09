@@ -1033,10 +1033,9 @@ def pagina_identificacao():
     )
 
     st.info(
-        f"Área: {registro['area'] or '—'} | "
-        f"Ponto: "
-        f"{registro['collection_point'] or '—'} | "
-        f"Data: {registro['data'] or '—'}"
+        f"Área: {registro.get('area', '—')} | "
+        f"Ponto: {registro.get('collection_point', '—')} | "
+        f"Data: {registro.get('data', '—')}"
     )
 
     with st.form("formulario_identificacao"):
@@ -1060,34 +1059,67 @@ def pagina_identificacao():
                 registro.get("identification", ""),
             )
 
+            # Lista suspensa de método terceirizado em inglês
+            opcoes_metodo = ["", "NGS Sequencing", "Maldi TOF", "Others"]
+            valor_salvo = registro.get("outsourced_method", "")
+            
+            if valor_salvo == "Sequenciamento NGS": valor_salvo = "NGS Sequencing"
+            if valor_salvo == "Outros": valor_salvo = "Others"
+            
+            if valor_salvo not in opcoes_metodo:
+                opcoes_metodo.append(valor_salvo)
+                
+            indice_metodo = opcoes_metodo.index(valor_salvo) if valor_salvo in opcoes_metodo else 0
+            
+            outsourced_method = st.selectbox(
+                "OUTSOURCED METHOD",
+                opcoes_metodo,
+                index=indice_metodo
+            )
+
         with coluna2:
             company = st.text_input(
                 "COMPANY",
                 registro.get("company", ""),
             )
 
-            data_final_atual = pd.to_datetime(
-                registro.get("end_date", ""),
-                errors="coerce",
-            )
+            col_data1, col_data2 = st.columns(2)
 
-            end_date = st.date_input(
-                "END DATE",
-                value=(
-                    None
-                    if pd.isna(data_final_atual)
-                    else data_final_atual.date()
-                ),
-                format="DD/MM/YYYY",
-            )
+            with col_data1:
+                data_inicio_atual = pd.to_datetime(
+                    registro.get("start_date", ""),
+                    errors="coerce",
+                )
+                start_date = st.date_input(
+                    "START DATE",
+                    value=(
+                        None
+                        if pd.isna(data_inicio_atual)
+                        else data_inicio_atual.date()
+                    ),
+                    format="DD/MM/YYYY",
+                )
 
-            # Entrada para upload dos relatórios e fotos
+            with col_data2:
+                data_final_atual = pd.to_datetime(
+                    registro.get("end_date", ""),
+                    errors="coerce",
+                )
+                end_date = st.date_input(
+                    "END DATE",
+                    value=(
+                        None
+                        if pd.isna(data_final_atual)
+                        else data_final_atual.date()
+                    ),
+                    format="DD/MM/YYYY",
+                )
+
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
             )
             
-            # 🆕 NOVA OPÇÃO: Caixinha para autorizar a remoção do arquivo atual
             remover_anexo = st.checkbox("❌ Remover anexo atual desta amostra")
 
         enviado = st.form_submit_button(
@@ -1096,7 +1128,6 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 EXTRAÇÃO E DOWNLOAD DOS BYTES REAIS DO BANCO DE DADOS
     nome_arquivo_salvo = registro.get("report", "")
     
     if nome_arquivo_salvo:
@@ -1127,7 +1158,6 @@ def pagina_identificacao():
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
-        # Lógica para definir se o arquivo será mantido, atualizado ou excluído completamente
         if remover_anexo:
             nome_relatorio = ""
             bytes_arquivo = None
@@ -1137,24 +1167,21 @@ def pagina_identificacao():
             bytes_arquivo = arquivo_anexo.getvalue()
             atualizar_dados_arquivo = True
         else:
-            # Mantém o arquivo antigo se nada foi mexido e a caixa de remoção está desmarcada
             nome_relatorio = registro.get("report", "")
             bytes_arquivo = None
             atualizar_dados_arquivo = False
 
         with conectar() as conexao:
-            try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
-                conexao.commit()
-            except sqlite3.OperationalError:
-                pass 
+            try: conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB"); conexao.commit()
+            except sqlite3.OperationalError: pass
+            try: conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT"); conexao.commit()
+            except sqlite3.OperationalError: pass
 
-        # Mudança na QUERY SQL para aceitar a limpeza forçada de arquivos (NULL)
         sql_salvar = f"""
             INSERT INTO identificacoes (
                 code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
-                outsourced_method, identification, report, company, end_date, report_data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                outsourced_method, identification, report, company, end_date, report_data, start_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(code) DO UPDATE SET
                 form=excluded.form,
                 gram_stain=excluded.gram_stain,
@@ -1163,27 +1190,30 @@ def pagina_identificacao():
                 end_date=excluded.end_date,
                 report={"excluded.report" if atualizar_dados_arquivo else "identificacoes.report"},
                 report_data={"excluded.report_data" if atualizar_dados_arquivo else "identificacoes.report_data"},
+                start_date=excluded.start_date,
+                outsourced_method=excluded.outsourced_method,
                 atualizado_em=CURRENT_TIMESTAMP
         """
 
         valores = (
             code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
             registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
-            registro.get("outsourced_method", ""), identification, nome_relatorio, company,
-            (end_date.isoformat() if end_date else ""), bytes_arquivo
+            outsourced_method, identification, nome_relatorio, company,
+            (end_date.isoformat() if end_date else ""), bytes_arquivo,
+            (start_date.isoformat() if start_date else "")
         )
 
         with conectar() as conexao:
             conexao.execute(sql_salvar, valores)
 
-        st.success(f"Identificação de {code} atualizada com sucesso!")
+        st.success(f"Identificação de {code} salva com sucesso!")
         st.rerun()
 
     st.subheader("Identificações cadastradas")
 
     colunas_visiveis = [
         "code", "area", "collection_point", "data", 
-        "form", "gram_stain", "identification", "report", "company", "end_date"
+        "form", "gram_stain", "identification", "outsourced_method", "report", "company", "start_date", "end_date"
     ]
     df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
 
@@ -1191,8 +1221,21 @@ def pagina_identificacao():
         df_filtrado,
         use_container_width=True,
         hide_index=True,
+        column_config={
+            "code": "CODE",
+            "area": "AREA",
+            "collection_point": "COLLECTION POINT",
+            "data": "DATE",
+            "form": "MORPHOLOGY",
+            "gram_stain": "GRAM STAIN",
+            "identification": "IDENTIFICATION",
+            "outsourced_method": "OUTSOURCED METHOD",
+            "report": "ATTACH REPORT",
+            "company": "COMPANY",
+            "start_date": "START DATE",
+            "end_date": "END DATE"
+        }
     )
-
 
 
 # ============================================================
