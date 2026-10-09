@@ -1204,9 +1204,10 @@ def pagina_identificacao():
         df["code"].tolist(),
     )
 
+    # CORREÇÃO DEFINITIVA: Adicionado o [0] junto ao .iloc para capturar a linha corretamente
     registro = (
         df[df["code"] == code]
-        .iloc
+        .iloc[0]
         .fillna("")
         .to_dict()
     )
@@ -1272,7 +1273,7 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 DOWNLOAD DO ARQUIVO REAL (CORRIGIDO PARA EVITAR OPERATIONALERROR)
+    # 📥 DOWNLOAD DO ARQUIVO REAL DIRETO DO BANCO DE DADOS
     nome_arquivo_salvo = registro.get("report", "")
     
     if nome_arquivo_salvo:
@@ -1281,7 +1282,6 @@ def pagina_identificacao():
         bytes_reais = None
         with conectar() as conexao:
             try:
-                # Tenta buscar os dados do arquivo
                 _linha = conexao.execute(
                     "SELECT report_data FROM identificacoes WHERE code = ?", 
                     (code,)
@@ -1289,7 +1289,6 @@ def pagina_identificacao():
                 if _linha:
                     bytes_reais = _linha["report_data"]
             except sqlite3.OperationalError:
-                # Se a coluna report_data não existir no banco ainda, cria ela agora mesmo
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
                 conexao.commit()
 
@@ -1314,7 +1313,6 @@ def pagina_identificacao():
             nome_relatorio = arquivo_anexo.name
             bytes_arquivo = arquivo_anexo.getvalue()
 
-        # Garante a existência da coluna na hora de salvar
         with conectar() as conexao:
             try:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
