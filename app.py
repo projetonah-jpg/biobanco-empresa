@@ -1445,16 +1445,16 @@ def pagina_registro():
 
             st.rerun()
 
-         st.subheader("Amostras cadastradas")
+                  st.subheader("Amostras cadastradas")
 
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "resultado_final": "RESULT"
-        }
-    )
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "resultado_final": "RESULT"
+                }
+            )
 
 
 
