@@ -1026,7 +1026,7 @@ def pagina_registro():
         )
 
         analista = coluna3.text_input(
-            "ANALISTA",
+            "ANALYST",
             registro_atual.get("analista", ""),
         )
 
@@ -1101,8 +1101,8 @@ def pagina_registro():
 
         with coluna3:
             resultado_final = campo_selecao(
-                "RESULTADO FINAL",
-                "RESULTADO_FINAL",
+                "RESULT",
+                "RESULTADO",
                 registro_atual.get(
                     "resultado_final",
                     "",
