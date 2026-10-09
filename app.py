@@ -479,8 +479,9 @@ COLUNAS_AMOSTRA = [
     "frequencia",
     "analista",
     "data",
-    "resultado",
+    "resultado_final",
 ]
+
 
 COLUNAS_IDENTIFICACAO = [
     "code",
