@@ -975,212 +975,191 @@ def pagina_dashboard():
 # REGISTRO DE AMOSTRAS
 # ============================================================
 
-def pagina_registro():
-    st.title("Registro de Monitoramento")
+def pagina_identificacao():
+    st.title("Identificação Microbiológica")
 
-    df = obter_amostras()
+    df = obter_identificacoes()
 
-    codigos = (
-        df["code"].tolist()
-        if not df.empty
-        else []
+    if df.empty:
+        st.info(
+            "Cadastre uma amostra antes "
+            "de preencher a identificação."
+        )
+        return
+
+    code = st.selectbox(
+        "Selecione o CODE",
+        df["code"].tolist(),
     )
 
-    modo = st.radio(
-        "Ação",
-        ["Novo registro", "Editar registro"],
-        horizontal=True,
+    registro = (
+        df[df["code"] == code]
+        .iloc[0]
+        .fillna("")
+        .to_dict()
     )
 
-    registro_atual = {}
+    st.info(
+        f"Área: {registro['area'] or '—'} | "
+        f"Ponto: "
+        f"{registro['collection_point'] or '—'} | "
+        f"Data: {registro['data'] or '—'}"
+    )
 
-    if modo == "Editar registro":
-        if not codigos:
-            st.info("Não existem registros para editar.")
-            return
-
-        codigo_selecionado = st.selectbox(
-            "Selecione o CODE",
-            codigos,
-        )
-
-        registro_atual = (
-            df[df["code"] == codigo_selecionado]
-            .iloc[0]
-            .fillna("")
-            .to_dict()
-        )
-
-    with st.form("formulario_amostra"):
-        coluna1, coluna2, coluna3 = st.columns(3)
-
-        code = coluna1.text_input(
-            "CODE *",
-            registro_atual.get("code", ""),
-            disabled=modo == "Editar registro",
-        )
-
-        ponto = coluna2.text_input(
-            "OBSERVATION",
-            registro_atual.get("ponto", ""),
-        )
-
-        analista = coluna3.text_input(
-            "ANALYST",
-            registro_atual.get("analista", ""),
-        )
-
-        coluna1, coluna2, coluna3 = st.columns(3)
+    with st.form("formulario_identificacao"):
+        coluna1, coluna2 = st.columns(2)
 
         with coluna1:
-            origin = campo_selecao(
-                "ORIGIN",
-                "ORIGIN",
-                registro_atual.get("origin", ""),
+            form = campo_selecao(
+                "MORPHOLOGY",
+                "FORM",
+                registro.get("form", ""),
             )
 
-            area = campo_selecao(
-                "AREA",
-                "AREA",
-                registro_atual.get("area", ""),
+            gram_stain = campo_selecao(
+                "GRAM STAIN",
+                "AFFIRMATION",
+                registro.get("gram_stain", ""),
+            )
+
+            identification = st.text_input(
+                "IDENTIFICATION",
+                registro.get("identification", ""),
             )
 
         with coluna2:
-            sample = campo_selecao(
-                "SAMPLE",
-                "SAMPLE",
-                registro_atual.get("sample", ""),
+            company = st.text_input(
+                "COMPANY",
+                registro.get("company", ""),
             )
 
-            collection_point = campo_selecao(
-                "COLLECTION POINT",
-                "COLLECTION POINT",
-                registro_atual.get(
-                    "collection_point",
-                    "",
-                ),
-            )
-
-        with coluna3:
-            sampling = campo_selecao(
-                "SAMPLING",
-                "SAMPLING",
-                registro_atual.get("sampling", ""),
-            )
-
-            method = campo_selecao(
-                "METHOD",
-                "METHOD",
-                registro_atual.get("method", ""),
-            )
-
-        coluna1, coluna2, coluna3 = st.columns(3)
-
-        with coluna1:
-            frequencia = campo_selecao(
-                "FREQUENCY",
-                "FREQUÊNCIA",
-                registro_atual.get("frequencia", ""),
-            )
-
-        with coluna2:
-            data_atual = pd.to_datetime(
-                registro_atual.get("data", ""),
+            data_final_atual = pd.to_datetime(
+                registro.get("end_date", ""),
                 errors="coerce",
             )
 
-            data = st.date_input(
-                "DATA",
+            end_date = st.date_input(
+                "END DATE",
                 value=(
                     None
-                    if pd.isna(data_atual)
-                    else data_atual.date()
+                    if pd.isna(data_final_atual)
+                    else data_final_atual.date()
                 ),
                 format="DD/MM/YYYY",
             )
 
-        with coluna3:
-            resultado_final = campo_selecao(
-                "RESULT",
-                "RESULTADO",
-                registro_atual.get(
-                    "resultado_final",
-                    "",
-                ),
+            # Entrada para upload dos relatórios e fotos
+            arquivo_anexo = st.file_uploader(
+                "ATTACH REPORT (Word, Excel, Foto ou PDF)",
+                type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
             )
+            
+            # 🆕 NOVA OPÇÃO: Caixinha para autorizar a remoção do arquivo atual
+            remover_anexo = st.checkbox("❌ Remover anexo atual desta amostra")
 
         enviado = st.form_submit_button(
-            "Salvar registro",
+            "Salvar identificação",
             type="primary",
             use_container_width=True,
         )
 
-    if enviado:
-        if not code.strip():
-            st.error("O campo CODE é obrigatório.")
+    # 📥 EXTRAÇÃO E DOWNLOAD DOS BYTES REAIS DO BANCO DE DADOS
+    nome_arquivo_salvo = registro.get("report", "")
+    
+    if nome_arquivo_salvo:
+        st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
+        
+        bytes_reais = None
+        with conectar() as conexao:
+            try:
+                _cursor = conexao.execute("SELECT report_data FROM identificacoes WHERE code = ?", (code,))
+                _linha = _cursor.fetchone()
+                if _linha and _linha["report_data"]:
+                    bytes_reais = _linha["report_data"]
+            except sqlite3.OperationalError:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
+                conexao.commit()
 
-        elif (
-            modo == "Novo registro"
-            and code.strip() in codigos
-        ):
-            st.error("Este CODE já está cadastrado.")
-
+        if bytes_reais and len(bytes_reais) > 100:
+            st.download_button(
+                label=f"📥 Baixar/Abrir Documento Físico: {nome_arquivo_salvo}",
+                data=bytes_reais,
+                file_name=nome_arquivo_salvo,
+                mime="application/octet-stream",
+                use_container_width=True
+            )
         else:
-            salvar_amostra(
-                {
-                    "code": code.strip(),
-                    "ponto": ponto,
-                    "origin": origin,
-                    "area": area,
-                    "sample": sample,
-                    "collection_point": collection_point,
-                    "sampling": sampling,
-                    "method": method,
-                    "frequencia": frequencia,
-                    "analista": analista,
-                    "data": (
-                        data.isoformat()
-                        if data
-                        else ""
-                    ),
-                    "resultado_final": resultado_final,
-                }
-            )
+            st.warning("⚠️ O arquivo antigo continha apenas metadados de texto. Faça um novo upload no campo acima para registrar o arquivo físico.")
+    else:
+        st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
-            st.success(
-                f"Registro {code} salvo com sucesso."
-            )
+    if enviado:
+        # Lógica para definir se o arquivo será mantido, atualizado ou excluído completamente
+        if remover_anexo:
+            nome_relatorio = ""
+            bytes_arquivo = None
+            atualizar_dados_arquivo = True
+        elif arquivo_anexo is not None:
+            nome_relatorio = arquivo_anexo.name
+            bytes_arquivo = arquivo_anexo.getvalue()
+            atualizar_dados_arquivo = True
+        else:
+            # Mantém o arquivo antigo se nada foi mexido e a caixa de remoção está desmarcada
+            nome_relatorio = registro.get("report", "")
+            bytes_arquivo = None
+            atualizar_dados_arquivo = False
 
-            st.rerun()
+        with conectar() as conexao:
+            try:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
+                conexao.commit()
+            except sqlite3.OperationalError:
+                pass 
 
-    if codigos:
-        with st.expander("Excluir registro"):
-            codigo_exclusao = st.selectbox(
-                "CODE para excluir",
-                codigos,
-                key="codigo_exclusao",
-            )
+        # Mudança na QUERY SQL para aceitar a limpeza forçada de arquivos (NULL)
+        sql_salvar = f"""
+            INSERT INTO identificacoes (
+                code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
+                outsourced_method, identification, report, company, end_date, report_data
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                form=excluded.form,
+                gram_stain=excluded.gram_stain,
+                identification=excluded.identification,
+                company=excluded.company,
+                end_date=excluded.end_date,
+                report={"excluded.report" if atualizar_dados_arquivo else "identificacoes.report"},
+                report_data={"excluded.report_data" if atualizar_dados_arquivo else "identificacoes.report_data"},
+                atualizado_em=CURRENT_TIMESTAMP
+        """
 
-            confirmar = st.checkbox(
-                "Confirmo a exclusão da amostra "
-                "e da identificação vinculada"
-            )
+        valores = (
+            code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
+            registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
+            registro.get("outsourced_method", ""), identification, nome_relatorio, company,
+            (end_date.isoformat() if end_date else ""), bytes_arquivo
+        )
 
-            if st.button(
-                "Excluir",
-                disabled=not confirmar,
-            ):
-                excluir_amostra(codigo_exclusao)
-                st.success("Registro excluído.")
-                st.rerun()
+        with conectar() as conexao:
+            conexao.execute(sql_salvar, valores)
 
-    st.subheader("Amostras cadastradas")
+        st.success(f"Identificação de {code} atualizada com sucesso!")
+        st.rerun()
+
+    st.subheader("Identificações cadastradas")
+
+    colunas_visiveis = [
+        "code", "area", "collection_point", "data", 
+        "form", "gram_stain", "identification", "report", "company", "end_date"
+    ]
+    df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
 
     st.dataframe(
-        df,
+        df_filtrado,
         use_container_width=True,
         hide_index=True,
     )
+
 
 
 # ============================================================
