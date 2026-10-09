@@ -1231,13 +1231,31 @@ def pagina_identificacao():
                 registro.get("identification", ""),
             )
 
+            # 🆕 NOVO: Lista suspensa de método terceirizado em inglês
+            opcoes_metodo = ["", "NGS Sequencing", "Maldi TOF", "Others"]
+            valor_salvo = registro.get("outsourced_method", "")
+            
+            # Traduz termos antigos em português caso existam no banco para não travar o índice
+            if valor_salvo == "Sequenciamento NGS": valor_salvo = "NGS Sequencing"
+            if valor_salvo == "Outros": valor_salvo = "Others"
+            
+            if valor_salvo not in opcoes_metodo:
+                opcoes_metodo.append(valor_salvo)
+                
+            indice_metodo = opcoes_metodo.index(valor_salvo) if valor_salvo in opcoes_metodo else 0
+            
+            outsourced_method = st.selectbox(
+                "OUTSOURCED METHOD",
+                opcoes_metodo,
+                index=indice_metodo
+            )
+
         with coluna2:
             company = st.text_input(
                 "COMPANY",
                 registro.get("company", ""),
             )
 
-            # 🛠️ SUBCOLUNAS LADO A LADO PARA AS DATAS
             col_data1, col_data2 = st.columns(2)
 
             with col_data1:
@@ -1270,7 +1288,6 @@ def pagina_identificacao():
                     format="DD/MM/YYYY",
                 )
 
-            # Entrada para upload dos relatórios e fotos
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1282,7 +1299,6 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 EXTRAÇÃO E DOWNLOAD DOS BYTES REAIS DO BANCO DE DADOS
     nome_arquivo_salvo = registro.get("report", "")
     
     if nome_arquivo_salvo:
@@ -1321,7 +1337,6 @@ def pagina_identificacao():
             bytes_arquivo = None
 
         with conectar() as conexao:
-            # Cria colunas extras dinamicamente se não existirem para evitar travar o fluxo
             try:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
                 conexao.commit()
@@ -1347,13 +1362,14 @@ def pagina_identificacao():
                 report=excluded.report,
                 report_data=excluded.report_data,
                 start_date=excluded.start_date,
+                outsourced_method=excluded.outsourced_method,
                 atualizado_em=CURRENT_TIMESTAMP
         """
 
         valores = (
             code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
             registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
-            registro.get("outsourced_method", ""), identification, nome_relatorio, company,
+            outsourced_method, identification, nome_relatorio, company,
             (end_date.isoformat() if end_date else ""), bytes_arquivo,
             (start_date.isoformat() if start_date else "")
         )
@@ -1366,10 +1382,10 @@ def pagina_identificacao():
 
     st.subheader("Identificações cadastradas")
 
-    # Adicionado "start_date" no mapeamento do DataFrame
+    # Inclusão da coluna outsourced_method na visualização do quadro inferior
     colunas_visiveis = [
         "code", "area", "collection_point", "data", 
-        "form", "gram_stain", "identification", "report", "company", "start_date", "end_date"
+        "form", "gram_stain", "identification", "outsourced_method", "report", "company", "start_date", "end_date"
     ]
     df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
 
@@ -1385,12 +1401,14 @@ def pagina_identificacao():
             "form": "MORPHOLOGY",
             "gram_stain": "GRAM STAIN",
             "identification": "IDENTIFICATION",
+            "outsourced_method": "OUTSOURCED METHOD", # Nome ajustado em inglês na tabela!
             "report": "ATTACH REPORT",
             "company": "COMPANY",
-            "start_date": "START DATE",    # Título arrumado na tabela!
+            "start_date": "START DATE",
             "end_date": "END DATE"
         }
     )
+
 
 
 
