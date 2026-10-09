@@ -793,6 +793,7 @@ def obter_identificacoes():
             i.identification,
             i.report,
             i.company,
+            i.start_date,
             i.end_date
         FROM amostras a
 
@@ -804,6 +805,7 @@ def obter_identificacoes():
     )
 
     return pd.DataFrame(dados)
+
 
 
 def campo_selecao(
@@ -1224,20 +1226,38 @@ def pagina_identificacao():
                 registro.get("company", ""),
             )
 
-            data_final_atual = pd.to_datetime(
-                registro.get("end_date", ""),
-                errors="coerce",
-            )
+            # 🛠️ SUBCOLUNAS LADO A LADO PARA AS DATAS
+            col_data1, col_data2 = st.columns(2)
 
-            end_date = st.date_input(
-                "END DATE",
-                value=(
-                    None
-                    if pd.isna(data_final_atual)
-                    else data_final_atual.date()
-                ),
-                format="DD/MM/YYYY",
-            )
+            with col_data1:
+                data_inicio_atual = pd.to_datetime(
+                    registro.get("start_date", ""),
+                    errors="coerce",
+                )
+                start_date = st.date_input(
+                    "START DATE",
+                    value=(
+                        None
+                        if pd.isna(data_inicio_atual)
+                        else data_inicio_atual.date()
+                    ),
+                    format="DD/MM/YYYY",
+                )
+
+            with col_data2:
+                data_final_atual = pd.to_datetime(
+                    registro.get("end_date", ""),
+                    errors="coerce",
+                )
+                end_date = st.date_input(
+                    "END DATE",
+                    value=(
+                        None
+                        if pd.isna(data_final_atual)
+                        else data_final_atual.date()
+                    ),
+                    format="DD/MM/YYYY",
+                )
 
             # Entrada para upload dos relatórios e fotos
             arquivo_anexo = st.file_uploader(
@@ -1282,8 +1302,6 @@ def pagina_identificacao():
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
-        # LÓGICA DO ELEMENTO DE LIMPEZA DIRETA:
-        # Se o campo de upload estiver vazio, limpa o banco de dados. Se tiver um arquivo, atualiza.
         if arquivo_anexo is not None:
             nome_relatorio = arquivo_anexo.name
             bytes_arquivo = arquivo_anexo.getvalue()
@@ -1292,17 +1310,23 @@ def pagina_identificacao():
             bytes_arquivo = None
 
         with conectar() as conexao:
+            # Cria colunas extras dinamicamente se não existirem para evitar travar o fluxo
             try:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
                 conexao.commit()
             except sqlite3.OperationalError:
-                pass 
+                pass
+            try:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
+                conexao.commit()
+            except sqlite3.OperationalError:
+                pass
 
         sql_salvar = """
             INSERT INTO identificacoes (
                 code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
-                outsourced_method, identification, report, company, end_date, report_data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                outsourced_method, identification, report, company, end_date, report_data, start_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(code) DO UPDATE SET
                 form=excluded.form,
                 gram_stain=excluded.gram_stain,
@@ -1311,6 +1335,7 @@ def pagina_identificacao():
                 end_date=excluded.end_date,
                 report=excluded.report,
                 report_data=excluded.report_data,
+                start_date=excluded.start_date,
                 atualizado_em=CURRENT_TIMESTAMP
         """
 
@@ -1318,7 +1343,8 @@ def pagina_identificacao():
             code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
             registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
             registro.get("outsourced_method", ""), identification, nome_relatorio, company,
-            (end_date.isoformat() if end_date else ""), bytes_arquivo
+            (end_date.isoformat() if end_date else ""), bytes_arquivo,
+            (start_date.isoformat() if start_date else "")
         )
 
         with conectar() as conexao:
@@ -1327,15 +1353,15 @@ def pagina_identificacao():
         st.success(f"Identificação de {code} salva com sucesso!")
         st.rerun()
 
-        st.subheader("Identificações cadastradas")
+    st.subheader("Identificações cadastradas")
 
+    # Adicionado "start_date" no mapeamento do DataFrame
     colunas_visiveis = [
         "code", "area", "collection_point", "data", 
-        "form", "gram_stain", "identification", "report", "company", "end_date"
+        "form", "gram_stain", "identification", "report", "company", "start_date", "end_date"
     ]
     df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
 
-    # 🔄 Alinha os nomes das colunas da tabela com os nomes do formulário
     st.dataframe(
         df_filtrado,
         use_container_width=True,
@@ -1345,11 +1371,12 @@ def pagina_identificacao():
             "area": "AREA",
             "collection_point": "COLLECTION POINT",
             "data": "DATE",
-            "form": "MORPHOLOGY",       # Corrigido aqui!
+            "form": "MORPHOLOGY",
             "gram_stain": "GRAM STAIN",
             "identification": "IDENTIFICATION",
-            "report": "ATTACH REPORT",  # Corrigido aqui!
+            "report": "ATTACH REPORT",
             "company": "COMPANY",
+            "start_date": "START DATE",    # Título arrumado na tabela!
             "end_date": "END DATE"
         }
     )
