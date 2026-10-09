@@ -1206,7 +1206,7 @@ def pagina_identificacao():
 
     registro = (
         df[df["code"] == code]
-        .iloc[0]
+        .iloc
         .fillna("")
         .to_dict()
     )
@@ -1260,7 +1260,7 @@ def pagina_identificacao():
                 format="DD/MM/YYYY",
             )
 
-            # Novo campo para anexar arquivos
+            # Campo de anexo de arquivo
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1271,6 +1271,24 @@ def pagina_identificacao():
             type="primary",
             use_container_width=True,
         )
+
+    # 📥 NOVO: BOTÃO DE DOWNLOAD DO ARQUIVO ANEXADO
+    # Verifica se a cepa selecionada já possui um arquivo salvo no histórico
+    nome_arquivo_salvo = registro.get("report", "")
+    if nome_arquivo_salvo:
+        st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
+        
+        # Como o seu banco de dados atual guarda strings, vamos criar um arquivo de texto simulado
+        # para download. Se você decidir salvar os bytes reais no futuro, o fluxo é o mesmo.
+        st.download_button(
+            label=f"📥 Baixar/Abrir Documento: {nome_arquivo_salvo}",
+            data=f"Conteúdo de referência do relatório para a cepa {code}".encode('utf-8'),
+            file_name=nome_arquivo_salvo,
+            mime="application/octet-stream",
+            use_container_width=True
+        )
+    else:
+        st.caption("ℹ️ Nenhhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
         nome_relatorio = registro.get("report", "")
@@ -1307,7 +1325,6 @@ def pagina_identificacao():
 
     st.subheader("Identificações cadastradas")
 
-    # Mostra apenas as colunas limpas do Biobank na tabela
     colunas_visiveis = [
         "code", "area", "collection_point", "data", 
         "form", "gram_stain", "identification", "report", "company", "end_date"
