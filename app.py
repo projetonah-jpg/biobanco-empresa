@@ -1223,7 +1223,7 @@ def pagina_identificacao():
 
         with coluna1:
             form = campo_selecao(
-                "FORM",
+                "MORPHOLOGY",
                 "FORM",
                 registro.get("form", ""),
             )
