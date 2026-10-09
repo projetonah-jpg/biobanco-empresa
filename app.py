@@ -1505,7 +1505,7 @@ def normalizar_coluna(nome):
         "FREQUENCIA": "frequencia",
         "ANALISTA": "analista",
         "DATA": "data",
-        "RESULTADO FINAL": "resultado_final",
+        "RESULTADO": "resultado",
         "FORM": "form",
         "MARGIN": "margin",
         "PIGMENT": "pigment",
