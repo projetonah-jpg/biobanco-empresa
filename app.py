@@ -1078,7 +1078,7 @@ def pagina_registro():
 
         with coluna1:
             frequencia = campo_selecao(
-                "FREQUÊNCIA",
+                "FREQUENCY",
                 "FREQUÊNCIA",
                 registro_atual.get("frequencia", ""),
             )
