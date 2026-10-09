@@ -180,7 +180,7 @@ LISTAS = {
     "ORIGIN": [
         "Environmental Monitoring",
         "Storage Tanks",
-        "Amostra",
+        "M.A",
         "Processes",
     ],
     "AREA": [
@@ -195,6 +195,7 @@ LISTAS = {
         "Autoclave",
     ],
     "SAMPLE": [
+        "Inoculation Room Anteroom",
         "Inoculation Room",
         "Flow Room",
         "Dissolution",
