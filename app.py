@@ -367,7 +367,7 @@ AMOSTRAS_INICIAIS = [
 IDENTIFICACOES_INICIAIS = [
     {
         "code": "B4-001",
-        "form": "Rhizoid",
+        "form": "",
         "margin": "Round",
         "pigment": "",
         "gram_stain": "Positive",
