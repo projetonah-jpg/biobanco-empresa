@@ -1218,235 +1218,197 @@ def campo_selecao(titulo, nome_lista, valor_atual=""):
 
 
 
-def pagina_identificacao():
-    st.title("Identificação Microbiológica")
+# ============================================================
+# ABA REGISTRO ATIVADA DE VOLTA (RESOLVE O NAMEERROR)
+# ============================================================
 
-    df = obter_identificacoes()
+def pagina_registro():
+    st.title("Registro de Monitoramento")
 
-    if df.empty:
-        st.info(
-            "Cadastre uma amostra antes "
-            "de preencher a identificação."
+    df = obter_amostras()
+
+    codigos = (
+        df["code"].tolist()
+        if not df.empty
+        else []
+    )
+
+    modo = st.radio(
+        "Ação",
+        ["Novo registro", "Editar registro"],
+        horizontal=True,
+    )
+
+    registro_atual = {}
+
+    if modo == "Editar registro":
+        if not codigos:
+            st.info("Não existem registros para editar.")
+            return
+
+        codigo_selecionado = st.selectbox(
+            "Selecione o CODE",
+            codigos,
         )
-        return
 
-    code = st.selectbox(
-        "Selecione o CODE",
-        df["code"].tolist(),
-    )
+        registro_atual = (
+            df[df["code"] == codigo_selecionado]
+            .iloc[0]
+            .fillna("")
+            .to_dict()
+        )
 
-    registro = (
-        df[df["code"] == code]
-        .iloc[0]
-        .fillna("")
-        .to_dict()
-    )
+    with st.form("formulario_amostra"):
+        coluna1, coluna2, coluna3 = st.columns(3)
 
-    st.info(
-        f"Área: {registro['area'] or '—'} | "
-        f"Ponto: "
-        f"{registro['collection_point'] or '—'} | "
-        f"Data: {registro['data'] or '—'}"
-    )
+        code = coluna1.text_input(
+            "CODE *",
+            registro_atual.get("code", ""),
+            disabled=modo == "Editar registro",
+        )
 
-    with st.form("formulario_identificacao"):
-        coluna1, coluna2 = st.columns(2)
+        ponto = coluna2.text_input(
+            "OBSERVATION",
+            registro_atual.get("ponto", ""),
+        )
+
+        analista = coluna3.text_input(
+            "ANALYST",
+            registro_atual.get("analista", ""),
+        )
+
+        coluna1, coluna2, coluna3 = st.columns(3)
 
         with coluna1:
-            form = campo_selecao(
-                "MORPHOLOGY",
-                "FORM",
-                registro.get("form", ""),
+            origin = campo_selecao(
+                "ORIGIN",
+                "ORIGIN",
+                registro_atual.get("origin", ""),
             )
 
-            gram_stain = campo_selecao(
-                "GRAM STAIN",
-                "AFFIRMATION",
-                registro.get("gram_stain", ""),
-            )
-
-            identification = st.text_input(
-                "IDENTIFICATION",
-                registro.get("identification", ""),
-            )
-
-            # 🆕 NOVO: Lista suspensa de método terceirizado em inglês
-            opcoes_metodo = ["", "NGS Sequencing", "Maldi TOF", "Others"]
-            valor_salvo = registro.get("outsourced_method", "")
-            
-            # Traduz termos antigos em português caso existam no banco para não travar o índice
-            if valor_salvo == "Sequenciamento NGS": valor_salvo = "NGS Sequencing"
-            if valor_salvo == "Outros": valor_salvo = "Others"
-            
-            if valor_salvo not in opcoes_metodo:
-                opcoes_metodo.append(valor_salvo)
-                
-            indice_metodo = opcoes_metodo.index(valor_salvo) if valor_salvo in opcoes_metodo else 0
-            
-            outsourced_method = st.selectbox(
-                "OUTSOURCED METHOD",
-                opcoes_metodo,
-                index=indice_metodo
+            area = campo_selecao(
+                "AREA",
+                "AREA",
+                registro_atual.get("area", ""),
             )
 
         with coluna2:
-            company = st.text_input(
-                "COMPANY",
-                registro.get("company", ""),
+            sample = campo_selecao(
+                "SAMPLE",
+                "SAMPLE",
+                registro_atual.get("sample", ""),
             )
 
-            col_data1, col_data2 = st.columns(2)
+            collection_point = campo_selecao(
+                "COLLECTION POINT",
+                "COLLECTION POINT",
+                registro_atual.get(
+                    "collection_point",
+                    "",
+                ),
+            )
 
-            with col_data1:
-                data_inicio_atual = pd.to_datetime(
-                    registro.get("start_date", ""),
-                    errors="coerce",
-                )
-                start_date = st.date_input(
-                    "START DATE",
-                    value=(
-                        None
-                        if pd.isna(data_inicio_atual)
-                        else data_inicio_atual.date()
-                    ),
-                    format="DD/MM/YYYY",
-                )
+        with coluna3:
+            sampling = campo_selecao(
+                "SAMPLING",
+                "SAMPLING",
+                registro_atual.get("sampling", ""),
+            )
 
-            with col_data2:
-                data_final_atual = pd.to_datetime(
-                    registro.get("end_date", ""),
-                    errors="coerce",
-                )
-                end_date = st.date_input(
-                    "END DATE",
-                    value=(
-                        None
-                        if pd.isna(data_final_atual)
-                        else data_final_atual.date()
-                    ),
-                    format="DD/MM/YYYY",
-                )
+            method = campo_selecao(
+                "METHOD",
+                "METHOD",
+                registro_atual.get("method", ""),
+            )
 
-            arquivo_anexo = st.file_uploader(
-                "ATTACH REPORT (Word, Excel, Foto ou PDF)",
-                type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
+        coluna1, coluna2, coluna3 = st.columns(3)
+
+        with coluna1:
+            frequencia = campo_selecao(
+                "FREQUENCY",
+                "FREQUÊNCIA",
+                registro_atual.get("frequencia", ""),
+            )
+
+        with coluna2:
+            data_atual = pd.to_datetime(
+                registro_atual.get("data", ""),
+                errors="coerce",
+            )
+
+            data = st.date_input(
+                "DATA",
+                value=(
+                    None
+                    if pd.isna(data_atual)
+                    else data_atual.date()
+                ),
+                format="DD/MM/YYYY",
+            )
+
+        with coluna3:
+            resultado_final = campo_selecao(
+                "RESULT",
+                "RESULTADO",
+                registro_atual.get(
+                    "resultado_final",
+                    "",
+                ),
             )
 
         enviado = st.form_submit_button(
-            "Salvar identificação",
+            "Salvar registro",
             type="primary",
             use_container_width=True,
         )
 
-    nome_arquivo_salvo = registro.get("report", "")
-    
-    if nome_arquivo_salvo:
-        st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
-        
-        bytes_reais = None
-        with conectar() as conexao:
-            try:
-                _cursor = conexao.execute("SELECT report_data FROM identificacoes WHERE code = ?", (code,))
-                _linha = _cursor.fetchone()
-                if _linha and _linha["report_data"]:
-                    bytes_reais = _linha["report_data"]
-            except sqlite3.OperationalError:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
-                conexao.commit()
-
-        if bytes_reais and len(bytes_reais) > 100:
-            st.download_button(
-                label=f"📥 Baixar/Abrir Documento Físico: {nome_arquivo_salvo}",
-                data=bytes_reais,
-                file_name=nome_arquivo_salvo,
-                mime="application/octet-stream",
-                use_container_width=True
-            )
-        else:
-            st.warning("⚠️ O arquivo antigo continha apenas metadados de texto. Faça um novo upload no campo acima para registrar o arquivo físico.")
-    else:
-        st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
-
     if enviado:
-        if arquivo_anexo is not None:
-            nome_relatorio = arquivo_anexo.name
-            bytes_arquivo = arquivo_anexo.getvalue()
+        if not code.strip():
+            st.error("O campo CODE é obrigatório.")
+
+        elif (
+            modo == "Novo registro"
+            and code.strip() in codigos
+        ):
+            st.error("Este CODE já está cadastrado.")
+
         else:
-            nome_relatorio = ""
-            bytes_arquivo = None
+            salvar_amostra(
+                {
+                    "code": code.strip(),
+                    "ponto": ponto,
+                    "origin": origin,
+                    "area": area,
+                    "sample": sample,
+                    "collection_point": collection_point,
+                    "sampling": sampling,
+                    "method": method,
+                    "frequencia": frequencia,
+                    "analista": analista,
+                    "data": (
+                        data.isoformat()
+                        if data
+                        else ""
+                    ),
+                    "resultado_final": resultado_final,
+                }
+            )
 
-        with conectar() as conexao:
-            try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
-                conexao.commit()
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
-                conexao.commit()
-            except sqlite3.OperationalError:
-                pass
+            st.success(
+                f"Registro {code} salvo com sucesso."
+            )
 
-        sql_salvar = """
-            INSERT INTO identificacoes (
-                code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
-                outsourced_method, identification, report, company, end_date, report_data, start_date
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(code) DO UPDATE SET
-                form=excluded.form,
-                gram_stain=excluded.gram_stain,
-                identification=excluded.identification,
-                company=excluded.company,
-                end_date=excluded.end_date,
-                report=excluded.report,
-                report_data=excluded.report_data,
-                start_date=excluded.start_date,
-                outsourced_method=excluded.outsourced_method,
-                atualizado_em=CURRENT_TIMESTAMP
-        """
+            st.rerun()
 
-        valores = (
-            code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
-            registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
-            outsourced_method, identification, nome_relatorio, company,
-            (end_date.isoformat() if end_date else ""), bytes_arquivo,
-            (start_date.isoformat() if start_date else "")
-        )
-
-        with conectar() as conexao:
-            conexao.execute(sql_salvar, valores)
-
-        st.success(f"Identificação de {code} salva com sucesso!")
-        st.rerun()
-
-    st.subheader("Identificações cadastradas")
-
-    # Inclusão da coluna outsourced_method na visualização do quadro inferior
-    colunas_visiveis = [
-        "code", "area", "collection_point", "data", 
-        "form", "gram_stain", "identification", "outsourced_method", "report", "company", "start_date", "end_date"
-    ]
-    df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
+    st.subheader("Amostras cadastradas")
 
     st.dataframe(
-        df_filtrado,
+        df,
         use_container_width=True,
         hide_index=True,
-        column_config={
-            "code": "CODE",
-            "area": "AREA",
-            "collection_point": "COLLECTION POINT",
-            "data": "DATE",
-            "form": "MORPHOLOGY",
-            "gram_stain": "GRAM STAIN",
-            "identification": "IDENTIFICATION",
-            "outsourced_method": "OUTSOURCED METHOD", # Nome ajustado em inglês na tabela!
-            "report": "ATTACH REPORT",
-            "company": "COMPANY",
-            "start_date": "START DATE",
-            "end_date": "END DATE"
-        }
     )
+
+
 
 
 
