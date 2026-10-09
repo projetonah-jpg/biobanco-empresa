@@ -14,7 +14,7 @@ import streamlit as st
 # ============================================================
 
 st.set_page_config(
-    page_title="BIO BANCO - NATALIA",
+    page_title="BIO BANK - NATALIA",
     page_icon="🧫",
     layout="wide",
 )
