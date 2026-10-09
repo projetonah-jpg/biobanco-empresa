@@ -1717,7 +1717,7 @@ st.markdown(
     """
     <div class="cabecalho">
         <h1>
-            BIO BANCO - NATALIA
+            BIO BANK - NATALIA
         </h1>
         <p>
             Gestão integrada de cepas, identificação
