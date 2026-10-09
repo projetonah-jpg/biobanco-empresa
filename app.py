@@ -1021,7 +1021,7 @@ def pagina_registro():
         )
 
         ponto = coluna2.text_input(
-            "Observation",
+            "OBSERVATION",
             registro_atual.get("ponto", ""),
         )
 
