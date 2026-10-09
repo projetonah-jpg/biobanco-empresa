@@ -1633,4 +1633,3 @@ elif pagina == "Armazenamento":
 
 elif pagina == "Dados":
     pagina_dados()
-```
