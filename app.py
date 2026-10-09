@@ -1239,7 +1239,7 @@ def pagina_identificacao():
                 format="DD/MM/YYYY",
             )
 
-            # Entrada para upload dos relatórios e fotos em binário puro
+            # Entrada para upload dos relatórios e fotos
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1260,7 +1260,6 @@ def pagina_identificacao():
         bytes_reais = None
         with conectar() as conexao:
             try:
-                # Faz a verificação direta na conexão SQLite bypassando o DataFrame do Pandas
                 _cursor = conexao.execute("SELECT report_data FROM identificacoes WHERE code = ?", (code,))
                 _linha = _cursor.fetchone()
                 if _linha and _linha["report_data"]:
@@ -1269,7 +1268,6 @@ def pagina_identificacao():
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
                 conexao.commit()
 
-        # Renderiza o botão se houver arquivo físico armazenado no BLOB
         if bytes_reais and len(bytes_reais) > 100:
             st.download_button(
                 label=f"📥 Baixar/Abrir Documento Físico: {nome_arquivo_salvo}",
@@ -1284,12 +1282,14 @@ def pagina_identificacao():
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
-        nome_relatorio = registro.get("report", "")
-        bytes_arquivo = None
-
+        # LÓGICA DO ELEMENTO DE LIMPEZA DIRETA:
+        # Se o campo de upload estiver vazio, limpa o banco de dados. Se tiver um arquivo, atualiza.
         if arquivo_anexo is not None:
             nome_relatorio = arquivo_anexo.name
             bytes_arquivo = arquivo_anexo.getvalue()
+        else:
+            nome_relatorio = ""
+            bytes_arquivo = None
 
         with conectar() as conexao:
             try:
@@ -1310,7 +1310,7 @@ def pagina_identificacao():
                 company=excluded.company,
                 end_date=excluded.end_date,
                 report=excluded.report,
-                report_data=COALESCE(excluded.report_data, identificacoes.report_data),
+                report_data=excluded.report_data,
                 atualizado_em=CURRENT_TIMESTAMP
         """
 
@@ -1324,7 +1324,7 @@ def pagina_identificacao():
         with conectar() as conexao:
             conexao.execute(sql_salvar, valores)
 
-        st.success(f"Identificação de {code} salva com sucesso com arquivo real!")
+        st.success(f"Identificação de {code} salva com sucesso!")
         st.rerun()
 
     st.subheader("Identificações cadastradas")
@@ -1340,6 +1340,7 @@ def pagina_identificacao():
         use_container_width=True,
         hide_index=True,
     )
+
 
 
 
