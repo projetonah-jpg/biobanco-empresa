@@ -25,6 +25,26 @@ CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
+def campo_selecao(titulo, nome_lista, valor_atual=""):
+    opcoes = [""] + LISTAS.get(nome_lista, [])
+
+    if valor_atual and valor_atual not in opcoes:
+        opcoes.append(valor_atual)
+
+    indice = (
+        opcoes.index(valor_atual)
+        if valor_atual in opcoes
+        else 0
+    )
+
+    return st.selectbox(
+        titulo,
+        opcoes,
+        index=indice,
+    )
+
+
+
 
 # ============================================================
 # ESTILO E IDENTIDADE VISUAL
