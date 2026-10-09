@@ -1767,7 +1767,7 @@ criar_banco()
 
 
 # ============================================================
-# MENU LATERAL
+# MENU LATERAL (CORRIGIDO PARA SINTAXE NATIVA)
 # ============================================================
 
 st.sidebar.markdown(
@@ -1785,10 +1785,11 @@ st.sidebar.caption(
     f"{st.session_state.get('usuario', 'Natalia')}"
 )
 
+# Definição das opções em português para bater com a lógica do seu app
 pagina = st.sidebar.radio(
     "Navegação",
     [
-        "Dashboard",
+        "Painel",
         "Registro",
         "Identificação",
         "Armazenamento",
@@ -1819,10 +1820,10 @@ st.markdown(
     """
     <div class="cabecalho">
         <h1>
-            BIO BANK - NATALIA
+            BANCO DE BIOLOGICOS - NATALIA
         </h1>
         <p>
-            Gestão integrada de cepas, identificação
+            Gestão integrada de cepas, identidade
             e armazenamento.
         </p>
     </div>
@@ -1832,10 +1833,10 @@ st.markdown(
 
 
 # ============================================================
-# ABERTURA DAS PÁGINAS
+# ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
 # ============================================================
 
-if pagina == "Dashboard":
+if pagina == "Painel":
     pagina_dashboard()
 
 elif pagina == "Registro":
@@ -1849,3 +1850,4 @@ elif pagina == "Armazenamento":
 
 elif pagina == "Dados":
     pagina_dados()
+
