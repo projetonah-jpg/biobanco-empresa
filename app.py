@@ -775,8 +775,7 @@ def obter_amostras():
 
 
 def obter_identificacoes():
-    dados = consultar(
-        """
+    sql_consulta = """
         SELECT
             a.code,
             a.area,
@@ -801,10 +800,22 @@ def obter_identificacoes():
             ON i.code = a.code
 
         ORDER BY a.code
-        """
-    )
+    """
+    try:
+        dados = consultar(sql_consulta)
+    except sqlite3.OperationalError:
+        # Se a coluna start_date não existir ainda, cria ela agora automaticamente
+        with conectar() as conexao:
+            try:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
+                conexao.commit()
+            except sqlite3.OperationalError:
+                pass
+        # Tenta consultar novamente após criar a coluna
+        dados = consultar(sql_consulta)
 
     return pd.DataFrame(dados)
+
 
 
 
