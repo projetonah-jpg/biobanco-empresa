@@ -604,6 +604,7 @@ def consultar(sql, parametros=()):
 
 
 def salvar_amostra(registro):
+    # Correção: Ajustado para usar exatamente a lista correta mapeada com 'resultado_final'
     marcadores = ",".join(
         "?" for _ in COLUNAS_AMOSTRA
     )
