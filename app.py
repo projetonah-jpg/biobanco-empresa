@@ -1,3 +1,8 @@
+Vou enviar em blocos numerados. Cole todos na sequência em um único arquivo `.py`.
+
+### Bloco 1/4
+
+```python
 import hmac
 import os
 import sqlite3
@@ -268,7 +273,144 @@ LISTAS = {
 
 
 AMOSTRAS_INICIAIS = [
+    {
+        "code": "B4-001",
+        "ponto": "",
+        "origin": "Storage Tanks",
+        "area": "Laboratory",
+        "sample": "",
+        "collection_point": "",
+        "sampling": "",
+        "method": "",
+        "frequencia": "Mensal",
+        "analista": "Natalia",
+        "data": "2026-09-23",
+        "resultado_final": "Conforme",
+    },
+    {
+        "code": "B4-002",
+        "ponto": "",
+        "origin": "Storage Tanks",
+        "area": "Line 4",
+        "sample": "Preparation",
+        "collection_point": "Laminar Flow FLA006",
+        "sampling": "Passive",
+        "method": "TSAC",
+        "frequencia": "Mensal",
+        "analista": "Natalia",
+        "data": "2026-09-23",
+        "resultado_final": "Não Conforme",
+    },
+    {
+        "code": "B4-003",
+        "ponto": "",
+        "origin": "Amostra",
+        "area": "Line 3",
+        "sample": "Dissolution",
+        "collection_point": "Laminar Flow FLA002",
+        "sampling": "MAS-100",
+        "method": "YPD",
+        "frequencia": "Mensal",
+        "analista": "Natalia",
+        "data": "2026-09-23",
+        "resultado_final": "Conforme",
+    },
+    {
+        "code": "B4-004",
+        "ponto": "",
+        "origin": "Storage Tanks",
+        "area": "Line 3",
+        "sample": "Flow Room",
+        "collection_point": "Flow Room",
+        "sampling": "Palating",
+        "method": "TSAC",
+        "frequencia": "Mensal",
+        "analista": "Natalia",
+        "data": "2026-09-23",
+        "resultado_final": "Conforme",
+    },
+    {
+        "code": "B4-005",
+        "ponto": "",
+        "origin": "Environmental Monitoring",
+        "area": "Dissolution",
+        "sample": "Flow Room",
+        "collection_point": "Laminar Flow FLA001",
+        "sampling": "Swab",
+        "method": "Petrifilm EB",
+        "frequencia": "Mensal",
+        "analista": "Natalia",
+        "data": "2026-09-23",
+        "resultado_final": "Não Conforme",
+    },
+]
 
+
+IDENTIFICACOES_INICIAIS = [
+    {
+        "code": "B4-001",
+        "morfologia": "",
+        "gram_stain": "Positive",
+        "catalase": "Negative",
+        "koh": "Negative",
+        "oxidase": "Negative",
+        "outsourced_method": "",
+        "identification": "Fungo",
+        "report": "",
+        "company": "",
+        "end_date": "",
+    },
+    {
+        "code": "B4-002",
+        "morfologia": "",
+        "gram_stain": "Negative",
+        "catalase": "Negative",
+        "koh": "Negative",
+        "oxidase": "Negative",
+        "outsourced_method": "",
+        "identification": "Fungo",
+        "report": "",
+        "company": "",
+        "end_date": "",
+    },
+    {
+        "code": "B4-003",
+        "morfologia": "",
+        "gram_stain": "Negative",
+        "catalase": "Positive",
+        "koh": "Positive",
+        "oxidase": "Positive",
+        "outsourced_method": "",
+        "identification": "Fungo",
+        "report": "",
+        "company": "",
+        "end_date": "",
+    },
+    {
+        "code": "B4-004",
+        "morfologia": "",
+        "gram_stain": "Negative",
+        "catalase": "Negative",
+        "koh": "Negative",
+        "oxidase": "Negative",
+        "outsourced_method": "",
+        "identification": "Fungo",
+        "report": "",
+        "company": "",
+        "end_date": "",
+    },
+    {
+        "code": "B4-005",
+        "morfologia": "",
+        "gram_stain": "Positive",
+        "catalase": "Negative",
+        "koh": "Positive",
+        "oxidase": "Positive",
+        "outsourced_method": "",
+        "identification": "Fungo",
+        "report": "",
+        "company": "",
+        "end_date": "",
     },
 ]
 
@@ -301,8 +443,9 @@ COLUNAS_IDENTIFICACAO = [
     "company",
     "end_date",
 ]
+```### Bloco 2/4
 
-
+```python
 def conectar():
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
@@ -635,8 +778,9 @@ def campo_selecao(
         opcoes,
         index=indice,
     )
+```### Bloco 3/4
 
-
+```python
 def pagina_dashboard():
     st.title("Dashboard")
 
@@ -966,8 +1110,9 @@ def pagina_registro():
         use_container_width=True,
         hide_index=True,
     )
-    
+```### Bloco 4/4
 
+```python
 def pagina_identificacao():
     st.title("Identificação Microbiológica")
 
@@ -1496,3 +1641,4 @@ elif pagina == "Armazenamento":
 
 elif pagina == "Dados":
     pagina_dados()
+```
