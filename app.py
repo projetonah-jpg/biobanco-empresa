@@ -1204,7 +1204,6 @@ def pagina_identificacao():
         df["code"].tolist(),
     )
 
-    # CORREÇÃO AQUI: Adicionado o .iloc[0] antes do .fillna("") para puxar a linha corretamente
     registro = (
         df[df["code"] == code]
         .iloc[0]
@@ -1261,7 +1260,7 @@ def pagina_identificacao():
                 format="DD/MM/YYYY",
             )
 
-            # Campo de anexo de arquivo
+            # Campo de anexo de arquivo físico
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1273,52 +1272,80 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # Botão de download do arquivo referenciado
+    # 📥 DOWNLOAD DO ARQUIVO REAL DIRETO DO BANCO DE DADOS
     nome_arquivo_salvo = registro.get("report", "")
+    
     if nome_arquivo_salvo:
         st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
         
-        st.download_button(
-            label=f"📥 Baixar/Abrir Documento: {nome_arquivo_salvo}",
-            data=f"Referência do laudo para a amostra {code}".encode('utf-8'),
-            file_name=nome_arquivo_salvo,
-            mime="application/octet-stream",
-            use_container_width=True
-        )
+        # Buscando os bytes reais salvos no banco SQLite para este CODE
+        with conectar() as conexao:
+            _linha = conexao.execute(
+                "SELECT report, report_data FROM identificacoes WHERE code = ?", 
+                (code,)
+            ).fetchone()
+            
+            bytes_reais = _linha["report_data"] if _linha and "report_data" in _linha.keys() else None
+
+        # Se o banco já tiver os bytes gravados, libera o download real sem corromper
+        if bytes_reais:
+            st.download_button(
+                label=f"📥 Baixar/Abrir Documento Real: {nome_arquivo_salvo}",
+                data=bytes_reais,
+                file_name=nome_arquivo_salvo,
+                mime="application/octet-stream",
+                use_container_width=True
+            )
+        else:
+            # Caso o registro seja antigo e tenha apenas o nome em texto
+            st.warning("⚠️ Este registro possui apenas o nome do arquivo texto. Reanexe o arquivo para poder baixá-lo completo.")
     else:
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
         nome_relatorio = registro.get("report", "")
+        bytes_arquivo = None
+
+        # Se o usuário subiu um arquivo novo, extraímos os bytes reais dele aqui
         if arquivo_anexo is not None:
             nome_relatorio = arquivo_anexo.name
+            bytes_arquivo = arquivo_anexo.getvalue()
 
-        salvar_identificacao(
-            {
-                "code": code,
-                "form": form,
-                "gram_stain": gram_stain,
-                "identification": identification,
-                "company": company,
-                "end_date": (
-                    end_date.isoformat()
-                    if end_date
-                    else ""
-                ),
-                "report": nome_relatorio,
-                "margin": registro.get("margin", ""),
-                "pigment": registro.get("pigment", ""),
-                "catalase": registro.get("catalase", ""),
-                "koh": registro.get("koh", ""),
-                "oxidase": registro.get("oxidase", ""),
-                "outsourced_method": registro.get("outsourced_method", ""),
-            }
+        # Altera estruturalmente a tabela se a coluna BLOB de dados ainda não existir no SQLite
+        with conectar() as conexao:
+            try:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
+            except sqlite3.OperationalError:
+                pass # Se a coluna já existir, ignora o erro e continua
+
+        # Executa a query atualizando os campos normais e injetando os bytes reais do documento
+        sql_salvar = """
+            INSERT INTO identificacoes (
+                code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
+                outsourced_method, identification, report, company, end_date, report_data
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                form=excluded.form,
+                gram_stain=excluded.gram_stain,
+                identification=excluded.identification,
+                company=excluded.company,
+                end_date=excluded.end_date,
+                report=excluded.report,
+                report_data=COALESCE(excluded.report_data, identificacoes.report_data),
+                atualizado_em=CURRENT_TIMESTAMP
+        """
+
+        valores = (
+            code, form, registro.get("margin", ""), registro.get("pigment", ""), gram_stain,
+            registro.get("catalase", ""), registro.get("koh", ""), registro.get("oxidase", ""),
+            registro.get("outsourced_method", ""), identification, nome_relatorio, company,
+            (end_date.isoformat() if end_date else ""), bytes_arquivo
         )
 
-        st.success(
-            f"Identificação de {code} salva com sucesso!"
-        )
+        with conectar() as conexao:
+            conexao.execute(sql_salvar, valores)
 
+        st.success(f"Identificação de {code} salva com sucesso com arquivo real!")
         st.rerun()
 
     st.subheader("Identificações cadastradas")
@@ -1334,6 +1361,7 @@ def pagina_identificacao():
         use_container_width=True,
         hide_index=True,
     )
+
 
 
 # ============================================================
