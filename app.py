@@ -1,8 +1,3 @@
-Vou enviar em blocos numerados. Cole todos na sequência em um único arquivo `.py`.
-
-### Bloco 1/4
-
-```python
 import hmac
 import os
 import sqlite3
