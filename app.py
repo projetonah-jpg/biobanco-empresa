@@ -1204,7 +1204,6 @@ def pagina_identificacao():
         df["code"].tolist(),
     )
 
-    # CORREÇÃO DEFINITIVA: Adicionado o [0] junto ao .iloc para capturar a linha corretamente
     registro = (
         df[df["code"] == code]
         .iloc[0]
@@ -1261,7 +1260,7 @@ def pagina_identificacao():
                 format="DD/MM/YYYY",
             )
 
-            # Campo de anexo de arquivo físico
+            # Entrada para upload dos relatórios e fotos em binário puro
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1273,7 +1272,7 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 DOWNLOAD DO ARQUIVO REAL DIRETO DO BANCO DE DADOS
+    # 📥 EXTRAÇÃO E DOWNLOAD DOS BYTES REAIS DO BANCO DE DADOS
     nome_arquivo_salvo = registro.get("report", "")
     
     if nome_arquivo_salvo:
@@ -1282,26 +1281,26 @@ def pagina_identificacao():
         bytes_reais = None
         with conectar() as conexao:
             try:
-                _linha = conexao.execute(
-                    "SELECT report_data FROM identificacoes WHERE code = ?", 
-                    (code,)
-                ).fetchone()
-                if _linha:
+                # Faz a verificação direta na conexão SQLite bypassando o DataFrame do Pandas
+                _cursor = conexao.execute("SELECT report_data FROM identificacoes WHERE code = ?", (code,))
+                _linha = _cursor.fetchone()
+                if _linha and _linha["report_data"]:
                     bytes_reais = _linha["report_data"]
             except sqlite3.OperationalError:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
                 conexao.commit()
 
-        if bytes_reais:
+        # Renderiza o botão se houver arquivo físico armazenado no BLOB
+        if bytes_reais and len(bytes_reais) > 100:
             st.download_button(
-                label=f"📥 Baixar/Abrir Documento Real: {nome_arquivo_salvo}",
+                label=f"📥 Baixar/Abrir Documento Físico: {nome_arquivo_salvo}",
                 data=bytes_reais,
                 file_name=nome_arquivo_salvo,
                 mime="application/octet-stream",
                 use_container_width=True
             )
         else:
-            st.warning("⚠️ Este registro possui apenas o nome do arquivo em texto. Selecione o arquivo no campo acima e salve para ativar o download completo.")
+            st.warning("⚠️ O arquivo antigo continha apenas metadados de texto. Faça um novo upload no campo acima para registrar o arquivo físico.")
     else:
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
@@ -1362,6 +1361,7 @@ def pagina_identificacao():
         use_container_width=True,
         hide_index=True,
     )
+
 
 
 
