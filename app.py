@@ -438,9 +438,8 @@ COLUNAS_IDENTIFICACAO = [
     "company",
     "end_date",
 ]
-```### Bloco 2/4
 
-```python
+
 def conectar():
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
@@ -773,9 +772,8 @@ def campo_selecao(
         opcoes,
         index=indice,
     )
-```### Bloco 3/4
 
-```python
+
 def pagina_dashboard():
     st.title("Dashboard")
 
@@ -1105,9 +1103,8 @@ def pagina_registro():
         use_container_width=True,
         hide_index=True,
     )
-```### Bloco 4/4
+    
 
-```python
 def pagina_identificacao():
     st.title("Identificação Microbiológica")
 
