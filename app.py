@@ -459,7 +459,7 @@ COLUNAS_AMOSTRA = [
     "frequencia",
     "analista",
     "data",
-    "resultado_final",
+    "resultado",
 ]
 
 COLUNAS_IDENTIFICACAO = [
