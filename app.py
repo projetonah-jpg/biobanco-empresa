@@ -1327,7 +1327,7 @@ def pagina_identificacao():
         st.success(f"Identificação de {code} salva com sucesso!")
         st.rerun()
 
-    st.subheader("Identificações cadastradas")
+        st.subheader("Identificações cadastradas")
 
     colunas_visiveis = [
         "code", "area", "collection_point", "data", 
@@ -1335,11 +1335,25 @@ def pagina_identificacao():
     ]
     df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
 
+    # 🔄 Alinha os nomes das colunas da tabela com os nomes do formulário
     st.dataframe(
         df_filtrado,
         use_container_width=True,
         hide_index=True,
+        column_config={
+            "code": "CODE",
+            "area": "AREA",
+            "collection_point": "COLLECTION POINT",
+            "data": "DATE",
+            "form": "MORPHOLOGY",       # Corrigido aqui!
+            "gram_stain": "GRAM STAIN",
+            "identification": "IDENTIFICATION",
+            "report": "ATTACH REPORT",  # Corrigido aqui!
+            "company": "COMPANY",
+            "end_date": "END DATE"
+        }
     )
+
 
 
 
