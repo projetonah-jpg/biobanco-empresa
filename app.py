@@ -1206,7 +1206,7 @@ def pagina_identificacao():
 
     registro = (
         df[df["code"] == code]
-        .iloc[0]
+        .iloc
         .fillna("")
         .to_dict()
     )
@@ -1272,22 +1272,27 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 DOWNLOAD DO ARQUIVO REAL DIRETO DO BANCO DE DADOS
+    # 📥 DOWNLOAD DO ARQUIVO REAL (CORRIGIDO PARA EVITAR OPERATIONALERROR)
     nome_arquivo_salvo = registro.get("report", "")
     
     if nome_arquivo_salvo:
         st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
         
-        # Buscando os bytes reais salvos no banco SQLite para este CODE
+        bytes_reais = None
         with conectar() as conexao:
-            _linha = conexao.execute(
-                "SELECT report, report_data FROM identificacoes WHERE code = ?", 
-                (code,)
-            ).fetchone()
-            
-            bytes_reais = _linha["report_data"] if _linha and "report_data" in _linha.keys() else None
+            try:
+                # Tenta buscar os dados do arquivo
+                _linha = conexao.execute(
+                    "SELECT report_data FROM identificacoes WHERE code = ?", 
+                    (code,)
+                ).fetchone()
+                if _linha:
+                    bytes_reais = _linha["report_data"]
+            except sqlite3.OperationalError:
+                # Se a coluna report_data não existir no banco ainda, cria ela agora mesmo
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
+                conexao.commit()
 
-        # Se o banco já tiver os bytes gravados, libera o download real sem corromper
         if bytes_reais:
             st.download_button(
                 label=f"📥 Baixar/Abrir Documento Real: {nome_arquivo_salvo}",
@@ -1297,8 +1302,7 @@ def pagina_identificacao():
                 use_container_width=True
             )
         else:
-            # Caso o registro seja antigo e tenha apenas o nome em texto
-            st.warning("⚠️ Este registro possui apenas o nome do arquivo texto. Reanexe o arquivo para poder baixá-lo completo.")
+            st.warning("⚠️ Este registro possui apenas o nome do arquivo em texto. Selecione o arquivo no campo acima e salve para ativar o download completo.")
     else:
         st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
@@ -1306,19 +1310,18 @@ def pagina_identificacao():
         nome_relatorio = registro.get("report", "")
         bytes_arquivo = None
 
-        # Se o usuário subiu um arquivo novo, extraímos os bytes reais dele aqui
         if arquivo_anexo is not None:
             nome_relatorio = arquivo_anexo.name
             bytes_arquivo = arquivo_anexo.getvalue()
 
-        # Altera estruturalmente a tabela se a coluna BLOB de dados ainda não existir no SQLite
+        # Garante a existência da coluna na hora de salvar
         with conectar() as conexao:
             try:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN report_data BLOB")
+                conexao.commit()
             except sqlite3.OperationalError:
-                pass # Se a coluna já existir, ignora o erro e continua
+                pass 
 
-        # Executa a query atualizando os campos normais e injetando os bytes reais do documento
         sql_salvar = """
             INSERT INTO identificacoes (
                 code, form, margin, pigment, gram_stain, catalase, koh, oxidase,
