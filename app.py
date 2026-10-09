@@ -1219,7 +1219,7 @@ def pagina_identificacao():
     )
 
     with st.form("formulario_identificacao"):
-        coluna1, coluna2, coluna3 = st.columns(3)
+        coluna1, coluna2 = st.columns(2)
 
         with coluna1:
             form = campo_selecao(
@@ -1228,85 +1228,43 @@ def pagina_identificacao():
                 registro.get("form", ""),
             )
 
-            margin = campo_selecao(
-                "MARGIN",
-                "MARGIN",
-                registro.get("margin", ""),
-            )
-
-            pigment = st.text_input(
-                "PIGMENT",
-                registro.get("pigment", ""),
-            )
-
-        with coluna2:
             gram_stain = campo_selecao(
                 "GRAM STAIN",
                 "AFFIRMATION",
                 registro.get("gram_stain", ""),
             )
 
-            catalase = campo_selecao(
-                "CATALASE",
-                "AFFIRMATION",
-                registro.get("catalase", ""),
-            )
-
-            koh = campo_selecao(
-                "KOH",
-                "AFFIRMATION",
-                registro.get("koh", ""),
-            )
-
-        with coluna3:
-            oxidase = campo_selecao(
-                "OXIDASE",
-                "AFFIRMATION",
-                registro.get("oxidase", ""),
-            )
-
-            outsourced_method = st.text_input(
-                "OUTSOURCED METHOD",
-                registro.get(
-                    "outsourced_method",
-                    "",
-                ),
-            )
-
             identification = st.text_input(
                 "IDENTIFICATION",
-                registro.get(
-                    "identification",
-                    "",
-                ),
+                registro.get("identification", ""),
             )
 
-        coluna1, coluna2, coluna3 = st.columns(3)
+        with coluna2:
+            company = st.text_input(
+                "COMPANY",
+                registro.get("company", ""),
+            )
 
-        report = coluna1.text_input(
-            "REPORT",
-            registro.get("report", ""),
-        )
+            data_final_atual = pd.to_datetime(
+                registro.get("end_date", ""),
+                errors="coerce",
+            )
 
-        company = coluna2.text_input(
-            "COMPANY",
-            registro.get("company", ""),
-        )
+            end_date = st.date_input(
+                "END DATE",
+                value=(
+                    None
+                    if pd.isna(data_final_atual)
+                    else data_final_atual.date()
+                ),
+                format="DD/MM/YYYY",
+            )
 
-        data_final_atual = pd.to_datetime(
-            registro.get("end_date", ""),
-            errors="coerce",
-        )
-
-        end_date = coluna3.date_input(
-            "END DATE",
-            value=(
-                None
-                if pd.isna(data_final_atual)
-                else data_final_atual.date()
-            ),
-            format="DD/MM/YYYY",
-        )
+            # Novo campo para anexar arquivos (substituindo a antiga caixa de texto)
+            arquivo_anexo = st.file_uploader(
+                "ATTACH REPORT (Word, Excel, Foto ou PDF)",
+                type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
+            )
 
         enviado = st.form_submit_button(
             "Salvar identificação",
@@ -1315,30 +1273,34 @@ def pagina_identificacao():
         )
 
     if enviado:
+        nome_relatorio = registro.get("report", "")
+        if arquivo_anexo is not None:
+            nome_relatorio = arquivo_anexo.name
+
         salvar_identificacao(
             {
                 "code": code,
                 "form": form,
-                "margin": margin,
-                "pigment": pigment,
                 "gram_stain": gram_stain,
-                "catalase": catalase,
-                "koh": koh,
-                "oxidase": oxidase,
-                "outsourced_method": outsourced_method,
                 "identification": identification,
-                "report": report,
                 "company": company,
                 "end_date": (
                     end_date.isoformat()
                     if end_date
                     else ""
                 ),
+                "report": nome_relatorio,
+                "margin": registro.get("margin", ""),
+                "pigment": registro.get("pigment", ""),
+                "catalase": registro.get("catalase", ""),
+                "koh": registro.get("koh", ""),
+                "oxidase": registro.get("oxidase", ""),
+                "outsourced_method": registro.get("outsourced_method", ""),
             }
         )
 
         st.success(
-            f"Identificação de {code} salva."
+            f"Identificação de {code} salva com sucesso!"
         )
 
         st.rerun()
