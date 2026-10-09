@@ -1445,13 +1445,29 @@ def pagina_registro():
 
             st.rerun()
 
-    st.subheader("Amostras cadastradas")
+      st.subheader("Amostras cadastradas")
 
+    # Alinha as colunas de baixo com os nomes em maiúsculo do formulário de cima
     st.dataframe(
         df,
         use_container_width=True,
         hide_index=True,
+        column_config={
+            "code": "CODE",
+            "ponto": "OBSERVATION",
+            "origin": "ORIGIN",
+            "area": "AREA",
+            "sample": "SAMPLE",
+            "collection_point": "COLLECTION POINT",
+            "sampling": "SAMPLING",
+            "method": "METHOD",
+            "frequencia": "FREQUENCY",
+            "analista": "ANALYST",
+            "data": "DATA",
+            "resultado_final": "RESULT"
+        }
     )
+
 
 
 
