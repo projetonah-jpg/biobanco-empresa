@@ -280,8 +280,8 @@ LISTAS = {
         "Non-Compliant",
     ],
     "FREQUÊNCIA": [
-        "Mensal",
-        "Semanal",
+        "MONTHLY",
+        "WEEKLY",
     ],
 }
 
