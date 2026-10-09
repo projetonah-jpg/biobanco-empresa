@@ -14,7 +14,7 @@ import streamlit as st
 # ============================================================
 
 st.set_page_config(
-    page_title="Natalia - Monitoramento Microbiológico",
+    page_title="BIO BANCO - NATALIA",
     page_icon="🧫",
     layout="wide",
 )
