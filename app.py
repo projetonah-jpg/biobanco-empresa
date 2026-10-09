@@ -276,12 +276,12 @@ LISTAS = {
         "Spiral",
     ],
     "RESULTADO": [
-        "Compliant",
-        "Non-Compliant",
+        "Conforme",
+        "Não Conforme",
     ],
     "FREQUÊNCIA": [
-        "MONTHLY",
-        "WEEKLY",
+        "Semanal",
+        "Mensal",
     ],
 }
 
