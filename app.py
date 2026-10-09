@@ -1260,7 +1260,7 @@ def pagina_identificacao():
                 format="DD/MM/YYYY",
             )
 
-            # Novo campo para anexar arquivos (substituindo a antiga caixa de texto)
+            # Novo campo para anexar arquivos
             arquivo_anexo = st.file_uploader(
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"]
@@ -1307,8 +1307,15 @@ def pagina_identificacao():
 
     st.subheader("Identificações cadastradas")
 
+    # Mostra apenas as colunas limpas do Biobank na tabela
+    colunas_visiveis = [
+        "code", "area", "collection_point", "data", 
+        "form", "gram_stain", "identification", "report", "company", "end_date"
+    ]
+    df_filtrado = df[[col for col in colunas_visiveis if col in df.columns]]
+
     st.dataframe(
-        df,
+        df_filtrado,
         use_container_width=True,
         hide_index=True,
     )
