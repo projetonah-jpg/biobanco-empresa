@@ -214,6 +214,10 @@ LISTAS = {
         "Dissolution Room",
         "Inoculation Room",
         "Inoculation Anteroom",
+        "Molasses",
+        "Blend",
+        "VHP",
+        "CIP",
         "Flow Room",
         "Dissolution Tank",
         "Pump Outlet Filter",
@@ -265,7 +269,7 @@ LISTAS = {
         "Filamentous",
         "Spiral",
     ],
-    "RESULTADO_FINAL": [
+    "RESULTADO": [
         "Conforme",
         "Não Conforme",
     ],
@@ -305,7 +309,7 @@ AMOSTRAS_INICIAIS = [
         "sampling": "Passive",
         "method": "TSAC",
         "frequencia": "Mensal",
-        "analista": "Natalia",
+        "analyst": "Natalia",
         "data": "2026-09-23",
         "resultado_final": "Não Conforme",
     },
