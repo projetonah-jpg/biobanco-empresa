@@ -1,8 +1,3 @@
-Vou enviar em blocos numerados. Cole todos na sequência em um único arquivo `.py`.
-
-### Bloco 1/4
-
-```python
 import hmac
 import os
 import sqlite3
@@ -13,6 +8,10 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+
+# ============================================================
+# CONFIGURAÇÃO GERAL
+# ============================================================
 
 st.set_page_config(
     page_title="BIO BANK - NATALIA",
@@ -26,6 +25,10 @@ CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
+
+# ============================================================
+# ESTILO E IDENTIDADE VISUAL
+# ============================================================
 
 st.markdown(
     """
@@ -169,6 +172,10 @@ st.markdown(
 )
 
 
+# ============================================================
+# LISTAS DE VALIDAÇÃO
+# ============================================================
+
 LISTAS = {
     "ORIGIN": [
         "Environmental Monitoring",
@@ -248,18 +255,25 @@ LISTAS = {
         "YPD",
         "Petrifilm YM",
     ],
-    "MORFOLOGIA": [
-        "Cocos",
-        "Bacilos",
-        "Strepto",
-        "Staphylo",
-        "Cocobacilos",
-        "Vibrio",
+    "FORM": [
+        "Punctiform",
+        "Circular",
+        "Filamentous",
+        "Irregular",
+        "Rhizoid",
+        "Fusiform",
     ],
     "AFFIRMATION": [
         "Positive",
         "Negative",
         "N/A",
+    ],
+    "MARGIN": [
+        "Round",
+        "Wavy",
+        "Lobulated",
+        "Filamentous",
+        "Spiral",
     ],
     "RESULTADO": [
         "Conforme",
@@ -271,6 +285,10 @@ LISTAS = {
     ],
 }
 
+
+# ============================================================
+# DADOS ATUAIS DA PLANILHA
+# ============================================================
 
 AMOSTRAS_INICIAIS = [
     {
@@ -297,7 +315,7 @@ AMOSTRAS_INICIAIS = [
         "sampling": "Passive",
         "method": "TSAC",
         "frequencia": "Mensal",
-        "analista": "Natalia",
+        "analyst": "Natalia",
         "data": "2026-09-23",
         "resultado_final": "Não Conforme",
     },
@@ -349,7 +367,9 @@ AMOSTRAS_INICIAIS = [
 IDENTIFICACOES_INICIAIS = [
     {
         "code": "B4-001",
-        "morfologia": "",
+        "form": "Rhizoid",
+        "margin": "Round",
+        "pigment": "",
         "gram_stain": "Positive",
         "catalase": "Negative",
         "koh": "Negative",
@@ -362,7 +382,9 @@ IDENTIFICACOES_INICIAIS = [
     },
     {
         "code": "B4-002",
-        "morfologia": "",
+        "form": "",
+        "margin": "",
+        "pigment": "",
         "gram_stain": "Negative",
         "catalase": "Negative",
         "koh": "Negative",
@@ -375,7 +397,9 @@ IDENTIFICACOES_INICIAIS = [
     },
     {
         "code": "B4-003",
-        "morfologia": "",
+        "form": "",
+        "margin": "",
+        "pigment": "",
         "gram_stain": "Negative",
         "catalase": "Positive",
         "koh": "Positive",
@@ -388,7 +412,9 @@ IDENTIFICACOES_INICIAIS = [
     },
     {
         "code": "B4-004",
-        "morfologia": "",
+        "form": "",
+        "margin": "",
+        "pigment": "",
         "gram_stain": "Negative",
         "catalase": "Negative",
         "koh": "Negative",
@@ -401,7 +427,9 @@ IDENTIFICACOES_INICIAIS = [
     },
     {
         "code": "B4-005",
-        "morfologia": "",
+        "form": "",
+        "margin": "",
+        "pigment": "",
         "gram_stain": "Positive",
         "catalase": "Negative",
         "koh": "Positive",
@@ -414,6 +442,10 @@ IDENTIFICACOES_INICIAIS = [
     },
 ]
 
+
+# ============================================================
+# BANCO DE DADOS
+# ============================================================
 
 COLUNAS_AMOSTRA = [
     "code",
@@ -432,7 +464,9 @@ COLUNAS_AMOSTRA = [
 
 COLUNAS_IDENTIFICACAO = [
     "code",
-    "morfologia",
+    "form",
+    "margin",
+    "pigment",
     "gram_stain",
     "catalase",
     "koh",
@@ -443,13 +477,13 @@ COLUNAS_IDENTIFICACAO = [
     "company",
     "end_date",
 ]
-```### Bloco 2/4
 
-```python
+
 def conectar():
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
+
     return conexao
 
 
@@ -476,7 +510,9 @@ def criar_banco():
 
             CREATE TABLE IF NOT EXISTS identificacoes (
                 code TEXT PRIMARY KEY,
-                morfologia TEXT,
+                form TEXT,
+                margin TEXT,
+                pigment TEXT,
                 gram_stain TEXT,
                 catalase TEXT,
                 koh TEXT,
@@ -529,7 +565,9 @@ def inserir_dados_iniciais(conexao):
             f"""
             INSERT OR IGNORE INTO identificacoes
             ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES ({",".join("?" for _ in COLUNAS_IDENTIFICACAO)})
+            VALUES (
+                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
+            )
             """,
             valores,
         )
@@ -630,6 +668,10 @@ def substituir_dados(amostras, identificacoes):
         salvar_identificacao(identificacao)
 
 
+# ============================================================
+# LOGIN
+# ============================================================
+
 def mostrar_login():
     if st.session_state.get("autenticado"):
         return True
@@ -697,11 +739,16 @@ def mostrar_login():
                 st.session_state.autenticado = True
                 st.session_state.usuario = USUARIO_PADRAO
                 st.rerun()
+
             else:
                 st.error("Usuário ou senha inválidos.")
 
     return False
 
+
+# ============================================================
+# FUNÇÕES DOS DADOS
+# ============================================================
 
 def obter_amostras():
     dados = consultar(
@@ -735,7 +782,9 @@ def obter_identificacoes():
             a.area,
             a.collection_point,
             a.data,
-            i.morfologia,
+            i.form,
+            i.margin,
+            i.pigment,
             i.gram_stain,
             i.catalase,
             i.koh,
@@ -778,9 +827,12 @@ def campo_selecao(
         opcoes,
         index=indice,
     )
-```### Bloco 3/4
 
-```python
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
 def pagina_dashboard():
     st.title("Dashboard")
 
@@ -810,10 +862,25 @@ def pagina_dashboard():
 
     coluna1, coluna2, coluna3, coluna4 = st.columns(4)
 
-    coluna1.metric("Total de amostras", total)
-    coluna2.metric("Coletas pendentes", int(pendentes))
-    coluna3.metric("Frequências mensais", int(mensais))
-    coluna4.metric("Não conformes", int(nao_conformes))
+    coluna1.metric(
+        "Total de amostras",
+        total,
+    )
+
+    coluna2.metric(
+        "Coletas pendentes",
+        int(pendentes),
+    )
+
+    coluna3.metric(
+        "Frequências mensais",
+        int(mensais),
+    )
+
+    coluna4.metric(
+        "Não conformes",
+        int(nao_conformes),
+    )
 
     esquerda, direita = st.columns(2)
 
@@ -903,6 +970,10 @@ def pagina_dashboard():
         hide_index=True,
     )
 
+
+# ============================================================
+# REGISTRO DE AMOSTRAS
+# ============================================================
 
 def pagina_registro():
     st.title("Registro de Monitoramento")
@@ -1110,9 +1181,12 @@ def pagina_registro():
         use_container_width=True,
         hide_index=True,
     )
-```### Bloco 4/4
 
-```python
+
+# ============================================================
+# IDENTIFICAÇÃO MICROBIOLÓGICA
+# ============================================================
+
 def pagina_identificacao():
     st.title("Identificação Microbiológica")
 
@@ -1139,7 +1213,8 @@ def pagina_identificacao():
 
     st.info(
         f"Área: {registro['area'] or '—'} | "
-        f"Ponto: {registro['collection_point'] or '—'} | "
+        f"Ponto: "
+        f"{registro['collection_point'] or '—'} | "
         f"Data: {registro['data'] or '—'}"
     )
 
@@ -1147,43 +1222,49 @@ def pagina_identificacao():
         coluna1, coluna2, coluna3 = st.columns(3)
 
         with coluna1:
-            morfologia = campo_selecao(
-                "MORFOLOGIA",
-                "MORFOLOGIA",
-                registro.get("morfologia", ""),
+            form = campo_selecao(
+                "FORM",
+                "FORM",
+                registro.get("form", ""),
+            )
+
+            margin = campo_selecao(
+                "MARGIN",
+                "MARGIN",
+                registro.get("margin", ""),
+            )
+
+            pigment = st.text_input(
+                "PIGMENT",
+                registro.get("pigment", ""),
             )
 
         with coluna2:
             gram_stain = campo_selecao(
-                "GRAM",
+                "GRAM STAIN",
                 "AFFIRMATION",
                 registro.get("gram_stain", ""),
             )
 
-        with coluna3:
             catalase = campo_selecao(
                 "CATALASE",
                 "AFFIRMATION",
                 registro.get("catalase", ""),
             )
 
-        coluna1, coluna2, coluna3 = st.columns(3)
-
-        with coluna1:
             koh = campo_selecao(
                 "KOH",
                 "AFFIRMATION",
                 registro.get("koh", ""),
             )
 
-        with coluna2:
+        with coluna3:
             oxidase = campo_selecao(
                 "OXIDASE",
                 "AFFIRMATION",
                 registro.get("oxidase", ""),
             )
 
-        with coluna3:
             outsourced_method = st.text_input(
                 "OUTSOURCED METHOD",
                 registro.get(
@@ -1192,9 +1273,6 @@ def pagina_identificacao():
                 ),
             )
 
-        coluna1, coluna2, coluna3 = st.columns(3)
-
-        with coluna1:
             identification = st.text_input(
                 "IDENTIFICATION",
                 registro.get(
@@ -1203,24 +1281,24 @@ def pagina_identificacao():
                 ),
             )
 
-        with coluna2:
-            report = st.text_input(
-                "REPORT",
-                registro.get("report", ""),
-            )
+        coluna1, coluna2, coluna3 = st.columns(3)
 
-        with coluna3:
-            company = st.text_input(
-                "COMPANY",
-                registro.get("company", ""),
-            )
+        report = coluna1.text_input(
+            "REPORT",
+            registro.get("report", ""),
+        )
+
+        company = coluna2.text_input(
+            "COMPANY",
+            registro.get("company", ""),
+        )
 
         data_final_atual = pd.to_datetime(
             registro.get("end_date", ""),
             errors="coerce",
         )
 
-        end_date = st.date_input(
+        end_date = coluna3.date_input(
             "END DATE",
             value=(
                 None
@@ -1240,7 +1318,9 @@ def pagina_identificacao():
         salvar_identificacao(
             {
                 "code": code,
-                "morfologia": morfologia,
+                "form": form,
+                "margin": margin,
+                "pigment": pigment,
                 "gram_stain": gram_stain,
                 "catalase": catalase,
                 "koh": koh,
@@ -1272,6 +1352,10 @@ def pagina_identificacao():
     )
 
 
+# ============================================================
+# ARMAZENAMENTO
+# ============================================================
+
 def pagina_armazenamento():
     st.title(
         "Armazenamento de Isolados Identificados"
@@ -1286,7 +1370,6 @@ def pagina_armazenamento():
     armazenamento = df[
         [
             "code",
-            "morfologia",
             "gram_stain",
             "identification",
         ]
@@ -1294,8 +1377,7 @@ def pagina_armazenamento():
 
     armazenamento.columns = [
         "CODE",
-        "MORFOLOGIA",
-        "GRAM",
+        "GRAM STAIN",
         "IDENTIFICATION",
     ]
 
@@ -1345,6 +1427,10 @@ def pagina_armazenamento():
     )
 
 
+# ============================================================
+# EXPORTAÇÃO PARA EXCEL
+# ============================================================
+
 def gerar_excel():
     amostras = obter_amostras()
     identificacoes = obter_identificacoes()
@@ -1352,7 +1438,6 @@ def gerar_excel():
     armazenamento = identificacoes[
         [
             "code",
-            "morfologia",
             "gram_stain",
             "identification",
         ]
@@ -1402,6 +1487,10 @@ def gerar_excel():
     return arquivo.getvalue()
 
 
+# ============================================================
+# IMPORTAÇÃO DE EXCEL
+# ============================================================
+
 def normalizar_coluna(nome):
     conversoes = {
         "CODE": "code",
@@ -1417,8 +1506,9 @@ def normalizar_coluna(nome):
         "ANALISTA": "analista",
         "DATA": "data",
         "RESULTADO": "resultado",
-        "MORFOLOGIA": "morfologia",
-        "GRAM": "gram_stain",
+        "FORM": "form",
+        "MARGIN": "margin",
+        "PIGMENT": "pigment",
         "GRAM STAIN": "gram_stain",
         "CATALASE": "catalase",
         "KOH": "koh",
@@ -1564,11 +1654,19 @@ def pagina_dados():
             )
 
 
+# ============================================================
+# INICIALIZAÇÃO DO SISTEMA
+# ============================================================
+
 if not mostrar_login():
     st.stop()
 
 criar_banco()
 
+
+# ============================================================
+# MENU LATERAL
+# ============================================================
 
 st.sidebar.markdown(
     """
@@ -1611,6 +1709,10 @@ st.sidebar.caption(
 )
 
 
+# ============================================================
+# CABEÇALHO
+# ============================================================
+
 st.markdown(
     """
     <div class="cabecalho">
@@ -1627,6 +1729,10 @@ st.markdown(
 )
 
 
+# ============================================================
+# ABERTURA DAS PÁGINAS
+# ============================================================
+
 if pagina == "Dashboard":
     pagina_dashboard()
 
@@ -1641,4 +1747,3 @@ elif pagina == "Armazenamento":
 
 elif pagina == "Dados":
     pagina_dados()
-```
