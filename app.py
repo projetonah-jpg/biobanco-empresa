@@ -1178,6 +1178,25 @@ def pagina_identificacao():
 # ============================================================
 # IDENTIFICAÇÃO MICROBIOLÓGICA
 # ============================================================
+def campo_selecao(titulo, nome_lista, valor_atual=""):
+    opcoes = [""] + LISTAS.get(nome_lista, [])
+
+    if valor_atual and valor_atual not in opcoes:
+        opcoes.append(valor_atual)
+
+    indice = (
+        opcoes.index(valor_atual)
+        if valor_atual in opcoes
+        else 0
+    )
+
+    return st.selectbox(
+        titulo,
+        opcoes,
+        index=indice,
+    )
+
+
 
 def pagina_identificacao():
     st.title("Identificação Microbiológica")
