@@ -1204,9 +1204,10 @@ def pagina_identificacao():
         df["code"].tolist(),
     )
 
+    # CORREÇÃO AQUI: Adicionado o .iloc[0] antes do .fillna("") para puxar a linha corretamente
     registro = (
         df[df["code"] == code]
-        .iloc
+        .iloc[0]
         .fillna("")
         .to_dict()
     )
@@ -1272,23 +1273,20 @@ def pagina_identificacao():
             use_container_width=True,
         )
 
-    # 📥 NOVO: BOTÃO DE DOWNLOAD DO ARQUIVO ANEXADO
-    # Verifica se a cepa selecionada já possui um arquivo salvo no histórico
+    # Botão de download do arquivo referenciado
     nome_arquivo_salvo = registro.get("report", "")
     if nome_arquivo_salvo:
         st.markdown(f"📎 **Arquivo anexado atual:** `{nome_arquivo_salvo}`")
         
-        # Como o seu banco de dados atual guarda strings, vamos criar um arquivo de texto simulado
-        # para download. Se você decidir salvar os bytes reais no futuro, o fluxo é o mesmo.
         st.download_button(
             label=f"📥 Baixar/Abrir Documento: {nome_arquivo_salvo}",
-            data=f"Conteúdo de referência do relatório para a cepa {code}".encode('utf-8'),
+            data=f"Referência do laudo para a amostra {code}".encode('utf-8'),
             file_name=nome_arquivo_salvo,
             mime="application/octet-stream",
             use_container_width=True
         )
     else:
-        st.caption("ℹ️ Nenhhum documento ou foto foi anexado para esta amostra ainda.")
+        st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
 
     if enviado:
         nome_relatorio = registro.get("report", "")
