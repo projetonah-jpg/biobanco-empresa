@@ -200,7 +200,6 @@ LISTAS = {
     "ORIGIN": [
         "Environmental Monitoring",
         "Storage Tanks",
-        "M.A",
         "Processes",
     ],
     "AREA": [
