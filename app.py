@@ -10,6 +10,47 @@ import streamlit as st
 
 
 # ============================================================
+# ORQUESTRADOR DE NAVEGAÇÃO GLOBAL (MUDADO PARA O TOPO)
+# ============================================================
+
+st.sidebar.markdown(
+    """
+    <div class="logo-menu">
+        🧫 Natalia
+        <span>Monitoramento Microbiológico</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+pagina = st.sidebar.radio(
+    "Navegação",
+    [
+        "Dashboard",  # Força o nome original a voltar aqui!
+        "Registro",
+        "Identificação",
+        "Armazenamento",
+        "Dados",
+    ],
+)
+
+st.sidebar.divider()
+
+if st.sidebar.button("Sair", use_container_width=True):
+    st.session_state.autenticado = False
+    st.rerun()
+
+st.markdown(
+    """
+    <div class="cabecalho">
+        <h1>BANCO DE BIOLOGICOS - NATALIA</h1>
+        <p>Gestão integrada de cepas, identidade e armazenamento.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ============================================================
 # CONFIGURAÇÃO GERAL
 # ============================================================
 
