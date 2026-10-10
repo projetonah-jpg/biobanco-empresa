@@ -1682,7 +1682,7 @@ st.sidebar.caption(
 pagina = st.sidebar.radio(
     "Navegação",
     [
-        "Painel",
+        "Dashboard",
         "Registro",
         "Identificação",
         "Armazenamento",
