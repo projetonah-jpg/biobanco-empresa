@@ -1275,33 +1275,58 @@ def pagina_registro():
     reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc[0].fillna("").to_dict() if modo == "Editar registro" and codigos else {}
     
     with st.form("form_amostra"):
-        c1, c2, c3 = st.columns(3)
-        code = c1.text_input("CODE *", reg.get("code", ""), disabled=modo == "Editar registro")
-        ponto = c2.text_input("OBSERVATION", reg.get("ponto", ""))
-        analista = c3.text_input("ANALYST", reg.get("analista", ""))
+        # 🟢 LINHA 1 — CODE, OBSERVATION E ANALYST LADO A LADO
+        col1, col2, col3 = st.columns(3)
+        code = col1.text_input("CODE *", reg.get("code", ""), disabled=modo == "Editar registro")
+        ponto = col2.text_input("OBSERVATION", reg.get("ponto", ""))
+        analista = col3.text_input("ANALYST", reg.get("analista", ""))
         
-        c1, c2, c3 = st.columns(3)
-        origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
-        area = campo_selecao("AREA", "AREA", reg.get("area", ""))
-        sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
-        collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
-        sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
-        method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
-        
-        c1, c2 = st.columns(2)
-        frequencia = c1.selectbox("FREQUENCY", ["", "Semanal", "Mensal"], index=["", "Semanal", "Mensal"].index(reg.get("frequencia", "")) if reg.get("frequencia", "") in ["", "Semanal", "Mensal"] else 0)
-        resultado_final = c2.selectbox("RESULT", ["", "Conforme", "Não Conforme"], index=["", "Conforme", "Não Conforme"].index(reg.get("resultado_final", "")) if reg.get("resultado_final", "") in ["", "Conforme", "Não Conforme"] else 0)
+        # 🟢 LINHA 2 — ORIGIN, SAMPLE E SAMPLING LADO A LADO
+        col4, col5, col6 = st.columns(3)
+        origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", "")) if 'campo_selecao' in globals() else col4.selectbox("ORIGIN", [""] + LISTAS["ORIGIN"])
+        # Nota técnica interna: correção dinâmica para os seletores Streamlit em colunas paralelas
+        with col4:
+            if 'campo_selecao' in globals(): origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
+            else: origin = st.selectbox("ORIGIN", [""] + LISTAS["ORIGIN"])
+        with col5:
+            if 'campo_selecao' in globals(): sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
+            else: sample = st.selectbox("SAMPLE", [""] + LISTAS["SAMPLE"])
+        with col6:
+            if 'campo_selecao' in globals(): sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
+            else: sampling = st.selectbox("SAMPLING", [""] + LISTAS["SAMPLING"])
+            
+        # 🟢 LINHA 3 — AREA, COLLECTION POINT E METHOD LADO A LADO
+        col7, col8, col9 = st.columns(3)
+        with col7:
+            if 'campo_selecao' in globals(): area = campo_selecao("AREA", "AREA", reg.get("area", ""))
+            else: area = st.selectbox("AREA", [""] + LISTAS["AREA"])
+        with col8:
+            if 'campo_selecao' in globals(): collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
+            else: collection_point = st.selectbox("COLLECTION POINT", [""] + LISTAS["COLLECTION POINT"])
+        with col9:
+            if 'campo_selecao' in globals(): method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
+            else: method = st.selectbox("METHOD", [""] + LISTAS["METHOD"])
+            
+        # 🟢 LINHA 4 — FREQUENCY, DATA E RESULT LADO A LADO
+        col10, col11, col12 = st.columns(3)
+        with col10:
+            frequencia = st.selectbox("FREQUENCY", ["", "Semanal", "Mensal"], index=["", "Semanal", "Mensal"].index(reg.get("frequencia", "")) if reg.get("frequencia", "") in ["", "Semanal", "Mensal"] else 0)
+        with col11:
+            dt_at = pd.to_datetime(reg.get("data", ""), errors="coerce")
+            data = st.date_input("DATA", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY")
+        with col12:
+            resultado_final = st.selectbox("RESULT", ["", "Conforme", "Não Conforme"], index=["", "Conforme", "Não Conforme"].index(reg.get("resultado_final", "")) if reg.get("resultado_final", "") in ["", "Conforme", "Não Conforme"] else 0)
         
         enviado_reg = st.form_submit_button("Salvar Registro", type="primary")
 
     if enviado_reg and code.strip():
-        salvar_amostra({"code": code.strip(), "ponto": ponto, "origin": origin, "area": area, "sample": sample, "collection_point": collection_point, "sampling": sampling, "method": method, "frequencia": frequencia, "analista": analista, "data": "2026-10-09", "resultado_final": resultado_final})
+        salvar_amostra({"code": code.strip(), "ponto": ponto, "origin": origin, "area": area, "sample": sample, "collection_point": collection_point, "sampling": sampling, "method": method, "frequencia": frequencia, "analista": analista, "data": data.isoformat() if data else "", "resultado_final": resultado_final})
         st.success("Registro salvo!")
         st.rerun()
 
     st.subheader("Amostras cadastradas")
     
-    # Grade inferior totalmente alinhada e mapeada em maiúsculas
+    # Exibição simétrica mapeada perfeitamente com os nomes de cima
     st.dataframe(
         df,
         use_container_width=True,
