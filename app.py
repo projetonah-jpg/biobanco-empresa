@@ -880,62 +880,100 @@ def pagina_dashboard():
     # 📊 Cálculos Matemáticos Automáticos baseados no Banco de Dados
     total_amostras = len(df_amostras)
     
-    # Conta quantas amostras já possuem o campo IDENTIFICATION preenchido
-    total_identificadas = 0
+    # Identifica os códigos que possuem o campo IDENTIFICATION preenchido
+    codigos_identificados = []
     if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-        total_identificadas = int(df_identificacoes["identification"].fillna("").str.strip().ne("").sum())
+        df_validas = df_identificacoes[df_identificacoes["identification"].fillna("").str.strip().ne("")]
+        codigos_identificados = df_validas["code"].tolist()
         
+    total_identificadas = len(codigos_identificados)
     total_nao_identificadas = max(0, total_amostras - total_identificadas)
+
+    # Inicializa o estado do filtro de clique se não existir
+    if "filtro_clique" not in st.session_state:
+        st.session_state.filtro_clique = "Todos"
+
+    # Botão para redefinir e ver tudo
+    if st.session_state.filtro_clique != "Todos":
+        if st.button("🔄 Mostrar Todos os Gráficos / Resetar Filtro"):
+            st.session_state.filtro_clique = "Todos"
+            st.rerun()
 
     # 🟢 Renderização dos 3 cartões de métricas no topo
     col1, col2, col3 = st.columns(3)
-    col1.metric(label="Total de amostras", value=total_amostras)
-    col2.metric(label="Total de amostras identificadas", value=total_identificadas)
-    col3.metric(label="Total de amostras não identificadas", value=total_nao_identificadas)
+    
+    with col1:
+        st.metric(label="Total de amostras", value=total_amostras)
+        if st.button("👁️ Ver todas", key="btn_todas", use_container_width=True):
+            st.session_state.filtro_clique = "Todos"
+            st.rerun()
+            
+    with col2:
+        st.metric(label="Total de amostras identificadas", value=total_identificadas)
+        if st.button("🔍 Ver identificadas", key="btn_iden", use_container_width=True):
+            st.session_state.filtro_clique = "Identificadas"
+            st.rerun()
+            
+    with col3:
+        st.metric(label="Total de amostras não identificadas", value=total_nao_identificadas)
+        if st.button("🔎 Ver não identificadas", key="btn_nao_iden", use_container_width=True):
+            st.session_state.filtro_clique = "Nao_Identificadas"
+            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 🗺️ Criação das duas colunas paralelas para os gráficos abaixo dos cartões
-    esquerda, direita = st.columns(2)
+    # 🛑 FLUXO DINÂMICO: Se o usuário clicou em um cartão, mostra a tabela filtrada específica
+    if st.session_state.filtro_clique == "Identificadas":
+        st.subheader("📋 Amostras Identificadas")
+        df_filtrado = df_amostras[df_amostras["code"].isin(codigos_identificados)]
+        st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+        
+    elif st.session_state.filtro_clique == "Nao_Identificadas":
+        st.subheader("📋 Amostras Aguardando Identificação")
+        df_filtrado = df_amostras[~df_amostras["code"].isin(codigos_identificados)]
+        st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+        
+    else:
+        # Se estiver em "Todos", renderiza os dois gráficos originais lado a lado normalmente
+        esquerda, direita = st.columns(2)
 
-    with esquerda:
-        # 📊 GRÁFICO DE OCORRÊNCIAS MICROBIOLÓGICAS (PUXADO PARA CÁ)
-        if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-            resumo_micro = (
-                df_identificacoes["identification"]
-                .replace("", pd.NA)
-                .dropna()
-                .value_counts()
-                .rename_axis("IDENTIFICAÇÃO")
-                .reset_index(name="OCORRÊNCIAS")
-            )
-            
-            if not resumo_micro.empty:
-                grafico_barras = px.bar(
-                    resumo_micro,
-                    x="OCORRÊNCIAS",
-                    y="IDENTIFICAÇÃO",
-                    orientation="h",
-                    text_auto=True,
-                    title="Ocorrências por identificação",
-                    color_discrete_sequence=["#13877c"] # Mantém a cor verde-escura padrão do Biobank
+        with esquerda:
+            if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
+                resumo_micro = (
+                    df_identificacoes["identification"]
+                    .replace("", pd.NA)
+                    .dropna()
+                    .value_counts()
+                    .rename_axis("IDENTIFICAÇÃO")
+                    .reset_index(name="OCORRÊNCIAS")
                 )
-                st.plotly_chart(grafico_barras, use_container_width=True)
+                
+                if not resumo_micro.empty:
+                    grafico_barras = px.bar(
+                        resumo_micro,
+                        x="OCORRÊNCIAS",
+                        y="IDENTIFICAÇÃO",
+                        orientation="h",
+                        text_auto=True,
+                        title="Ocorrências por identificação",
+                        color_discrete_sequence=["#13877c"]
+                    )
+                    st.plotly_chart(grafico_barras, use_container_width=True)
+                else:
+                    st.info("Nenhum microrganismo identificado ainda para gerar o gráfico.")
             else:
-                st.info("Nenhum microrganismo identificado ainda para gerar o gráfico.")
-        else:
-            st.info("Aguardando registros de identificação.")
+                st.info("Aguardando registros de identificação.")
 
-    with direita:
-        # 🍕 GRÁFICO DE STATUS DE COLETAS
-        grafico_pizza = px.pie(
-            df_amostras, 
-            names="resultado_final", 
-            title="Status das Coletas (Conformidade)",
-            hole=0.45,
-            color_discrete_sequence=["#13877c", "#12343b"]
-        )
-        st.plotly_chart(grafico_pizza, use_container_width=True)
+        with direita:
+            grafico_pizza = px.pie(
+                df_amostras, 
+                names="resultado_final", 
+                title="Status das Coletas (Conformidade)",
+                hole=0.45,
+                color_discrete_sequence=["#13877c", "#12343b"]
+            )
+            st.plotly_chart(grafico_pizza, use_container_width=True)
+
 
 
 
