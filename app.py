@@ -1272,42 +1272,34 @@ def pagina_registro():
     df = obter_amostras()
     codigos = df["code"].tolist() if not df.empty else []
     modo = st.radio("Ação", ["Novo registro", "Editar registro"], horizontal=True)
-    reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc[0].fillna("").to_dict() if modo == "Editar registro" and codigos else {}
+    reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc.fillna("").to_dict() if modo == "Editar registro" and codigos else {}
     
     with st.form("form_amostra"):
-        # 🟢 LINHA 1 — CODE, OBSERVATION E ANALYST LADO A LADO
+        # 🟢 LINHA 1 — CODE, OBSERVATION E ANALYST
         col1, col2, col3 = st.columns(3)
         code = col1.text_input("CODE *", reg.get("code", ""), disabled=modo == "Editar registro")
         ponto = col2.text_input("OBSERVATION", reg.get("ponto", ""))
         analista = col3.text_input("ANALYST", reg.get("analista", ""))
         
-        # 🟢 LINHA 2 — ORIGIN, SAMPLE E SAMPLING LADO A LADO
+        # 🟢 LINHA 2 — ORIGIN, SAMPLE E SAMPLING
         col4, col5, col6 = st.columns(3)
-        origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", "")) if 'campo_selecao' in globals() else col4.selectbox("ORIGIN", [""] + LISTAS["ORIGIN"])
-        # Nota técnica interna: correção dinâmica para os seletores Streamlit em colunas paralelas
         with col4:
-            if 'campo_selecao' in globals(): origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
-            else: origin = st.selectbox("ORIGIN", [""] + LISTAS["ORIGIN"])
+            origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
         with col5:
-            if 'campo_selecao' in globals(): sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
-            else: sample = st.selectbox("SAMPLE", [""] + LISTAS["SAMPLE"])
+            sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
         with col6:
-            if 'campo_selecao' in globals(): sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
-            else: sampling = st.selectbox("SAMPLING", [""] + LISTAS["SAMPLING"])
+            sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
             
-        # 🟢 LINHA 3 — AREA, COLLECTION POINT E METHOD LADO A LADO
+        # 🟢 LINHA 3 — AREA, COLLECTION POINT E METHOD
         col7, col8, col9 = st.columns(3)
         with col7:
-            if 'campo_selecao' in globals(): area = campo_selecao("AREA", "AREA", reg.get("area", ""))
-            else: area = st.selectbox("AREA", [""] + LISTAS["AREA"])
+            area = campo_selecao("AREA", "AREA", reg.get("area", ""))
         with col8:
-            if 'campo_selecao' in globals(): collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
-            else: collection_point = st.selectbox("COLLECTION POINT", [""] + LISTAS["COLLECTION POINT"])
+            collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
         with col9:
-            if 'campo_selecao' in globals(): method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
-            else: method = st.selectbox("METHOD", [""] + LISTAS["METHOD"])
+            method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
             
-        # 🟢 LINHA 4 — FREQUENCY, DATA E RESULT LADO A LADO
+        # 🟢 LINHA 4 — FREQUENCY, DATA E RESULT
         col10, col11, col12 = st.columns(3)
         with col10:
             frequencia = st.selectbox("FREQUENCY", ["", "Semanal", "Mensal"], index=["", "Semanal", "Mensal"].index(reg.get("frequencia", "")) if reg.get("frequencia", "") in ["", "Semanal", "Mensal"] else 0)
@@ -1326,7 +1318,6 @@ def pagina_registro():
 
     st.subheader("Amostras cadastradas")
     
-    # Exibição simétrica mapeada perfeitamente com os nomes de cima
     st.dataframe(
         df,
         use_container_width=True,
@@ -1346,6 +1337,7 @@ def pagina_registro():
             "resultado_final": "RESULT"
         }
     )
+
 
 
 
