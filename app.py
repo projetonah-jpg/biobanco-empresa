@@ -1700,10 +1700,10 @@ st.markdown(
     """
     <div class="cabecalho">
         <h1>
-            BIO BANK - NATALIA
+            BIOBANK - NATALIA
         </h1>
         <p>
-            Gestão integrada de cepas, identidade
+            Gestão integrada de cepas, identificação
             e armazenamento.
         </p>
     </div>
