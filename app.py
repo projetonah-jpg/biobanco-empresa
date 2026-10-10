@@ -870,140 +870,54 @@ def campo_selecao(
 
 def pagina_dashboard():
     st.title("Dashboard")
+    df_amostras = obter_amostras()
+    df_identificacoes = obter_identificacoes()
 
-    df = obter_amostras()
-
-    if df.empty:
-        st.info("Cadastre a primeira amostra.")
+    if df_amostras.empty:
+        st.info("Sem dados cadastrados.")
         return
 
-    total = len(df)
+    # 📊 Cálculos Matemáticos Automáticos baseados no Banco de Dados
+    total_amostras = len(df_amostras)
+    
+    # Conta quantas amostras já possuem o campo IDENTIFICATION preenchido e não vazio
+    total_identificadas = 0
+    if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
+        total_identificadas = int(df_identificacoes["identification"].fillna("").str.strip().ne("").sum())
+        
+    # O restante são as não identificadas
+    total_nao_identificadas = max(0, total_amostras - total_identificadas)
 
-    pendentes = (
-        df["resultado_final"]
-        .fillna("")
-        .str.strip()
-        .eq("")
-        .sum()
+    # 🟢 Renderização dos 3 novos quadros lado a lado na tela
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        label="Total de amostras",
+        value=total_amostras
     )
 
-    mensais = (
-        df["frequencia"] == "Mensal"
-    ).sum()
-
-    nao_conformes = (
-        df["resultado_final"] == "Não Conforme"
-    ).sum()
-
-    coluna1, coluna2, coluna3, coluna4 = st.columns(4)
-
-    coluna1.metric(
-        "Total de amostras",
-        total,
+    col2.metric(
+        label="Total de amostras identificadas",
+        value=total_identificadas
     )
 
-    coluna2.metric(
-        "Coletas pendentes",
-        int(pendentes),
+    col3.metric(
+        label="Total de amostras não identificadas",
+        value=total_nao_identificadas
     )
 
-    coluna3.metric(
-        "Frequências mensais",
-        int(mensais),
+    # Gráfico de pizza ilustrativo das amostras no laboratório
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.plotly_chart(
+        px.pie(
+            df_amostras, 
+            names="resultado_final", 
+            title="Status das Coletas",
+            hole=0.45
+        ), 
+        use_container_width=True
     )
 
-    coluna4.metric(
-        "Não conformes",
-        int(nao_conformes),
-    )
-
-    esquerda, direita = st.columns(2)
-
-    frequencias = (
-        df["frequencia"]
-        .replace("", "Não informado")
-        .value_counts()
-        .rename_axis("Frequência")
-        .reset_index(name="Amostras")
-    )
-
-    grafico_frequencia = px.bar(
-        frequencias,
-        x="Frequência",
-        y="Amostras",
-        color="Frequência",
-        text_auto=True,
-        title="Distribuição por frequência",
-    )
-
-    esquerda.plotly_chart(
-        grafico_frequencia,
-        use_container_width=True,
-    )
-
-    status = (
-        df["resultado_final"]
-        .replace("", "Pendente")
-        .value_counts()
-        .rename_axis("Status")
-        .reset_index(name="Amostras")
-    )
-
-    grafico_status = px.pie(
-        status,
-        names="Status",
-        values="Amostras",
-        hole=0.45,
-        title="Status das coletas",
-    )
-
-    direita.plotly_chart(
-        grafico_status,
-        use_container_width=True,
-    )
-
-    tendencia = df.copy()
-
-    tendencia["data"] = pd.to_datetime(
-        tendencia["data"],
-        errors="coerce",
-    )
-
-    tendencia = tendencia.dropna(subset=["data"])
-
-    if not tendencia.empty:
-        tendencia["Mês"] = (
-            tendencia["data"]
-            .dt.to_period("M")
-            .astype(str)
-        )
-
-        resumo_mensal = (
-            tendencia.groupby("Mês")
-            .size()
-            .reset_index(name="Amostras")
-        )
-
-        grafico_tendencia = px.line(
-            resumo_mensal,
-            x="Mês",
-            y="Amostras",
-            markers=True,
-            title="Amostras por mês",
-        )
-
-        st.plotly_chart(
-            grafico_tendencia,
-            use_container_width=True,
-        )
-
-    st.subheader("Registros recentes")
-
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True,
-    )
 
 
 # ============================================================
