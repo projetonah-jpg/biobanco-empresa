@@ -922,16 +922,32 @@ def pagina_dashboard():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 🛑 FLUXO DINÂMICO: Se o usuário clicou em um cartão, mostra a tabela filtrada específica
+    # ⚙️ Configuração padrão de nomes maiúsculos para as tabelas do Dashboard
+    config_colunas = {
+        "code": "CODE",
+        "ponto": "OBSERVATION",
+        "origin": "ORIGIN",
+        "area": "AREA",
+        "sample": "SAMPLE",
+        "collection_point": "COLLECTION POINT",
+        "sampling": "SAMPLING",
+        "method": "METHOD",
+        "frequencia": "FREQUENCY",
+        "analista": "ANALYST",
+        "data": "DATA",
+        "resultado_final": "RESULT"
+    }
+
+    # 🛑 FLUXO DINÂMICO: Mostra as tabelas filtradas com os cabeçalhos corrigidos
     if st.session_state.filtro_clique == "Identificadas":
         st.subheader("📋 Amostras Identificadas")
         df_filtrado = df_amostras[df_amostras["code"].isin(codigos_identificados)]
-        st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+        st.dataframe(df_filtrado, use_container_width=True, hide_index=True, column_config=config_colunas)
         
     elif st.session_state.filtro_clique == "Nao_Identificadas":
         st.subheader("📋 Amostras Aguardando Identificação")
         df_filtrado = df_amostras[~df_amostras["code"].isin(codigos_identificados)]
-        st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+        st.dataframe(df_filtrado, use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
         # Se estiver em "Todos", renderiza os dois gráficos originais lado a lado normalmente
@@ -973,6 +989,7 @@ def pagina_dashboard():
                 color_discrete_sequence=["#13877c", "#12343b"]
             )
             st.plotly_chart(grafico_pizza, use_container_width=True)
+
 
 
 
