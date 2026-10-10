@@ -1729,7 +1729,7 @@ st.markdown(
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
 # ============================================================
 
-if pagina == "Dashboard":
+if pagina == "Painel":
     pagina_dashboard()
 
 elif pagina == "Registro":
