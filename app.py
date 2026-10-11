@@ -1003,8 +1003,9 @@ def pagina_dashboard():
         # 📈 GRÁFICO DE TENDÊNCIA MICROBIOLÓGICA AJUSTADO
         st.markdown("<br><hr>", unsafe_allow_html=True)
 
-        st.subheader("📊 Histórico de Tendência Microbiológica")
+                st.subheader("📊 Histórico de Tendência Microbiológica")
         
+        # Busca os dados unindo as tabelas
         dados_tendencia = consultar("""
             SELECT a.origin, a.data, i.identification
             FROM amostras a
@@ -1018,6 +1019,14 @@ def pagina_dashboard():
             df_t = df_t.dropna(subset=["datetime"])
             
             if not df_t.empty:
+                # 🎛️ Filtro Dinâmico por Origem na Tela
+                lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
+                origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
+                
+                # Aplica o filtro caso o usuário escolha uma origem específica
+                if origem_selecionada != "Todas as Origens":
+                    df_t = df_t[df_t["origin"] == origem_selecionada]
+                
                 df_t["mes_num"] = df_t["datetime"].dt.month
                 nomes_meses = {
                     1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
@@ -1025,19 +1034,25 @@ def pagina_dashboard():
                 }
                 df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
                 
+                # Agrupa os dados filtrados
                 df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias")
                 df_agrupado = df_agrupado.sort_values(by="mes_num")
                 
-                grafico_linha = px.line(
-                    df_agrupado, x="Mês", y="Colônias", color="identification", markers=True,
-                    title="Bacterial Identification by Genus", labels={"identification": "Genus"}
-                )
-                
-                grafico_linha.update_layout(
-                    xaxis_title="Month", yaxis_title="# of Colonies Observed",
-                    xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())}
-                )
-                st.plotly_chart(grafico_linha, use_container_width=True)
+                if not df_agrupado.empty:
+                    grafico_linha = px.line(
+                        df_agrupado, x="Mês", y="Colônias", color="identification", markers=True,
+                        title=f"Bacterial Identification by Genus — {origem_selecionada}", 
+                        labels={"identification": "Genus"},
+                        color_discrete_sequence=px.colors.qualitative.Bold
+                    )
+                    
+                    grafico_linha.update_layout(
+                        xaxis_title="Month", yaxis_title="# of Colonies Observed",
+                        xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())}
+                    )
+                    st.plotly_chart(grafico_linha, use_container_width=True)
+                else:
+                    st.info(f"Nenhum dado encontrado para a origem: {origem_selecionada}")
             else:
                 st.info("Aguardando amostras com datas válidas.")
         else:
