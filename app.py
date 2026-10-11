@@ -949,7 +949,7 @@ def pagina_dashboard():
         st.dataframe(df_filtrado, use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        # Se estiver em "Todos", renderiza os dois gráficos originais lado a lado normalmente
+        # Se estiver em "Todos", renderiza os gráficos originais e o gráfico de tendência abaixo
         esquerda, direita = st.columns(2)
 
         with esquerda:
@@ -989,6 +989,83 @@ def pagina_dashboard():
             )
             st.plotly_chart(grafico_pizza, use_container_width=True)
 
+        # 📈 GRÁFICO DE TENDÊNCIA MICROBIOLÓGICA AJUSTADO
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.subheader("📊 Histórico de Identificação Bacteriana por Gênero")
+        
+        if not df_identificacoes.empty and "data" in df_identificacoes.columns and "identification" in df_identificacoes.columns:
+            df_tendencia = df_identificacoes.copy()
+            df_tendencia["identification"] = df_tendencia["identification"].fillna("").str.strip()
+            df_tendencia = df_tendencia[df_tendencia["identification"] != ""]
+            
+            df_tendencia["datetime"] = pd.to_datetime(df_tendencia["data"], errors="coerce")
+            df_tendencia = df_tendencia.dropna(subset=["datetime"])
+            
+            if not df_tendencia.empty:
+                df_tendencia["mes_num"] = df_tendencia["datetime"].dt.month
+                
+                nomes_meses = {
+                    1: "January", 2: "February", 3: "March", 4: "April", 5: "May", 6: "June",
+                    7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
+                }
+                df_tendencia["Month"] = df_tendencia["mes_num"].map(nomes_meses)
+                
+                df_agrupado = (
+                    df_tendencia.groupby(["mes_num", "Month", "identification"])
+                    .size()
+                    .reset_index(name="Colonies Observed")
+                )
+                
+                df_agrupado = df_agrupado.sort_values(by="mes_num")
+                
+                # Paleta de cores científica de alto contraste
+                cores_slide = px.colors.qualitative.Bold
+                
+                grafico_linha = px.line(
+                    df_agrupado,
+                    x="Month",
+                    y="Colonies Observed",
+                    color="identification",
+                    markers=True,
+                    title="Bacterial Identification by Genus",
+                    labels={"identification": "Genus"},
+                    color_discrete_sequence=cores_slide
+                )
+                
+                # Estilização profissional simulando a referência do slide
+                grafico_linha.update_traces(
+                    line=dict(width=3),
+                    marker=dict(size=9, line=dict(width=1, color='white'))
+                )
+                
+                grafico_linha.update_layout(
+                    xaxis_title="Month",
+                    yaxis_title="# of Colonies Observed",
+                    legend_title="Genus",
+                    hovermode="x unified",
+                    plot_bgcolor="#f3f4f6",  # Fundo cinza suave clássico de laboratório
+                    paper_bgcolor="white",
+                    margin=dict(l=40, r=40, t=50, b=40),
+                    xaxis=dict(
+                        categoryorder='array', 
+                        categoryarray=list(nomes_meses.values()),
+                        gridcolor="white"
+                    ),
+                    yaxis=dict(
+                        gridcolor="white",
+                        dtick=5  # Escala saltando de 5 em 5 igual ao gráfico original
+                    ),
+                    title=dict(
+                        font=dict(size=20, color="#12343b"),
+                        x=0.02
+                    )
+                )
+                
+                st.plotly_chart(grafico_linha, use_container_width=True)
+            else:
+                st.info("Nenhuma amostra possui data válida para gerar a linha do tempo.")
+        else:
+            st.info("Insira microrganismos na aba de Identificação para popular a tendência cronológica.")
 
 
 
