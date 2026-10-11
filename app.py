@@ -150,18 +150,20 @@ st.markdown(
         border: 1px solid #dfefeb;
     }
 
-    .cabecalho {
+        .cabecalho {
         padding: 20px 24px;
+        /* 💜 NOVO GRADIENTE ROXO SUAVE E PROFISSIONAL */
         background: linear-gradient(
             120deg,
-            #12343b,
-            #13877c
+            #4a3f75,
+            #6c5b9b
         );
         color: white;
         border-radius: 18px;
         margin-bottom: 20px;
-        box-shadow: 0 12px 30px rgba(18, 52, 59, 0.14);
+        box-shadow: 0 12px 30px rgba(74, 63, 117, 0.14);
     }
+
 
     .cabecalho h1 {
         margin: 0;
