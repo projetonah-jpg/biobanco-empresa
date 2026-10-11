@@ -1003,7 +1003,7 @@ def pagina_dashboard():
         # 📈 GRÁFICO DE TENDÊNCIA MICROBIOLÓGICA AJUSTADO
         st.markdown("<br><hr>", unsafe_allow_html=True)
 
-                st.subheader("📊 Histórico de Tendência Microbiológica")
+        st.subheader("📊 Histórico de Tendência Microbiológica")
         
         # Busca os dados unindo as tabelas
         dados_tendencia = consultar("""
