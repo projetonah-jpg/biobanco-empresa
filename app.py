@@ -1005,7 +1005,6 @@ def pagina_dashboard():
 
         st.subheader("📊 Histórico de Tendência Microbiológica")
         
-        # Busca os dados unindo as tabelas
         dados_tendencia = consultar("""
             SELECT a.origin, a.data, i.identification
             FROM amostras a
@@ -1019,17 +1018,11 @@ def pagina_dashboard():
             df_t = df_t.dropna(subset=["datetime"])
             
             if not df_t.empty:
-                # 🎛️ Filtro Dinâmico por Origem na Tela
                 lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
                 origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
                 
-                                if origem_selecionada != "Todas as Origens":
-                    df_t = df_t[df_t["origin"] == origem_selecionada]
-
-                
-                # Aplica o filtro caso o usuário escolha uma origem específica
                 if origem_selecionada != "Todas as Origens":
-                df_t = df_t[df_t["origin"] == origem_selecionada]
+                    df_t = df_t[df_t["origin"] == origem_selecionada]
                 
                 df_t["mes_num"] = df_t["datetime"].dt.month
                 nomes_meses = {
@@ -1038,7 +1031,6 @@ def pagina_dashboard():
                 }
                 df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
                 
-                # Agrupa os dados filtrados
                 df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias")
                 df_agrupado = df_agrupado.sort_values(by="mes_num")
                 
@@ -1061,6 +1053,7 @@ def pagina_dashboard():
                 st.info("Aguardando amostras com datas válidas.")
         else:
             st.info("Nenhum microrganismo identificado encontrado no banco.")
+
 
 
 
