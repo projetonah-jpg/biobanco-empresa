@@ -1002,7 +1002,8 @@ def pagina_dashboard():
 
         # 📈 GRÁFICO DE TENDÊNCIA MICROBIOLÓGICA AJUSTADO
         st.markdown("<br><hr>", unsafe_allow_html=True)
-         st.subheader("📊 Histórico de Tendência Microbiológica")
+
+        st.subheader("📊 Histórico de Tendência Microbiológica")
         
         dados_tendencia = consultar("""
             SELECT a.origin, a.data, i.identification
@@ -1041,6 +1042,7 @@ def pagina_dashboard():
                 st.info("Aguardando amostras com datas válidas.")
         else:
             st.info("Nenhum microrganismo identificado encontrado no banco.")
+
 
 # ============================================================
 # REGISTRO DE AMOSTRAS
