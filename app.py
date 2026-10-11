@@ -1322,57 +1322,96 @@ def pagina_registro():
     st.title("Registro de Monitoramento")
     df = obter_amostras()
     codigos = df["code"].tolist() if not df.empty else []
-    modo = st.radio("Ação", ["Novo registro", "Editar registro"], horizontal=True)
-    reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc.fillna("").to_dict() if modo == "Editar registro" and codigos else {}
     
-    with st.form("form_amostra"):
-        col1, col2, col3 = st.columns(3)
+    # 🎛️ Adicionada a opção de Excluir de volta no menu de rádio
+    modo = st.radio("Ação", ["Novo registro", "Editar registro", "Excluir registro"], horizontal=True)
+    
+    # 🩹 Carrega as informações se for editar ou excluir
+    reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc[0].fillna("").to_dict() if modo in ["Editar registro", "Excluir registro"] and codigos else {}
+    
+    # ============================================================
+    # MODO EXCLUIR REGISTRO (TELA EXCLUSIVA)
+    # ============================================================
+    if modo == "Excluir registro":
+        if not codigos:
+            st.info("Nenhum registro encontrado para excluir.")
+            return
+            
+        st.warning(f"⚠️ Atenção: Você está prestes a excluir definitivamente a amostra {reg.get('code')}.")
+        st.markdown(
+            f"""
+            * **Origem:** {reg.get('origin', '—')}
+            * **Área:** {reg.get('area', '—')}
+            * **Data de Coleta:** {reg.get('data', '—')}
+            * **Resultado:** {reg.get('resultado_final', '—')}
+            """
+        )
         
-        # 🤖 GERAÇÃO AUTOMÁTICA DO PRÓXIMO CODE
-        if modo == "Novo registro":
-            ultimo_registro = consultar("SELECT code FROM amostras ORDER BY code DESC LIMIT 1")
-            if ultimo_registro and len(ultimo_registro) > 0:
-                ultimo_code = ultimo_registro[0]["code"]  # Acessa o primeiro item da lista de dicionários
-                try:
-                    prefixo, numero = ultimo_code.split("-")
-                    proximo_numero = int(numero) + 1
-                    code_sugerido = f"{prefixo}-{proximo_numero:03d}"
-                except ValueError:
-                    code_sugerido = "B4-006"
+        # Botão com confirmação para evitar cliques acidentais
+        confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente a amostra {reg.get('code')}")
+        
+        if st.button("❌ Deletar Registro Permanentemente", type="primary", disabled=not confirmar_exclusao, use_container_width=True):
+            excluir_amostra(reg.get("code"))
+            st.success(f"Amostra {reg.get('code')} deletada com sucesso!")
+            st.rerun()
+            
+        st.divider()
+
+    # ============================================================
+    # MODO NOVO / EDITAR REGISTRO
+    # ============================================================
+    else:
+        with st.form("form_amostra"):
+            col1, col2, col3 = st.columns(3)
+            
+            # 🤖 GERAÇÃO AUTOMÁTICA DO PRÓXIMO CODE
+            if modo == "Novo registro":
+                ultimo_registro = consultar("SELECT code FROM amostras ORDER BY code DESC LIMIT 1")
+                if ultimo_registro and len(ultimo_registro) > 0:
+                    ultimo_code = ultimo_registro[0]["code"]  # Acessa o dicionário dentro da lista retornada
+                    try:
+                        prefixo, numero = ultimo_code.split("-")
+                        proximo_numero = int(numero) + 1
+                        code_sugerido = f"{prefixo}-{proximo_numero:03d}"
+                    except ValueError:
+                        code_sugerido = "B4-006"
+                else:
+                    code_sugerido = "B4-001"
+                    
+                code = col1.text_input("CODE *", value=code_sugerido)
             else:
-                code_sugerido = "B4-001"
+                code = col1.text_input("CODE *", reg.get("code", ""), disabled=True)
                 
-            code = col1.text_input("CODE *", value=code_sugerido)
-        else:
-            code = col1.text_input("CODE *", reg.get("code", ""), disabled=True)
+            ponto = col2.text_input("OBSERVATION", reg.get("ponto", ""))
+            analista = col3.text_input("ANALYST", reg.get("analista", ""))
             
-        ponto = col2.text_input("OBSERVATION", reg.get("ponto", ""))
-        analista = col3.text_input("ANALYST", reg.get("analista", ""))
-        
-        col4, col5, col6 = st.columns(3)
-        with col4: origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
-        with col5: sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
-        with col6: sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
+            col4, col5, col6 = st.columns(3)
+            with col4: origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
+            with col5: sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
+            with col6: sampling = campo_selecao("SAMPLING", "SAMPLING", reg.get("sampling", ""))
+                
+            col7, col8, col9 = st.columns(3)
+            with col7: area = campo_selecao("AREA", "AREA", reg.get("area", ""))
+            with col8: collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
+            with col9: method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
+                
+            col10, col11, col12 = st.columns(3)
+            with col10: frequencia = st.selectbox("FREQUENCY", ["", "Semanal", "Mensal"], index=["", "Semanal", "Mensal"].index(reg.get("frequencia", "")) if reg.get("frequencia", "") in ["", "Semanal", "Mensal"] else 0)
+            with col11:
+                dt_at = pd.to_datetime(reg.get("data", ""), errors="coerce")
+                data = st.date_input("DATA", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY")
+            with col12: resultado_final = st.selectbox("RESULT", ["", "Conforme", "Não Conforme"], index=["", "Conforme", "Não Conforme"].index(reg.get("resultado_final", "")) if reg.get("resultado_final", "") in ["", "Conforme", "Não Conforme"] else 0)
             
-        col7, col8, col9 = st.columns(3)
-        with col7: area = campo_selecao("AREA", "AREA", reg.get("area", ""))
-        with col8: collection_point = campo_selecao("COLLECTION POINT", "COLLECTION POINT", reg.get("collection_point", ""))
-        with col9: method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
-            
-        col10, col11, col12 = st.columns(3)
-        with col10: frequencia = st.selectbox("FREQUENCY", ["", "Semanal", "Mensal"], index=["", "Semanal", "Mensal"].index(reg.get("frequencia", "")) if reg.get("frequencia", "") in ["", "Semanal", "Mensal"] else 0)
-        with col11:
-            dt_at = pd.to_datetime(reg.get("data", ""), errors="coerce")
-            data = st.date_input("DATA", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY")
-        with col12: resultado_final = st.selectbox("RESULT", ["", "Conforme", "Não Conforme"], index=["", "Conforme", "Não Conforme"].index(reg.get("resultado_final", "")) if reg.get("resultado_final", "") in ["", "Conforme", "Não Conforme"] else 0)
-        
-        enviado_reg = st.form_submit_button("Salvar Registro", type="primary")
+            enviado_reg = st.form_submit_button("Salvar Registro", type="primary")
 
-    if enviado_reg and code.strip():
-        salvar_amostra({"code": code.strip(), "ponto": ponto, "origin": origin, "area": area, "sample": sample, "collection_point": collection_point, "sampling": sampling, "method": method, "frequencia": frequencia, "analista": analista, "data": data.isoformat() if data else "", "resultado_final": resultado_final})
-        st.success("Registro Corretamente Salvo!")
-        st.rerun()
+        if enviado_reg and code.strip():
+            salvar_amostra({"code": code.strip(), "ponto": ponto, "origin": origin, "area": area, "sample": sample, "collection_point": collection_point, "sampling": sampling, "method": method, "frequencia": frequencia, "analista": analista, "data": data.isoformat() if data else "", "resultado_final": resultado_final})
+            st.success("Registro Corretamente Salvo!")
+            st.rerun()
 
+    # ============================================================
+    # VISUALIZAÇÃO DA TABELA (COMUM A TODOS OS MODOS)
+    # ============================================================
     st.subheader("Amostras cadastradas")
     config_colunas = {
         "code": "CODE", "ponto": "OBSERVATION", "origin": "ORIGIN", "area": "AREA", 
