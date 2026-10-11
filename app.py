@@ -1028,7 +1028,7 @@ def pagina_dashboard():
                 
                 # Aplica o filtro caso o usuário escolha uma origem específica
                 if origem_selecionada != "Todas as Origens":
-                    df_t = df_t[df_t["origin"] == origem_selecionada]
+                df_t = df_t[df_t["origin"] == origem_selecionada]
                 
                 df_t["mes_num"] = df_t["datetime"].dt.month
                 nomes_meses = {
