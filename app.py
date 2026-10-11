@@ -1023,6 +1023,9 @@ def pagina_dashboard():
                 lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
                 origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
                 
+                if origem_selecionada != "Todas as Origens":
+                df_t = df_t[df_t["origin"] == origem_selecionada]
+                
                 # Aplica o filtro caso o usuário escolha uma origem específica
                 if origem_selecionada != "Todas as Origens":
                     df_t = df_t[df_t["origin"] == origem_selecionada]
