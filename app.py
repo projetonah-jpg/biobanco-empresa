@@ -888,6 +888,10 @@ def pagina_dashboard():
     total_identificadas = len(codigos_identificados)
     total_nao_identificadas = max(0, total_amostras - total_identificadas)
 
+    # Cálculo das Porcentagens para as Métricas de Cima
+    pct_identificadas = (total_identificadas / total_amostras * 100) if total_amostras > 0 else 0
+    pct_nao_identificadas = (total_nao_identificadas / total_amostras * 100) if total_amostras > 0 else 0
+
     # Inicializa o estado do filtro de clique se não existir
     if "filtro_clique" not in st.session_state:
         st.session_state.filtro_clique = "Todos"
@@ -898,23 +902,23 @@ def pagina_dashboard():
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # 🟢 Renderização dos 3 cartões de métricas no topo
+    # 🟢 Renderização dos 3 cartões de métricas no topo (Com Porcentagens integradas)
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric(label="Total de amostras", value=total_amostras)
+        st.metric(label="Total de amostras", value=f"{total_amostras} un")
         if st.button("👁️ Ver todas", key="btn_todas", use_container_width=True):
             st.session_state.filtro_clique = "Todos"
             st.rerun()
             
     with col2:
-        st.metric(label="Total de amostras identificadas", value=total_identificadas)
+        st.metric(label="Amostras Identificadas", value=f"{total_identificadas} un", delta=f"{pct_identificadas:.1f}% do total", delta_color="off")
         if st.button("🔍 Ver identificadas", key="btn_iden", use_container_width=True):
             st.session_state.filtro_clique = "Identificadas"
             st.rerun()
             
     with col3:
-        st.metric(label="Total de amostras não identificadas", value=total_nao_identificadas)
+        st.metric(label="Aguardando Identificação", value=f"{total_nao_identificadas} un", delta=f"{pct_nao_identificadas:.1f}% do total", delta_color="off")
         if st.button("🔎 Ver não identificadas", key="btn_nao_iden", use_container_width=True):
             st.session_state.filtro_clique = "Nao_Identificadas"
             st.rerun()
@@ -980,12 +984,19 @@ def pagina_dashboard():
                 st.info("Aguardando registros de identificação.")
 
         with direita:
+            # 🍕 Gráfico de Pizza configurado para mostrar a Porcentagem diretamente nas fatias
             grafico_pizza = px.pie(
                 df_amostras, 
                 names="resultado_final", 
                 title="Status das Coletas (Conformidade)",
                 hole=0.45,
                 color_discrete_sequence=["#13877c", "#12343b"]
+            )
+            # Força a exibição do texto com o valor e a porcentagem dentro/fora da fatia
+            grafico_pizza.update_traces(
+                textinfo="percent+label", 
+                textposition="inside",
+                insidetextorientation="radial"
             )
             st.plotly_chart(grafico_pizza, use_container_width=True)
 
@@ -1018,7 +1029,6 @@ def pagina_dashboard():
                 
                 df_agrupado = df_agrupado.sort_values(by="mes_num")
                 
-                # Paleta de cores científica de alto contraste
                 cores_slide = px.colors.qualitative.Bold
                 
                 grafico_linha = px.line(
@@ -1032,7 +1042,6 @@ def pagina_dashboard():
                     color_discrete_sequence=cores_slide
                 )
                 
-                # Estilização profissional simulando a referência do slide
                 grafico_linha.update_traces(
                     line=dict(width=3),
                     marker=dict(size=9, line=dict(width=1, color='white'))
@@ -1043,7 +1052,7 @@ def pagina_dashboard():
                     yaxis_title="# of Colonies Observed",
                     legend_title="Genus",
                     hovermode="x unified",
-                    plot_bgcolor="#f3f4f6",  # Fundo cinza suave clássico de laboratório
+                    plot_bgcolor="#f3f4f6",
                     paper_bgcolor="white",
                     margin=dict(l=40, r=40, t=50, b=40),
                     xaxis=dict(
@@ -1053,7 +1062,7 @@ def pagina_dashboard():
                     ),
                     yaxis=dict(
                         gridcolor="white",
-                        dtick=5  # Escala saltando de 5 em 5 igual ao gráfico original
+                        dtick=5
                     ),
                     title=dict(
                         font=dict(size=20, color="#12343b"),
@@ -1066,8 +1075,6 @@ def pagina_dashboard():
                 st.info("Nenhuma amostra possui data válida para gerar a linha do tempo.")
         else:
             st.info("Insira microrganismos na aba de Identificação para popular a tendência cronológica.")
-
-
 
 
 # ============================================================
