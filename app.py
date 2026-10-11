@@ -1059,6 +1059,7 @@ def pagina_dashboard():
             st.info("Nenhum microrganismo identificado encontrado no banco.")
 
 
+
 # ============================================================
 # REGISTRO DE AMOSTRAS
 # ============================================================
