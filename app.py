@@ -1434,74 +1434,72 @@ def pagina_registro():
 # ============================================================
 
 def pagina_armazenamento():
-    st.title(
-        "Armazenamento de Isolados Identificados"
-    )
-
+    st.title("Armazenamento de Isolados Identificados")
     df = obter_identificacoes()
 
     if df.empty:
         st.info("Nenhuma amostra cadastrada.")
         return
 
-    armazenamento = df[
-        [
-            "code",
-            "gram_stain",
-            "identification",
-        ]
-    ].copy()
+    # Organiza a tabela principal de visualização
+    armazenamento = df[["code", "gram_stain", "identification"]].copy()
+    armazenamento.columns = ["CODE", "GRAM STAIN", "IDENTIFICATION"]
+    
+    # Exibe a tabela principal de isolados
+    st.dataframe(armazenamento, use_container_width=True, hide_index=True)
 
-    armazenamento.columns = [
-        "CODE",
-        "GRAM STAIN",
-        "IDENTIFICATION",
-    ]
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+    st.subheader("🦠 Resumo de Contaminantes em Banco de Cepas")
 
-    st.dataframe(
-        armazenamento,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    resumo = (
-        armazenamento["IDENTIFICATION"]
-        .replace("", pd.NA)
-        .dropna()
-        .value_counts()
-        .rename_axis("IDENTIFICAÇÃO")
-        .reset_index(name="OCORRÊNCIAS")
-    )
-
-    st.subheader("Resumo de contaminantes")
+    # Filtra e agrupa os microrganismos identificados
+    resumo = armazenamento["IDENTIFICATION"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
 
     if resumo.empty:
-        st.info(
-            "Ainda não existem identificações preenchidas."
-        )
+        st.info("Ainda não existem identificações preenchidas para gerar o resumo.")
         return
 
+    # 💡 IDEIA 1: Renderizar o resumo em formatos de indicadores/cards modernos
+    colunas_cards = st.columns(min(len(resumo), 4))
+    for i, linha in resumo.iterrows():
+        idx_col = i % 4
+        with colunas_cards[idx_col]:
+            st.metric(
+                label=f"Total de {linha['IDENTIFICAÇÃO']}", 
+                value=f"{linha['OCORRÊNCIAS']} un"
+            )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 💡 IDEIA 2: Gráfico de barras horizontal estilizado com as cores do sistema
     coluna1, coluna2 = st.columns([1, 2])
+    
+    with coluna1:
+        st.caption("📋 Detalhamento em formato tabular:")
+        st.dataframe(resumo, use_container_width=True, hide_index=True)
+        
+    with coluna2:
+        # Gráfico configurado com a paleta profissional verde do sistema
+        grafico = px.bar(
+            resumo, 
+            x="OCORRÊNCIAS", 
+            y="IDENTIFICAÇÃO", 
+            orientation="h", 
+            text_auto=True, 
+            title="Ocorrências por Tipo de Microrganismo",
+            color="IDENTIFICAÇÃO",
+            color_discrete_sequence=px.colors.qualitative.Safe
+        )
+        
+        # Deixa o fundo cinza clássico e as linhas limpas
+        grafico.update_layout(
+            plot_bgcolor="#f8fafc",
+            paper_bgcolor="white",
+            xaxis_title="Quantidade de Isolados",
+            yaxis_title="Microrganismo",
+            showlegend=False
+        )
+        st.plotly_chart(grafico, use_container_width=True)
 
-    coluna1.dataframe(
-        resumo,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    grafico = px.bar(
-        resumo,
-        x="OCORRÊNCIAS",
-        y="IDENTIFICAÇÃO",
-        orientation="h",
-        text_auto=True,
-        title="Ocorrências por identificação",
-    )
-
-    coluna2.plotly_chart(
-        grafico,
-        use_container_width=True,
-    )
 
 
 # ============================================================
