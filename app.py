@@ -1752,7 +1752,6 @@ def pagina_dados_brutos():
         else:
             st.markdown("### 🚦 Status e Alertas de Validade")
             
-            # Função interna para calcular a cor com base no vencimento
             def mapear_status_validade(data_texto):
                 if not data_texto or data_texto == "—":
                     return "⚪ Sem Data"
@@ -1770,12 +1769,10 @@ def pagina_dados_brutos():
                 except Exception:
                     return "⚪ Erro na data"
 
-            # Cria as colunas de alerta visual na tabela
             df_visualizacao = df_brutos.copy()
             df_visualizacao["STATUS TSB"] = df_visualizacao["tsb_val"].apply(mapear_status_validade)
             df_visualizacao["STATUS TSA"] = df_visualizacao["tsa_val"].apply(mapear_status_validade)
             
-            # Formata a tabela organizada para a Natália ver
             st.dataframe(
                 df_visualizacao[[
                     "id", "tsb", "tsb_val", "STATUS TSB", 
@@ -1832,12 +1829,12 @@ def pagina_dados_brutos():
             
             ultrafreezer = st.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
             
-                        if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
+            if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
                 t_val = tsb_val.isoformat() if tsb_val else ""
                 a_val = tsa_val.isoformat() if tsa_val else ""
                 
                 with conectar() as conexao:
-                    # 🩹 TRAVA DE SEGURANÇA: Injeta as colunas novas na tabela antiga para evitar o erro de SQL
+                    # 🩹 SEGURANÇA INTERNA AUTOMÁTICA CONTRA ERROS DE SQLITE
                     try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsb_val TEXT")
                     except sqlite3.OperationalError: pass
                     try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsa_val TEXT")
@@ -1856,6 +1853,7 @@ def pagina_dados_brutos():
                         """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer))
                 st.success("Dados salvos e monitoramento ativado!")
                 st.rerun()
+
 
 
 
