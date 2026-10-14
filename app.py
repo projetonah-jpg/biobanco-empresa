@@ -1832,11 +1832,17 @@ def pagina_dados_brutos():
             
             ultrafreezer = st.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
             
-            if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
+                        if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
                 t_val = tsb_val.isoformat() if tsb_val else ""
                 a_val = tsa_val.isoformat() if tsa_val else ""
                 
                 with conectar() as conexao:
+                    # 🩹 TRAVA DE SEGURANÇA: Injeta as colunas novas na tabela antiga para evitar o erro de SQL
+                    try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsb_val TEXT")
+                    except sqlite3.OperationalError: pass
+                    try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsa_val TEXT")
+                    except sqlite3.OperationalError: pass
+                    
                     if modo == "✏️ Editar Linha":
                         conexao.execute("""
                             UPDATE dados_brutos 
@@ -1850,6 +1856,7 @@ def pagina_dados_brutos():
                         """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer))
                 st.success("Dados salvos e monitoramento ativado!")
                 st.rerun()
+
 
 
 
