@@ -1860,31 +1860,23 @@ st.sidebar.caption(
 )
 
 # Definição das opções em português para bater com a lógica do seu app
-pagina = st.sidebar.radio(
-    "Navegação",
-    [
-        "Dashboard",
-        "Registro",
-        "Identificação",
-        "Armazenamento",
-        "Dados",
-        "Dados Brutos",
-    ],
-)
-
+pagina = st.sidebar.radio("Navegação", ["Dashboard", "Registro", "Identificação", "Armazenamento", "Dados", "Dados Brutos"])
 st.sidebar.divider()
 
-if st.sidebar.button(
-    "Sair",
-    use_container_width=True,
-):
+if st.sidebar.button("Sair", use_container_width=True):
     st.session_state.autenticado = False
-    st.session_state.pop("usuario", None)
     st.rerun()
 
-st.sidebar.caption(
-    "Banco SQLite • dados persistentes"
-)
+# 🖥️ BANNER OFICIAL VIA URL (RODANDO DIRETO DO GITHUB NO TOPO DO SISTEMA)
+st.image("https://githubusercontent.com", use_container_width=True)
+
+# Orquestrador correto de exibições baseado na aba selecionada (Traz as telas de volta!)
+if pagina == "Dashboard": pagina_dashboard()
+elif pagina == "Registro": pagina_registro()
+elif pagina == "Identificação": pagina_identificacao()
+elif pagina == "Armazenamento": pagina_armazenamento()
+elif pagina == "Dados Brutos": pagina_dados_brutos()
+elif pagina == "Dados": pagina_dados()
 
 
 # ============================================================
