@@ -1364,71 +1364,47 @@ def pagina_registro():
 # ============================================================
 
 def pagina_armazenamento():
-    st.title("Armazenamento de Isolados Identificados")
+    st.title("🧫 Armazenamento de Isolados Identificados")
+    st.caption("Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas.")
+
     df = obter_identificacoes()
-
-    if df.empty:
-        st.info("Nenhuma amostra cadastrada.")
-        return
-
-    # Organiza a tabela principal de visualização
-    armazenamento = df[["code", "gram_stain", "identification"]].copy()
-    armazenamento.columns = ["CODE", "GRAM STAIN", "IDENTIFICATION"]
     
-    # Exibe a tabela principal de isolados
-    st.dataframe(armazenamento, use_container_width=True, hide_index=True)
-
-    st.markdown("<br><hr>", unsafe_allow_html=True)
-    st.subheader("🦠 Resumo de Contaminantes em Banco de Cepas")
-
-    # Filtra e agrupa os microrganismos identificados
-    resumo = armazenamento["IDENTIFICATION"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-
-    if resumo.empty:
-        st.info("Ainda não existem identificações preenchidas para gerar o resumo.")
+    if df.empty:
+        st.info("Nenhuma amostra cadastrada no sistema até o momento.")
         return
 
-    # 💡 IDEIA 1: Renderizar o resumo em formatos de indicadores/cards modernos
-    colunas_cards = st.columns(min(len(resumo), 4))
-    for i, linha in resumo.iterrows():
-        idx_col = i % 4
-        with colunas_cards[idx_col]:
-            st.metric(
-                label=f"Total de {linha['IDENTIFICAÇÃO']}", 
-                value=f"{linha['OCORRÊNCIAS']} un"
-            )
+    # Filtra apenas os registros que já possuem identificação preenchida
+    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
 
+    if df_filtrado.empty:
+        st.info("Nenhum microrganismo identificado e armazenado no banco de cepas ainda.")
+        return
+
+    # Conta o total de registros válidos para mostrar no indicador superior
+    total_isolados = len(df_filtrado)
+    st.metric(label="🦠 Total de Isolados Preservados no Banco", value=f"{total_isolados} un")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 💡 IDEIA 2: Gráfico de barras horizontal estilizado com as cores do sistema
-    coluna1, coluna2 = st.columns([1, 2])
+    # Prepara e formata a tabela com as colunas essenciais de rastreabilidade
+    armazenamento = df_filtrado[["code", "gram_stain", "identification", "area", "collection_point", "data"]].copy()
     
-    with coluna1:
-        st.caption("📋 Detalhamento em formato tabular:")
-        st.dataframe(resumo, use_container_width=True, hide_index=True)
-        
-    with coluna2:
-        # Gráfico configurado com a paleta profissional verde do sistema
-        grafico = px.bar(
-            resumo, 
-            x="OCORRÊNCIAS", 
-            y="IDENTIFICAÇÃO", 
-            orientation="h", 
-            text_auto=True, 
-            title="Ocorrências por Tipo de Microrganismo",
-            color="IDENTIFICAÇÃO",
-            color_discrete_sequence=px.colors.qualitative.Safe
-        )
-        
-        # Deixa o fundo cinza clássico e as linhas limpas
-        grafico.update_layout(
-            plot_bgcolor="#f8fafc",
-            paper_bgcolor="white",
-            xaxis_title="Quantidade de Isolados",
-            yaxis_title="Microrganismo",
-            showlegend=False
-        )
-        st.plotly_chart(grafico, use_container_width=True)
+    config_armazenamento = {
+        "code": "CODE",
+        "gram_stain": "GRAM STAIN",
+        "identification": "IDENTIFICATION",
+        "area": "AREA",
+        "collection_point": "COLLECTION POINT",
+        "data": "COLLECTION DATE"
+    }
+
+    st.dataframe(
+        armazenamento, 
+        use_container_width=True, 
+        hide_index=True, 
+        column_config=config_armazenamento
+    )
+    st.caption(f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos.")
+
 
 
 
