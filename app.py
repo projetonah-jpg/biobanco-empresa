@@ -1701,7 +1701,7 @@ def pagina_dados_brutos():
         """)
 
     try:
-        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, glicerina_val, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
+        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
     except Exception:
         linhas = []
         
