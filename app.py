@@ -304,22 +304,46 @@ def obter_amostras():
 
 
 def obter_identificacoes():
-    sql_consulta = "SELECT a.code, a.area, a.collection_point, a.data, i.form, i.margin, i.pigment, i.gram_stain, i.catalase, i.koh, i.oxidase, i.outsourced_method, i.identification, i.report, i.company, i.start_date, i.end_date FROM amostras a LEFT JOIN identificacoes i ON i.code = a.code ORDER BY a.code"
+    sql_consulta = """
+        SELECT
+            a.code,
+            a.area,
+            a.collection_point,
+            a.data,
+            i.form,
+            i.margin,
+            i.pigment,
+            i.gram_stain,
+            i.catalase,
+            i.koh,
+            i.oxidase,
+            i.outsourced_method,
+            i.identification,
+            i.report,
+            i.company,
+            i.start_date,
+            i.end_date
+        FROM amostras a
+
+        LEFT JOIN identificacoes i
+            ON i.code = a.code
+
+        ORDER BY a.code
+    """
     try:
         dados = consultar(sql_consulta)
     except sqlite3.OperationalError:
+        # Se a coluna start_date não existir ainda, cria ela agora automaticamente
         with conectar() as conexao:
             try:
                 conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
-conexao.commit() Em inglês
-exceto sqlite3. OperaçãoErro:
-passar
-dados =(sql_consulta)
-return pd.DataFrame(dados)
-def campo_selecao(titulo, nome_lista, valor_atual="):
-opcoes = [""] + LISTAS.get(nome_lista, [])
-indice = opcoes.index(valor_atual) se valor_atual em opcoes else 0
-retorno st.selectbox(titulo, opcoes, index=indice)
+                conexao.commit()
+            except sqlite3.OperationalError:
+                pass
+        # Tenta consultar novamente após criar a coluna
+        dados = consultar(sql_consulta)
+
+    return pd.DataFrame(dados)
 
 =========================================================================================================
 
