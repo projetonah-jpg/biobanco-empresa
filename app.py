@@ -1763,7 +1763,7 @@ def pagina_dados_brutos():
             st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
             st.caption(f"Total de registros brutos armazenados: {len(df_brutos)} linhas.")
 
-    with tab_cadastro:
+        with tab_cadastro:
         with st.form("form_dados_brutos"):
             c1, c2, c3 = st.columns(3)
             tsb = c1.text_input("TSB", placeholder="Lote / Validade")
@@ -1780,7 +1780,7 @@ def pagina_dados_brutos():
 
             salvar_bruto = st.form_submit_button("Adicionar Linha aos Dados Brutos", type="primary")
 
-                      if salvar_bruto:
+        if salvar_bruto:
             with conectar() as conexao:
                 conexao.execute("""
                     CREATE TABLE IF NOT EXISTS dados_brutos (
@@ -1804,7 +1804,6 @@ def pagina_dados_brutos():
                 )
             st.success("Linha de dados brutos adicionada com sucesso!")
             st.rerun()
-
 
 
 
