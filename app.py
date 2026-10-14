@@ -1736,10 +1736,26 @@ def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
     st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
 
-    # Busca as informações diretamente do banco de dados de forma segura
+    # Garante que a tabela exista fisicamente antes de qualquer operação de leitura
+    with conectar() as conexao:
+        conexao.execute("""
+            CREATE TABLE IF NOT EXISTS dados_brutos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tsb TEXT,
+                glicerina TEXT,
+                tsa TEXT,
+                criotubo TEXT,
+                placa_de_petri TEXT,
+                fluxo_laminar TEXT,
+                ultrafreezer TEXT,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+    # Busca as informações diretamente do banco de dados
     try:
         linhas = consultar("""
-            SELECT tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
+            SELECT id, tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
             FROM dados_brutos 
             ORDER BY id DESC
         """)
@@ -1747,67 +1763,97 @@ def pagina_dados_brutos():
         linhas = []
         
     df_brutos = pd.DataFrame(linhas)
+    
+    # Cria uma lista de IDs para os seletores de edição e exclusão
+    lista_ids = df_brutos["id"].tolist() if not df_brutos.empty else []
 
-    # Criação das abas de visualização e cadastro manual
-    tab_visualizar, tab_cadastro = st.tabs(["📋 Visualizar Planilha", "➕ Inserir Linha Manual"])
+    # 🎛️ Menu de Ações completo igual ao da aba de registros
+    modo = st.radio("Ação", ["📋 Visualizar Planilha", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
 
-    with tab_visualizar:
+    # ============================================================
+    # MODO VISUALIZAR PLANILHA
+    # ============================================================
+    if modo == "📋 Visualizar Planilha":
         if df_brutos.empty:
-            st.info("Nenhum dado bruto encontrado. Use a aba de importação ou cadastre manualmente ao lado.")
+            st.info("Nenhum dado bruto encontrado. Use a aba de inserção ao lado para cadastrar.")
         else:
             config_brutos = {
-                "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
-                "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", 
-                "ultrafreezer": "ULTRAFREEZER"
+                "id": "ID", "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
+                "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
             }
             st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
             st.caption(f"Total de registros brutos armazenados: {len(df_brutos)} linhas.")
 
-    with tab_cadastro:
-        with st.form("form_dados_brutos"):
+    # ============================================================
+    # MODO EXCLUIR LINHA
+    # ============================================================
+    elif modo == "❌ Excluir Linha":
+        if not lista_ids:
+            st.info("Nenhum registro bruto encontrado para excluir.")
+            return
+            
+        id_selecionado = st.selectbox("Selecione o ID do registro que deseja remover:", lista_ids)
+        reg_excluir = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
+        
+        st.warning(f"⚠️ Atenção: Você está prestes a excluir definitivamente o registro de ID {id_selecionado}.")
+        st.markdown(f"**Dados atuais:** TSB: `{reg_excluir['tsb']}` | TSA: `{reg_excluir['tsa']}` | Ultrafreezer: `{reg_excluir['ultrafreezer']}`")
+        
+        confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente o registro {id_selecionado}")
+        
+        if st.button("❌ Deletar Permanentemente", type="primary", disabled=not confirmar_exclusao, use_container_width=True):
+            with conectar() as conexao:
+                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_selecionado,))
+            st.success(f"Registro {id_selecionado} deletado com sucesso!")
+            st.rerun()
+
+    # ============================================================
+    # MODO INSERIR OU EDITAR REGISTRO
+    # ============================================================
+    else:
+        # Se for edição, busca a linha selecionada para preencher os campos automaticamente
+        if modo == "✏️ Editar Linha":
+            if not lista_ids:
+                st.info("Nenhum registro bruto encontrado para editar.")
+                return
+            id_selecionado = st.selectbox("Selecione o ID do registro que deseja editar:", lista_ids)
+            reg = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
+        else:
+            reg = {}
+
+        with st.form("form_dados_brutos_avancado"):
             c1, c2, c3 = st.columns(3)
-            tsb = c1.text_input("TSB", placeholder="Lote / Validade")
-            glicerina = c2.text_input("GLICERINA")
-            tsa = c3.text_input("TSA")
+            tsb = c1.text_input("TSB", value=reg.get("tsb", ""), placeholder="Lote / Validade")
+            glicerina = c2.text_input("GLICERINA", value=reg.get("glicerina", ""))
+            tsa = c3.text_input("TSA", value=reg.get("tsa", ""))
 
             c4, c5, c6 = st.columns(3)
-            criotubo = c4.text_input("CRIOTUBO")
-            placa_de_petri = c5.text_input("PLACA DE PETRI")
-            fluxo_laminar = c6.text_input("FLUXO LAMINAR")
+            criotubo = c4.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
+            placa_de_petri = c5.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
+            fluxo_laminar = c6.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
 
             c7, _, _ = st.columns(3)
-            ultrafreezer = c7.text_input("ULTRAFREEZER")
+            ultrafreezer = c7.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
 
-            salvar_bruto = st.form_submit_button("Adicionar Linha aos Dados Brutos", type="primary")
+            texto_botao = "Salvar Alterações" if modo == "✏️ Editar Linha" else "Adicionar Linha aos Dados Brutos"
+            salvar_bruto = st.form_submit_button(texto_botao, type="primary")
 
         if salvar_bruto:
             with conectar() as conexao:
-                # Garante que a tabela exista fisicamente no arquivo do banco
-                conexao.execute("""
-                    CREATE TABLE IF NOT EXISTS dados_brutos (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        tsb TEXT,
-                        glicerina TEXT,
-                        tsa TEXT,
-                        criotubo TEXT,
-                        placa_de_petri TEXT,
-                        fluxo_laminar TEXT,
-                        ultrafreezer TEXT,
-                        criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                
-                # Realiza o insert na tabela criada
-                conexao.execute(
-                    """
-                    INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
-                )
-                
-            st.success("Linha de dados brutos adicionada com sucesso!")
+                if modo == "✏️ Editar Linha":
+                    conexao.execute("""
+                        UPDATE dados_brutos 
+                        SET tsb=?, glicerina=?, tsa=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=?
+                        WHERE id=?
+                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer, id_selecionado))
+                    st.success("Alterações salvas com sucesso!")
+                else:
+                    conexao.execute("""
+                        INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer))
+                    st.success("Linha de dados brutos adicionada com sucesso!")
             st.rerun()
+
 
 
 
