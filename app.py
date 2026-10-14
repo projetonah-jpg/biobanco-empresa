@@ -54,17 +54,17 @@ st.markdown(
     """
     <style>
     :root {
-        --navy: #12343b;
-        --teal: #13877c;
-        --mint: #eaf5f2;
+        --purple-dark: #4a3f75;
+        --purple-light: #6c5b9b;
+        --purple-bg: #f5f3f9;
         --white: #ffffff;
     }
 
     .stApp {
         background: linear-gradient(
             135deg,
-            #f8fcfb 0%,
-            #edf6f4 100%
+            #fbfbfe 0%,
+            #f3f2f8 100%
         );
     }
 
@@ -73,11 +73,12 @@ st.markdown(
         max-width: 1280px;
     }
 
+    /* 💜 Menu Lateral Customizado */
     [data-testid="stSidebar"] {
         background: linear-gradient(
             180deg,
-            #12343b,
-            #0d5c58
+            #3a3260,
+            #4a3f75
         );
     }
 
@@ -85,33 +86,38 @@ st.markdown(
         color: white;
     }
 
+    /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
     [data-testid="stMetric"] {
         background-color: white;
-        border: 1px solid #dcebe7;
-        border-left: 5px solid #13877c;
+        border: 1px solid #e1def2;
+        border-left: 5px solid #6c5b9b;
         padding: 16px;
         border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(18, 52, 59, 0.07);
+        box-shadow: 0 6px 18px rgba(74, 63, 117, 0.06);
     }
 
+    /* 💜 Botões e Formulários Padronizados em Roxo */
     .stButton > button,
     .stFormSubmitButton > button {
         border-radius: 10px;
         border: 0;
-        background-color: #13877c;
+        background-color: #6c5b9b;
         color: white;
         font-weight: 700;
+        transition: all 0.3s ease;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #0f6f67;
+        background-color: #4a3f75;
         color: white;
+        box-shadow: 0 4px 12px rgba(108, 91, 155, 0.25);
     }
 
+    /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #12343b;
+        color: #4a3f75;
         margin: 3vh auto 18px auto;
     }
 
@@ -121,7 +127,7 @@ st.markdown(
     }
 
     .logo-login p {
-        color: #5e7776;
+        color: #787299;
         margin-top: 4px;
     }
 
@@ -134,25 +140,25 @@ st.markdown(
         place-items: center;
         background: linear-gradient(
             145deg,
-            #13877c,
-            #12343b
+            #6c5b9b,
+            #3a3260
         );
         color: white;
         font-size: 48px;
-        box-shadow: 0 12px 28px rgba(19, 135, 124, 0.28);
+        box-shadow: 0 12px 28px rgba(108, 91, 155, 0.3);
     }
 
     .caixa-login {
         background-color: white;
         padding: 28px 34px 20px 34px;
         border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(18, 52, 59, 0.14);
-        border: 1px solid #dfefeb;
+        box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
+        border: 1px solid #e1def2;
     }
 
-        .cabecalho {
+    /* 💜 Cabeçalho Principal (Biobank) */
+    .cabecalho {
         padding: 20px 24px;
-        /* 💜 NOVO GRADIENTE ROXO SUAVE E PROFISSIONAL */
         background: linear-gradient(
             120deg,
             #4a3f75,
@@ -164,7 +170,6 @@ st.markdown(
         box-shadow: 0 12px 30px rgba(74, 63, 117, 0.14);
     }
 
-
     .cabecalho h1 {
         margin: 0;
         font-size: 29px;
@@ -172,7 +177,7 @@ st.markdown(
 
     .cabecalho p {
         margin: 5px 0 0 0;
-        color: #d8efeb;
+        color: #e9e6f5;
     }
 
     .logo-menu {
@@ -186,7 +191,7 @@ st.markdown(
         display: block;
         font-size: 12px;
         font-weight: 400;
-        color: #cbe5e1;
+        color: #dcd7ee;
     }
     </style>
     """,
