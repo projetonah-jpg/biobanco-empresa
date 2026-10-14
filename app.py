@@ -511,6 +511,9 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
+        # 🩹 Força a nuvem a limpar apenas a tabela de insumos travada para aplicar a nova estrutura
+        conexao.execute("DROP TABLE IF EXISTS dados_brutos")
+        
         conexao.executescript(
             """
             CREATE TABLE IF NOT EXISTS amostras (
@@ -545,17 +548,17 @@ def criar_banco():
                 company TEXT,
                 end_date TEXT,
                 atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (code)
-                    REFERENCES amostras(code)
-                    ON DELETE CASCADE
+                FOREIGN KEY (code) REFERENCES amostras(code) ON DELETE CASCADE
             );
 
+            /* 🧪 CRIADA A NOVA TABELA ATUALIZADA COM AS VALIDADES COM CARDS */
             CREATE TABLE IF NOT EXISTS dados_brutos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tsb TEXT,
+                tsb_val TEXT,
                 glicerina TEXT,
                 tsa TEXT,
+                tsa_val TEXT,
                 criotubo TEXT,
                 placa_de_petri TEXT,
                 fluxo_laminar TEXT,
@@ -564,48 +567,7 @@ def criar_banco():
             );
             """
         )
-def inserir_dados_iniciais(conexao):
-    for amostra in AMOSTRAS_INICIAIS:
-        valores = [
-            amostra.get(coluna, "")
-            for coluna in COLUNAS_AMOSTRA
-        ]
 
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO amostras
-            ({",".join(COLUNAS_AMOSTRA)})
-            VALUES ({",".join("?" for _ in COLUNAS_AMOSTRA)})
-            """,
-            valores,
-        )
-
-    for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [
-            identificacao.get(coluna, "")
-            for coluna in COLUNAS_IDENTIFICACAO
-        ]
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO identificacoes
-            ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES (
-                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
-            )
-            """,
-            valores,
-        )
-
-
-def consultar(sql, parametros=()):
-    with conectar() as conexao:
-        linhas = conexao.execute(
-            sql,
-            parametros,
-        ).fetchall()
-
-        return [dict(linha) for linha in linhas]
 
 
 def salvar_amostra(registro):
