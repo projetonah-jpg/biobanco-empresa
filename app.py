@@ -1891,8 +1891,15 @@ st.sidebar.caption(
 # CABEÇALHO
 # ============================================================
 
-# 🖥️ Configuração do novo banner integrado por imagem
-caminho_do_banner = PASTA_APP / "banner_novo.png"
+# 🖥️ Configuração do novo banner com caminho absoluto forçado para a nuvem
+import os
+
+nome_arquivo_banner = "banner_novo.png"
+caminho_do_banner = PASTA_APP / nome_arquivo_banner
+
+# Força uma segunda busca caso o Streamlit mude o diretório de execução na nuvem
+if not caminho_do_banner.exists():
+    caminho_do_banner = Path(os.getcwd()) / nome_arquivo_banner
 
 if caminho_do_banner.exists():
     st.image(str(caminho_do_banner), use_container_width=True)
@@ -1906,6 +1913,7 @@ else:
         """,
         unsafe_allow_html=True,
     )
+
 
 
 
