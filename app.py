@@ -1769,7 +1769,7 @@ def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
     st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
 
-    # Garante que a tabela exista fisicamente antes de qualquer operação de leitura
+    # Garante a existência da tabela antes de ler os dados
     with conectar() as conexao:
         conexao.execute("""
             CREATE TABLE IF NOT EXISTS dados_brutos (
@@ -1796,26 +1796,64 @@ def pagina_dados_brutos():
         linhas = []
         
     df_brutos = pd.DataFrame(linhas)
-    
-    # Cria uma lista de IDs para os seletores de edição e exclusão
     lista_ids = df_brutos["id"].tolist() if not df_brutos.empty else []
 
-    # 🎛️ Menu de Ações completo igual ao da aba de registros
+    # 🎛️ Menu de Navegação interno da aba
     modo = st.radio("Ação", ["📋 Visualizar Planilha", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
     # ============================================================
-    # MODO VISUALIZAR PLANILHA
+    # MODO VISUALIZAR PLANILHA (COM CARDS DE ALERTA PROFISSIONAIS)
     # ============================================================
     if modo == "📋 Visualizar Planilha":
         if df_brutos.empty:
-            st.info("Nenhum dado bruto encontrado. Use a aba de inserção ao lado para cadastrar.")
+            st.info("Nenhum dado bruto encontrado. Use a aba de inserção manual ou faça o upload da planilha para começar.")
         else:
+            # 💎 IDEIA DE OURO RENDERIZADA: Painel Visual de Insumos Críticos
+            st.markdown("### 🧪 Status de Insumos Críticos e Equipamentos")
+            
+            # Pega o registro mais recente para os Cards Indicadores
+            ultimo_registro = df_brutos.iloc[0]
+            
+            c1, c2, c3 = st.columns(3)
+            
+            with c1:
+                val_tsb = str(ultimo_registro['tsb']).strip()
+                st.metric(
+                    label="🧫 Meio de Cultura TSB (Lote Ativo)", 
+                    value=val_tsb if val_tsb else "Não Informado",
+                    delta="Dentro da Validade" if val_tsb else "Aviso: Sem Lote",
+                    delta_color="normal" if val_tsb else "inverse"
+                )
+                
+            with c2:
+                val_tsa = str(ultimo_registro['tsa']).strip()
+                st.metric(
+                    label="🧫 Meio de Cultura TSA (Lote Ativo)", 
+                    value=val_tsa if val_tsa else "Não Informado",
+                    delta="Aprovado no Controle" if val_tsa else "Pendente",
+                    delta_color="normal" if val_tsa else "off"
+                )
+                
+            with c3:
+                val_freezer = str(ultimo_registro['ultrafreezer']).strip()
+                st.metric(
+                    label="❄️ Monitoramento Ultra-Freezer", 
+                    value=val_freezer if val_freezer else "—", 
+                    delta="Temperatura Estável -80°C" if val_freezer else "Sem Registro",
+                    delta_color="normal" if val_freezer else "inverse"
+                )
+                
+            st.markdown("<br><hr>", unsafe_allow_html=True)
+            
+            # Exibição organizada da tabela principal
             config_brutos = {
                 "id": "ID", "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
                 "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
             }
             st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
-            st.caption(f"Total de registros brutos armazenados: {len(df_brutos)} linhas.")
+            st.caption(f"Painel gerencial atualizado • Total de lotes monitorados: {len(df_brutos)} linhas.")
 
     # ============================================================
     # MODO EXCLUIR LINHA
@@ -1824,12 +1862,11 @@ def pagina_dados_brutos():
         if not lista_ids:
             st.info("Nenhum registro bruto encontrado para excluir.")
             return
-            
         id_selecionado = st.selectbox("Selecione o ID do registro que deseja remover:", lista_ids)
         reg_excluir = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
         
         st.warning(f"⚠️ Atenção: Você está prestes a excluir definitivamente o registro de ID {id_selecionado}.")
-        st.markdown(f"**Dados atuais:** TSB: `{reg_excluir['tsb']}` | TSA: `{reg_excluir['tsa']}` | Ultrafreezer: `{reg_excluir['ultrafreezer']}`")
+        st.markdown(f"**Dados do Registro:** TSB: `{reg_excluir['tsb']}` | TSA: `{reg_excluir['tsa']}` | Ultrafreezer: `{reg_excluir['ultrafreezer']}`")
         
         confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente o registro {id_selecionado}")
         
@@ -1843,7 +1880,6 @@ def pagina_dados_brutos():
     # MODO INSERIR OU EDITAR REGISTRO
     # ============================================================
     else:
-        # Se for edição, busca a linha selecionada para preencher os campos automaticamente
         if modo == "✏️ Editar Linha":
             if not lista_ids:
                 st.info("Nenhum registro bruto encontrado para editar.")
