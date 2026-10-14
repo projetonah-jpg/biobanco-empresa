@@ -1904,6 +1904,7 @@ if not caminho_do_banner.exists():
 if caminho_do_banner.exists():
     st.image("https://githubusercontent.com", use_container_width=True)
 
+
 else:
     st.markdown(
         """
