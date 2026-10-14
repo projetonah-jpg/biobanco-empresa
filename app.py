@@ -1717,161 +1717,139 @@ def pagina_dados():
 
 def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
-    st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
+    st.caption("Gerenciamento e monitoramento automático de validades de insumos e meios de cultura.")
 
-    # Garante a existência da tabela antes de ler os dados
+    # Garante a existência da tabela com suporte a formato de data nativo
     with conectar() as conexao:
         conexao.execute("""
             CREATE TABLE IF NOT EXISTS dados_brutos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tsb TEXT,
-                glicerina TEXT,
-                tsa TEXT,
-                criotubo TEXT,
-                placa_de_petri TEXT,
-                fluxo_laminar TEXT,
-                ultrafreezer TEXT,
+                tsb TEXT, tsb_val TEXT,
+                glicerina TEXT, glicerina_val TEXT,
+                tsa TEXT, tsa_val TEXT,
+                criotubo TEXT, placa_de_petri TEXT, fluxo_laminar TEXT, ultrafreezer TEXT,
                 criado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
-    # Busca as informações diretamente do banco de dados
     try:
-        linhas = consultar("""
-            SELECT id, tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
-            FROM dados_brutos 
-            ORDER BY id DESC
-        """)
+        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, glicerina_val, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
     except Exception:
         linhas = []
         
     df_brutos = pd.DataFrame(linhas)
     lista_ids = df_brutos["id"].tolist() if not df_brutos.empty else []
 
-    # 🎛️ Menu de Navegação interno da aba
-    modo = st.radio("Ação", ["📋 Visualizar Planilha", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
-
+    modo = st.radio("Ação", ["📋 Visualizar Planilha & Alertas", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ============================================================
-    # MODO VISUALIZAR PLANILHA (COM CARDS DE ALERTA PROFISSIONAIS)
+    # MODO 1: VISUALIZAR PLANILHA COM ALERTAS COLORIDOS
     # ============================================================
-    if modo == "📋 Visualizar Planilha":
+    if modo == "📋 Visualizar Planilha & Alertas":
         if df_brutos.empty:
-            st.info("Nenhum dado bruto encontrado. Use a aba de inserção manual ou faça o upload da planilha para começar.")
+            st.info("Nenhum dado bruto encontrado. Cadastre manualmente ou via importação.")
         else:
-            # 💎 IDEIA DE OURO RENDERIZADA: Painel Visual de Insumos Críticos
-            st.markdown("### 🧪 Status de Insumos Críticos e Equipamentos")
+            st.markdown("### 🚦 Status e Alertas de Validade")
             
-            # Pega o registro mais recente para os Cards Indicadores
-            ultimo_registro = df_brutos.iloc[0]
-            
-            c1, c2, c3 = st.columns(3)
-            
-            with c1:
-                val_tsb = str(ultimo_registro['tsb']).strip()
-                st.metric(
-                    label="🧫 Meio de Cultura TSB (Lote Ativo)", 
-                    value=val_tsb if val_tsb else "Não Informado",
-                    delta="Dentro da Validade" if val_tsb else "Aviso: Sem Lote",
-                    delta_color="normal" if val_tsb else "inverse"
-                )
-                
-            with c2:
-                val_tsa = str(ultimo_registro['tsa']).strip()
-                st.metric(
-                    label="🧫 Meio de Cultura TSA (Lote Ativo)", 
-                    value=val_tsa if val_tsa else "Não Informado",
-                    delta="Aprovado no Controle" if val_tsa else "Pendente",
-                    delta_color="normal" if val_tsa else "off"
-                )
-                
-            with c3:
-                val_freezer = str(ultimo_registro['ultrafreezer']).strip()
-                st.metric(
-                    label="❄️ Monitoramento Ultra-Freezer", 
-                    value=val_freezer if val_freezer else "—", 
-                    delta="Temperatura Estável -80°C" if val_freezer else "Sem Registro",
-                    delta_color="normal" if val_freezer else "inverse"
-                )
-                
-            st.markdown("<br><hr>", unsafe_allow_html=True)
-            
-            # Exibição organizada da tabela principal
-            config_brutos = {
-                "id": "ID", "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
-                "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
-            }
-            st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
-            st.caption(f"Painel gerencial atualizado • Total de lotes monitorados: {len(df_brutos)} linhas.")
+            # Função interna para calcular a cor com base no vencimento
+            def mapear_status_validade(data_texto):
+                if not data_texto or data_texto == "—":
+                    return "⚪ Sem Data"
+                try:
+                    data_val = pd.to_datetime(data_texto).date()
+                    hoje = pd.Timestamp.now().date()
+                    dias_restantes = (data_val - hoje).days
+                    
+                    if dias_restantes < 0:
+                        return "🔴 VENCIDO"
+                    elif dias_restantes <= 30:
+                        return f"🟡 Vence em {dias_restantes} dias"
+                    else:
+                        return "🟢 Regular"
+                except Exception:
+                    return "⚪ Erro na data"
 
+            # Cria as colunas de alerta visual na tabela
+            df_visualizacao = df_brutos.copy()
+            df_visualizacao["STATUS TSB"] = df_visualizacao["tsb_val"].apply(mapear_status_validade)
+            df_visualizacao["STATUS TSA"] = df_visualizacao["tsa_val"].apply(mapear_status_validade)
+            
+            # Formata a tabela organizada para a Natália ver
+            st.dataframe(
+                df_visualizacao[[
+                    "id", "tsb", "tsb_val", "STATUS TSB", 
+                    "tsa", "tsa_val", "STATUS TSA", 
+                    "glicerina", "criotubo", "placa_de_petri", "fluxo_laminar", "ultrafreezer"
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "id": "ID", "tsb": "LOTE TSB", "tsb_val": "VALIDADE TSB",
+                    "tsa": "LOTE TSA", "tsa_val": "VALIDADE TSA",
+                    "glicerina": "GLICERINA", "criotubo": "CRIOTUBO",
+                    "placa_de_petri": "PLACA PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
+                }
+            )
+            
     # ============================================================
-    # MODO EXCLUIR LINHA
+    # MODO 2: EXCLUIR REGISTRO
     # ============================================================
     elif modo == "❌ Excluir Linha":
-        if not lista_ids:
-            st.info("Nenhum registro bruto encontrado para excluir.")
-            return
-        id_selecionado = st.selectbox("Selecione o ID do registro que deseja remover:", lista_ids)
-        reg_excluir = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
-        
-        st.warning(f"⚠️ Atenção: Você está prestes a excluir definitivamente o registro de ID {id_selecionado}.")
-        st.markdown(f"**Dados do Registro:** TSB: `{reg_excluir['tsb']}` | TSA: `{reg_excluir['tsa']}` | Ultrafreezer: `{reg_excluir['ultrafreezer']}`")
-        
-        confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente o registro {id_selecionado}")
-        
-        if st.button("❌ Deletar Permanentemente", type="primary", disabled=not confirmar_exclusao, use_container_width=True):
-            with conectar() as conexao:
-                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_selecionado,))
-            st.success(f"Registro {id_selecionado} deletado com sucesso!")
+        if not lista_ids: return
+        id_sel = st.selectbox("Selecione o ID para remover:", lista_ids)
+        if st.button("❌ Deletar Permanentemente", type="primary", use_container_width=True):
+            with conectar() as conexao: 
+                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_sel,))
+            st.success("Deletado com sucesso!")
             st.rerun()
 
     # ============================================================
-    # MODO INSERIR OU EDITAR REGISTRO
+    # MODO 3: INSERIR OU EDITAR COM SELETOR DE CALENDÁRIO
     # ============================================================
     else:
-        if modo == "✏️ Editar Linha":
-            if not lista_ids:
-                st.info("Nenhum registro bruto encontrado para editar.")
-                return
-            id_selecionado = st.selectbox("Selecione o ID do registro que deseja editar:", lista_ids)
-            reg = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
-        else:
-            reg = {}
+        reg = df_brutos[df_brutos["id"] == st.selectbox("Selecione o ID para editar:", lista_ids)].iloc[0].to_dict() if modo == "✏️ Editar Linha" and lista_ids else {}
+        
+        with st.form("form_brutos_validades"):
+            st.markdown("##### 🧫 Meios de Cultura (Lote e Validade)")
+            col_tsb1, col_tsb2 = st.columns([2, 1])
+            tsb = col_tsb1.text_input("Lote TSB", value=reg.get("tsb", ""))
+            dt_tsb = pd.to_datetime(reg.get("tsb_val", ""), errors="coerce")
+            tsb_val = col_tsb2.date_input("Validade TSB", value=None if pd.isna(dt_tsb) else dt_tsb.date(), format="DD/MM/YYYY")
 
-        with st.form("form_dados_brutos_avancado"):
-            c1, c2, c3 = st.columns(3)
-            tsb = c1.text_input("TSB", value=reg.get("tsb", ""), placeholder="Lote / Validade")
-            glicerina = c2.text_input("GLICERINA", value=reg.get("glicerina", ""))
-            tsa = c3.text_input("TSA", value=reg.get("tsa", ""))
+            col_tsa1, col_tsa2 = st.columns([2, 1])
+            tsa = col_tsa1.text_input("Lote TSA", value=reg.get("tsa", ""))
+            dt_tsa = pd.to_datetime(reg.get("tsa_val", ""), errors="coerce")
+            tsa_val = col_tsa2.date_input("Validade TSA", value=None if pd.isna(dt_tsa) else dt_tsa.date(), format="DD/MM/YYYY")
 
-            c4, c5, c6 = st.columns(3)
-            criotubo = c4.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
-            placa_de_petri = c5.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
-            fluxo_laminar = c6.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
-
-            c7, _, _ = st.columns(3)
-            ultrafreezer = c7.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
-
-            texto_botao = "Salvar Alterações" if modo == "✏️ Editar Linha" else "Adicionar Linha aos Dados Brutos"
-            salvar_bruto = st.form_submit_button(texto_botao, type="primary")
-
-        if salvar_bruto:
-            with conectar() as conexao:
-                if modo == "✏️ Editar Linha":
-                    conexao.execute("""
-                        UPDATE dados_brutos 
-                        SET tsb=?, glicerina=?, tsa=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=?
-                        WHERE id=?
-                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer, id_selecionado))
-                    st.success("Alterações salvas com sucesso!")
-                else:
-                    conexao.execute("""
-                        INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer))
-                    st.success("Linha de dados brutos adicionada com sucesso!")
-            st.rerun()
+            st.markdown("---")
+            st.markdown("##### 📦 Outros Insumos e Equipamentos")
+            c1, c2, c3, c4 = st.columns(4)
+            glicerina = c1.text_input("GLICERINA", value=reg.get("glicerina", ""))
+            criotubo = c2.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
+            placa = c3.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
+            fluxo = c4.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
+            
+            ultrafreezer = st.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
+            
+            if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
+                t_val = tsb_val.isoformat() if tsb_val else ""
+                a_val = tsa_val.isoformat() if tsa_val else ""
+                
+                with conectar() as conexao:
+                    if modo == "✏️ Editar Linha":
+                        conexao.execute("""
+                            UPDATE dados_brutos 
+                            SET tsb=?, tsb_val=?, glicerina=?, tsa=?, tsa_val=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=? 
+                            WHERE id=?
+                        """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer, id_sel))
+                    else:
+                        conexao.execute("""
+                            INSERT INTO dados_brutos (tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer))
+                st.success("Dados salvos e monitoramento ativado!")
+                st.rerun()
 
 
 
