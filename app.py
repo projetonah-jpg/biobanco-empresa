@@ -1780,9 +1780,8 @@ def pagina_dados_brutos():
 
             salvar_bruto = st.form_submit_button("Adicionar Linha aos Dados Brutos", type="primary")
 
-               if salvar_bruto:
+                      if salvar_bruto:
             with conectar() as conexao:
-                # 🛠️ Força a criação da tabela física caso ela ainda não exista no banco
                 conexao.execute("""
                     CREATE TABLE IF NOT EXISTS dados_brutos (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1796,8 +1795,6 @@ def pagina_dados_brutos():
                         criado_em TEXT DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
-                
-                # Realiza a gravação das caixas de texto de forma segura
                 conexao.execute(
                     """
                     INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
@@ -1805,9 +1802,9 @@ def pagina_dados_brutos():
                     """,
                     (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
                 )
-                
             st.success("Linha de dados brutos adicionada com sucesso!")
             st.rerun()
+
 
 
 
