@@ -915,7 +915,7 @@ def pagina_dashboard():
         else:
             st.info("Aguardando registros de identificação.")
 
-        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR BOTÕES HORIZONTAIS
+        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS (SELECTBOX)
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.subheader("📈 Análise de Tendência de Contaminação por Período")
         
@@ -932,15 +932,16 @@ def pagina_dashboard():
             df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
             df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
             
+            # Filtros dinâmicos compactados em listas suspensas de visual limpo
             filt1, filt2 = st.columns(2)
             
             with filt1:
                 opcoes_area = ["Todas as Áreas"] + sorted(df_linha_dados["area"].unique().tolist())
-                area_sel = st.radio("🏢 Filtrar por Área:", opcoes_area, horizontal=True)
+                area_sel = st.selectbox("🏢 Filtrar por Área:", opcoes_area)
                 
             with filt2:
                 opcoes_ponto = ["Todos os Pontos"] + sorted(df_linha_dados["collection_point"].unique().tolist())
-                ponto_sel = st.radio("📍 Filtrar por Ponto de Coleta:", opcoes_ponto, horizontal=True)
+                ponto_sel = st.selectbox("📍 Filtrar por Ponto de Coleta:", opcoes_ponto)
             
             if area_sel != "Todas as Áreas":
                 df_linha_dados = df_linha_dados[df_linha_dados["area"] == area_sel]
@@ -963,7 +964,6 @@ def pagina_dashboard():
                     color_discrete_sequence=px.colors.qualitative.Safe
                 )
                 
-                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
                 fig_linha_dinamica.update_layout(
                     plot_bgcolor="#f8fafc",
                     paper_bgcolor="white",
