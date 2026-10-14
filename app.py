@@ -876,7 +876,7 @@ def pagina_dashboard():
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # Módulos superiores de métricas
+    # Módulos superiores de métricas (Cards com bordas roxas)
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -909,18 +909,18 @@ def pagina_dashboard():
         st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        # Gráfico de barras horizontal ocupando a largura total de forma limpa
+        # 💜 Gráfico de barras horizontal ocupando a largura total na cor roxa corporativa
         if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
             resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
             if not resumo_micro.empty:
-                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
+                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#6c5b9b"])
                 st.plotly_chart(grafico_barras, use_container_width=True)
             else:
                 st.info("Nenhum microrganismo identificado ainda.")
         else:
             st.info("Aguardando registros de identificação.")
 
-        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS (SELECTBOX)
+        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.subheader("📈 Análise de Tendência de Contaminação por Período")
         
@@ -937,7 +937,7 @@ def pagina_dashboard():
             df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
             df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
             
-            # Filtros dinâmicos compactados em listas suspensas de visual limpo
+            # Filtros dinâmicos compactados em listas suspensas (Selectbox)
             filt1, filt2 = st.columns(2)
             
             with filt1:
@@ -969,6 +969,7 @@ def pagina_dashboard():
                     color_discrete_sequence=px.colors.qualitative.Safe
                 )
                 
+                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
                 fig_linha_dinamica.update_layout(
                     plot_bgcolor="#f8fafc",
                     paper_bgcolor="white",
