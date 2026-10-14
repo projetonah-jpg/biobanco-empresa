@@ -1736,7 +1736,7 @@ def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
     st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
 
-    # Busca as informações diretamente do banco de dados
+    # Busca as informações diretamente do banco de dados de forma segura
     try:
         linhas = consultar("""
             SELECT tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
@@ -1748,7 +1748,7 @@ def pagina_dados_brutos():
         
     df_brutos = pd.DataFrame(linhas)
 
-    # Abas internas para organizar a tela
+    # Criação das abas de visualização e cadastro manual
     tab_visualizar, tab_cadastro = st.tabs(["📋 Visualizar Planilha", "➕ Inserir Linha Manual"])
 
     with tab_visualizar:
@@ -1763,7 +1763,7 @@ def pagina_dados_brutos():
             st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
             st.caption(f"Total de registros brutos armazenados: {len(df_brutos)} linhas.")
 
-        with tab_cadastro:
+    with tab_cadastro:
         with st.form("form_dados_brutos"):
             c1, c2, c3 = st.columns(3)
             tsb = c1.text_input("TSB", placeholder="Lote / Validade")
@@ -1782,6 +1782,7 @@ def pagina_dados_brutos():
 
         if salvar_bruto:
             with conectar() as conexao:
+                # Garante que a tabela exista fisicamente no arquivo do banco
                 conexao.execute("""
                     CREATE TABLE IF NOT EXISTS dados_brutos (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1795,6 +1796,8 @@ def pagina_dados_brutos():
                         criado_em TEXT DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
+                
+                # Realiza o insert na tabela criada
                 conexao.execute(
                     """
                     INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
@@ -1802,6 +1805,7 @@ def pagina_dados_brutos():
                     """,
                     (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
                 )
+                
             st.success("Linha de dados brutos adicionada com sucesso!")
             st.rerun()
 
