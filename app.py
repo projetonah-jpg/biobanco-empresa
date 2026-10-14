@@ -881,10 +881,9 @@ def pagina_dashboard():
         st.info("Sem dados cadastrados.")
         return
 
-    # 📊 Cálculos Matemáticos Automáticos baseados no Banco de Dados
+    # 📊 Cálculos Matemáticos baseados no Banco de Dados
     total_amostras = len(df_amostras)
     
-    # Identifica os códigos que possuem o campo IDENTIFICATION preenchido
     codigos_identificados = []
     if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
         df_validas = df_identificacoes[df_identificacoes["identification"].fillna("").str.strip().ne("")]
@@ -893,21 +892,18 @@ def pagina_dashboard():
     total_identificadas = len(codigos_identificados)
     total_nao_identificadas = max(0, total_amostras - total_identificadas)
 
-    # Cálculo das Porcentagens para as Métricas de Cima
     pct_identificadas = (total_identificadas / total_amostras * 100) if total_amostras > 0 else 0
     pct_nao_identificadas = (total_nao_identificadas / total_amostras * 100) if total_amostras > 0 else 0
 
-    # Inicializa o estado do filtro de clique se não existir
     if "filtro_clique" not in st.session_state:
         st.session_state.filtro_clique = "Todos"
 
-    # Botão para redefinir e ver tudo
     if st.session_state.filtro_clique != "Todos":
         if st.button("🔄 Mostrar Todos os Gráficos / Resetar Filtro"):
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # 🟢 Renderização dos 3 cartões de métricas no topo (Com Porcentagens integradas)
+    # 🟢 Módulos superiores de métricas
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -929,85 +925,37 @@ def pagina_dashboard():
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
+    config_colunas = {"code": "CODE", "ponto": "OBSERVATION", "origin": "ORIGIN", "area": "AREA", "sample": "SAMPLE", "collection_point": "COLLECTION POINT", "sampling": "SAMPLING", "method": "METHOD", "frequencia": "FREQUENCY", "analista": "ANALYST", "data": "DATA", "resultado_final": "RESULT"}
 
-    # ⚙️ Configuração padrão de nomes maiúsculos para as tabelas do Dashboard
-    config_colunas = {
-        "code": "CODE",
-        "ponto": "OBSERVATION",
-        "origin": "ORIGIN",
-        "area": "AREA",
-        "sample": "SAMPLE",
-        "collection_point": "COLLECTION POINT",
-        "sampling": "SAMPLING",
-        "method": "METHOD",
-        "frequencia": "FREQUENCY",
-        "analista": "ANALYST",
-        "data": "DATA",
-        "resultado_final": "RESULT"
-    }
-
-    # 🛑 FLUXO DINÂMICO: Mostra as tabelas filtradas com os cabeçalhos corrigidos
     if st.session_state.filtro_clique == "Identificadas":
         st.subheader("📋 Amostras Identificadas")
-        df_filtrado = df_amostras[df_amostras["code"].isin(codigos_identificados)]
-        st.dataframe(df_filtrado, use_container_width=True, hide_index=True, column_config=config_colunas)
+        st.dataframe(df_amostras[df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     elif st.session_state.filtro_clique == "Nao_Identificadas":
         st.subheader("📋 Amostras Aguardando Identificação")
-        df_filtrado = df_amostras[~df_amostras["code"].isin(codigos_identificados)]
-        st.dataframe(df_filtrado, use_container_width=True, hide_index=True, column_config=config_colunas)
+        st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        # Se estiver em "Todos", renderiza os gráficos originais e o gráfico de tendência abaixo
         esquerda, direita = st.columns(2)
 
         with esquerda:
             if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-                resumo_micro = (
-                    df_identificacoes["identification"]
-                    .replace("", pd.NA)
-                    .dropna()
-                    .value_counts()
-                    .rename_axis("IDENTIFICAÇÃO")
-                    .reset_index(name="OCORRÊNCIAS")
-                )
-                
+                resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
                 if not resumo_micro.empty:
-                    grafico_barras = px.bar(
-                        resumo_micro,
-                        x="OCORRÊNCIAS",
-                        y="IDENTIFICAÇÃO",
-                        orientation="h",
-                        text_auto=True,
-                        title="Ocorrências por identificação",
-                        color_discrete_sequence=["#13877c"]
-                    )
+                    grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
                     st.plotly_chart(grafico_barras, use_container_width=True)
                 else:
-                    st.info("Nenhum microrganismo identificado ainda para gerar o gráfico.")
+                    st.info("Nenhum microrganismo identificado ainda.")
             else:
                 st.info("Aguardando registros de identificação.")
 
         with direita:
-            # 🍕 Gráfico de Pizza configurado para mostrar a Porcentagem diretamente nas fatias
-            grafico_pizza = px.pie(
-                df_amostras, 
-                names="resultado_final", 
-                title="Status das Coletas (Conformidade)",
-                hole=0.45,
-                color_discrete_sequence=["#13877c", "#12343b"]
-            )
-            # Força a exibição do texto com o valor e a porcentagem dentro/fora da fatia
-            grafico_pizza.update_traces(
-                textinfo="percent+label", 
-                textposition="inside",
-                insidetextorientation="radial"
-            )
+            grafico_pizza = px.pie(df_amostras, names="resultado_final", title="Status das Coletas (Conformidade)", hole=0.45, color_discrete_sequence=["#13877c", "#12343b"])
+            grafico_pizza.update_traces(textinfo="percent+label", textposition="inside", insidetextorientation="radial")
             st.plotly_chart(grafico_pizza, use_container_width=True)
 
-        # 📈 GRÁFICO DE TENDÊNCIA MICROBIOLÓGICA AJUSTADO
+        # 📈 Histórico de Tendência Microbiológica
         st.markdown("<br><hr>", unsafe_allow_html=True)
-
         st.subheader("📊 Histórico de Tendência Microbiológica")
         
         dados_tendencia = consultar("""
@@ -1030,34 +978,16 @@ def pagina_dashboard():
                     df_t = df_t[df_t["origin"] == origem_selecionada]
                 
                 df_t["mes_num"] = df_t["datetime"].dt.month
-                nomes_meses = {
-                    1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
-                    7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
-                }
+                nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
                 df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
                 
-                df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias")
-                df_agrupado = df_agrupado.sort_values(by="mes_num")
+                df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias").sort_values(by="mes_num")
                 
                 if not df_agrupado.empty:
-                    grafico_linha = px.line(
-                        df_agrupado, x="Mês", y="Colônias", color="identification", markers=True,
-                        title=f"Bacterial Identification by Genus — {origem_selecionada}", 
-                        labels={"identification": "Genus"},
-                        color_discrete_sequence=px.colors.qualitative.Bold
-                    )
-                    
-                    grafico_linha.update_layout(
-                        xaxis_title="Month", yaxis_title="# of Colonies Observed",
-                        xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())}
-                    )
+                    grafico_linha = px.line(df_agrupado, x="Mês", y="Colônias", color="identification", markers=True, title=f"Bacterial Identification by Genus — {origem_selecionada}", labels={"identification": "Genus"}, color_discrete_sequence=px.colors.qualitative.Bold)
+                    grafico_linha.update_layout(xaxis_title="Month", yaxis_title="# of Colonies Observed", xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())})
                     st.plotly_chart(grafico_linha, use_container_width=True)
-                else:
-                    st.info(f"Nenhum dado encontrado para a origem: {origem_selecionada}")
-            else:
-                st.info("Aguardando amostras com datas válidas.")
-        else:
-            st.info("Nenhum microrganismo identificado encontrado no banco.")
+
 
 
 
