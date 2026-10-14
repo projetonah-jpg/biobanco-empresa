@@ -530,38 +530,6 @@ def criar_banco():
                 atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS identificacoes (
-                code TEXT PRIMARY KEY,
-                form TEXT,
-                margin TEXT,
-                pigment TEXT,
-                gram_stain TEXT,
-                catalase TEXT,
-                koh TEXT,
-                oxidase TEXT,
-                outsourced_method TEXT,
-                identification TEXT,
-                report TEXT,
-                company TEXT,
-                end_date TEXT,
-                atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (code)
-                    REFERENCES amostras(code)
-                    ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS dados_brutos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tsb TEXT,
-                glicerina TEXT,
-                tsa TEXT,
-                criotubo TEXT,
-                placa_de_petri TEXT,
-                fluxo_laminar TEXT,
-                ultrafreezer TEXT,
-                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-            );
             """
         )
 def inserir_dados_iniciais(conexao):
