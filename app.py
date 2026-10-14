@@ -849,7 +849,7 @@ def pagina_dashboard():
         st.info("Sem dados cadastrados.")
         return
 
-    # 📊 Cálculos Matemáticos baseados no Banco de Dados
+    # Cálculos Matemáticos baseados no Banco de Dados
     total_amostras = len(df_amostras)
     
     codigos_identificados = []
@@ -871,7 +871,7 @@ def pagina_dashboard():
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # 🟢 Módulos superiores de métricas
+    # Módulos superiores de métricas
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -904,57 +904,70 @@ def pagina_dashboard():
         st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        esquerda, direita = st.columns(2)
-
-        with esquerda:
-            if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-                resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-                if not resumo_micro.empty:
-                    grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
-                    st.plotly_chart(grafico_barras, use_container_width=True)
-                else:
-                    st.info("Nenhum microrganismo identificado ainda.")
+        # O gráfico de barras horizontal agora ocupa a largura total de forma limpa
+        if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
+            resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
+            if not resumo_micro.empty:
+                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
+                st.plotly_chart(grafico_barras, use_container_width=True)
             else:
-                st.info("Aguardando registros de identificação.")
+                st.info("Nenhum microrganismo identificado ainda.")
+        else:
+            st.info("Aguardando registros de identificação.")
 
-        with direita:
-            grafico_pizza = px.pie(df_amostras, names="resultado_final", title="Status das Coletas (Conformidade)", hole=0.45, color_discrete_sequence=["#13877c", "#12343b"])
-            grafico_pizza.update_traces(textinfo="percent+label", textposition="inside", insidetextorientation="radial")
-            st.plotly_chart(grafico_pizza, use_container_width=True)
-
-        # 📈 Histórico de Tendência Microbiológica
+        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR BOTÕES
         st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.subheader("📊 Histórico de Tendência Microbiológica")
+        st.subheader("📈 Análise de Tendência de Contaminação por Período")
         
-        dados_tendencia = consultar("""
-            SELECT a.origin, a.data, i.identification
-            FROM amostras a
-            INNER JOIN identificacoes i ON a.code = i.code
-            WHERE i.identification IS NOT NULL AND i.identification != ''
-        """)
+        df_linha_dados = df_amostras.merge(df_identificacoes[["code", "identification"]], on="code", how="inner")
+        df_linha_dados = df_linha_dados[df_linha_dados["identification"].fillna("").str.strip() != ""]
         
-        if dados_tendencia:
-            df_t = pd.DataFrame(dados_tendencia)
-            df_t["datetime"] = pd.to_datetime(df_t["data"], errors="coerce")
-            df_t = df_t.dropna(subset=["datetime"])
+        if df_linha_dados.empty:
+            st.info("Aguardando dados com identificações completas para renderizar o gráfico de linhas.")
+        else:
+            df_linha_dados["datetime"] = pd.to_datetime(df_linha_dados["data"], errors="coerce")
+            df_linha_dados = df_linha_dados.dropna(subset=["datetime"]).sort_values(by="datetime")
             
-            if not df_t.empty:
-                lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
-                origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
+            nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
+            df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
+            df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
+            
+            filt1, filt2 = st.columns(2)
+            
+            with filt1:
+                opcoes_area = ["Todas as Áreas"] + sorted(df_linha_dados["area"].unique().tolist())
+                area_sel = st.radio("🏢 Filtrar por Área:", opcoes_area, horizontal=True)
                 
-                if origem_selecionada != "Todas as Origens":
-                    df_t = df_t[df_t["origin"] == origem_selecionada]
+            with filt2:
+                opcoes_ponto = ["Todos os Pontos"] + sorted(df_linha_dados["collection_point"].unique().tolist())
+                ponto_sel = st.radio("📍 Filtrar por Ponto de Coleta:", opcoes_ponto, horizontal=True)
+            
+            if area_sel != "Todas as Áreas":
+                df_linha_dados = df_linha_dados[df_linha_dados["area"] == area_sel]
+            if ponto_sel != "Todos os Pontos":
+                df_linha_dados = df_linha_dados[df_linha_dados["collection_point"] == ponto_sel]
                 
-                df_t["mes_num"] = df_t["datetime"].dt.month
-                nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
-                df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
-                
-                df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias").sort_values(by="mes_num")
-                
-                if not df_agrupado.empty:
-                    grafico_linha = px.line(df_agrupado, x="Mês", y="Colônias", color="identification", markers=True, title=f"Bacterial Identification by Genus — {origem_selecionada}", labels={"identification": "Genus"}, color_discrete_sequence=px.colors.qualitative.Bold)
-                    grafico_linha.update_layout(xaxis_title="Month", yaxis_title="# of Colonies Observed", xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())})
-                    st.plotly_chart(grafico_linha, use_container_width=True)
+            df_agrupado_linha = df_linha_dados.groupby(["Mês_Num", "Mês", "identification"]).size().reset_index(name="Quantidade").sort_values(by="Mês_Num")
+            
+            if df_agrupado_linha.empty:
+                st.warning("Nenhum registro encontrado para essa combinação de filtros.")
+            else:
+                fig_linha_dinamica = px.line(
+                    df_agrupado_linha,
+                    x="Mês",
+                    y="Quantidade",
+                    color="identification",
+                    markers=True,
+                    title=f"Evolução Microbiológica — {area_sel} | {ponto_sel}",
+                    labels={"identification": "Gênero Isolado", "Quantidade": "Contagem de Colônias"},
+                    color_discrete_sequence=px.colors.qualitative.Safe
+                )
+                fig_linha_dinamica.update_layout(
+                    plot_bgcolor="#f8fafc",
+                    paper_bgcolor="white",
+                    xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())}
+                )
+                st.plotly_chart(fig_linha_dinamica, use_container_width=True)
 
 
 
