@@ -1731,6 +1731,68 @@ def pagina_dados():
             )
 
 
+
+def pagina_dados_brutos():
+    st.title("🗃️ Registro de Dados Brutos (Raw Data)")
+    st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
+
+    # Busca as informações diretamente do banco de dados
+    try:
+        linhas = consultar("""
+            SELECT tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
+            FROM dados_brutos 
+            ORDER BY id DESC
+        """)
+    except Exception:
+        linhas = []
+        
+    df_brutos = pd.DataFrame(linhas)
+
+    # Abas internas para organizar a tela
+    tab_visualizar, tab_cadastro = st.tabs(["📋 Visualizar Planilha", "➕ Inserir Linha Manual"])
+
+    with tab_visualizar:
+        if df_brutos.empty:
+            st.info("Nenhum dado bruto encontrado. Use a aba de importação ou cadastre manualmente ao lado.")
+        else:
+            config_brutos = {
+                "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
+                "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", 
+                "ultrafreezer": "ULTRAFREEZER"
+            }
+            st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
+            st.caption(f"Total de registros brutos armazenados: {len(df_brutos)} linhas.")
+
+    with tab_cadastro:
+        with st.form("form_dados_brutos"):
+            c1, c2, c3 = st.columns(3)
+            tsb = c1.text_input("TSB", placeholder="Lote / Validade")
+            glicerina = c2.text_input("GLICERINA")
+            tsa = c3.text_input("TSA")
+
+            c4, c5, c6 = st.columns(3)
+            criotubo = c4.text_input("CRIOTUBO")
+            placa_de_petri = c5.text_input("PLACA DE PETRI")
+            fluxo_laminar = c6.text_input("FLUXO LAMINAR")
+
+            c7, _, _ = st.columns(3)
+            ultrafreezer = c7.text_input("ULTRAFREEZER")
+
+            salvar_bruto = st.form_submit_button("Adicionar Linha aos Dados Brutos", type="primary")
+
+        if salvar_bruto:
+            with conectar() as conexao:
+                conexao.execute(
+                    """
+                    INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
+                )
+            st.success("Linha de dados brutos adicionada com sucesso!")
+            st.rerun()
+
+
 # ============================================================
 # INICIALIZAÇÃO DO SISTEMA
 # ============================================================
@@ -1769,6 +1831,7 @@ pagina = st.sidebar.radio(
         "Identificação",
         "Armazenamento",
         "Dados",
+        "Dados Brutos",
     ],
 )
 
@@ -1822,6 +1885,9 @@ elif pagina == "Identificação":
 
 elif pagina == "Armazenamento":
     pagina_armazenamento()
+
+elif pagina == "Dados Brutos":
+    pagina_dados_brutos()
 
 elif pagina == "Dados":
     pagina_dados()
