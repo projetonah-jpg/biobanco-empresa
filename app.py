@@ -904,7 +904,7 @@ def pagina_dashboard():
         st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        # O gráfico de barras horizontal agora ocupa a largura total de forma limpa
+        # Gráfico de barras horizontal ocupando a largura total de forma limpa
         if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
             resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
             if not resumo_micro.empty:
@@ -915,7 +915,7 @@ def pagina_dashboard():
         else:
             st.info("Aguardando registros de identificação.")
 
-        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR BOTÕES
+        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR BOTÕES HORIZONTAIS
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.subheader("📈 Análise de Tendência de Contaminação por Período")
         
@@ -962,14 +962,22 @@ def pagina_dashboard():
                     labels={"identification": "Gênero Isolado", "Quantidade": "Contagem de Colônias"},
                     color_discrete_sequence=px.colors.qualitative.Safe
                 )
+                
+                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
                 fig_linha_dinamica.update_layout(
                     plot_bgcolor="#f8fafc",
                     paper_bgcolor="white",
-                    xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())}
+                    yaxis=dict(
+                        tickformat="d",
+                        dtick=1,
+                        autorange=True
+                    ),
+                    xaxis=dict(
+                        categoryorder='array', 
+                        categoryarray=list(nomes_meses.values())
+                    )
                 )
                 st.plotly_chart(fig_linha_dinamica, use_container_width=True)
-
-
 
 
 
