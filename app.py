@@ -550,17 +550,20 @@ def criar_banco():
                     REFERENCES amostras(code)
                     ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS dados_brutos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tsb TEXT,
+                glicerina TEXT,
+                tsa TEXT,
+                criotubo TEXT,
+                placa_de_petri TEXT,
+                fluxo_laminar TEXT,
+                ultrafreezer TEXT,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
-
-        quantidade = conexao.execute(
-            "SELECT COUNT(*) FROM amostras"
-        ).fetchone()[0]
-
-        if quantidade == 0:
-            inserir_dados_iniciais(conexao)
-
-
 def inserir_dados_iniciais(conexao):
     for amostra in AMOSTRAS_INICIAIS:
         valores = [
