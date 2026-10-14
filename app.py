@@ -1636,7 +1636,8 @@ def gerar_excel():
             planilha.auto_filter.ref = planilha.dimensions
             for coluna in planilha.columns:
                 maior_tamanho = max(len(str(celula.value or "")) for celula in coluna)
-                planilha.column_dimensions[coluna.column_letter].width = min(maior_tamanho + 2, 38)
+                planilha.column_dimensions[coluna[0].column_letter].width = min(maior_tamanho + 2, 38)
+
                 
     return arquivo.getvalue()
 
