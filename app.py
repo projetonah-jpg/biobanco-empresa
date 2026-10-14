@@ -1609,89 +1609,108 @@ def importar_excel(arquivo):
     )
 
 
+def gerar_excel():
+    amostras = obter_amostras()
+    identificacoes = obter_identificacoes()
+    
+    # Prepara a aba de armazenamento de isolados
+    armazenamento = identificacoes[["code", "gram_stain", "identification"]].copy() if not identificacoes.empty else pd.DataFrame(columns=["code", "gram_stain", "identification"])
+    
+    # Busca os dados brutos cadastrados para exportar junto no relatório
+    try:
+        linhas_brutas = consultar("SELECT tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
+        df_export_brutos = pd.DataFrame(linhas_brutas)
+    except Exception:
+        df_export_brutos = pd.DataFrame(columns=["tsb", "glicerina", "tsa", "criotubo", "placa_de_petri", "fluxo_laminar", "ultrafreezer"])
+
+    arquivo = BytesIO()
+
+    with pd.ExcelWriter(arquivo, engine="openpyxl") as writer:
+        amostras.to_excel(writer, sheet_name="Registro", index=False)
+        identificacoes.to_excel(writer, sheet_name="Identification", index=False)
+        armazenamento.to_excel(writer, sheet_name="Storage", index=False)
+        df_export_brutos.to_excel(writer, sheet_name="Dados Brutos", index=False)
+
+        for planilha in writer.book.worksheets:
+            planilha.freeze_panes = "A2"
+            planilha.auto_filter.ref = planilha.dimensions
+            for coluna in planilha.columns:
+                maior_tamanho = max(len(str(celula.value or "")) for celula in coluna)
+                planilha.column_dimensions[coluna.column_letter].width = min(maior_tamanho + 2, 38)
+                
+    return arquivo.getvalue()
+
+
+def normalizar_coluna_sistema(nome):
+    conversoes = {
+        "CODE": "code", "PONTO": "ponto", "ORIGIN": "origin", "AREA": "area", "SAMPLE": "sample",
+        "COLLECTION POINT": "collection_point", "SAMPLING": "sampling", "METHOD": "method",
+        "FREQUÊNCIA": "frequencia", "FREQUENCIA": "frequencia", "ANALISTA": "analista", "DATA": "data",
+        "RESULTADO": "resultado", "FORM": "form", "MARGIN": "margin", "PIGMENT": "pigment",
+        "GRAM STAIN": "gram_stain", "CATALASE": "catalase", "KOH": "koh", "OXIDASE": "oxidase",
+        "OUTSOURCED METHOD": "outsourced_method", "IDENTIFICATION": "identification", "REPORT": "report",
+        "COMPANY": "company", "END DATE": "end_date",
+        "TSB": "tsb", "GLICERINA": "glicerina", "TSA": "tsa", "CRIOTUBO": "criotubo",
+        "PLACA DE PETRI": "placa_de_petri", "FLUXO LAMINAR": "fluxo_laminar", "ULTRAFREEZER": "ultrafreezer"
+    }
+    return conversoes.get(str(nome).strip().upper(), str(nome).strip().lower().replace(" ", "_"))
+
+
 def importar_excel(arquivo):
     with conectar() as conexao:
-        # 🟢 1. LEITURA AUTOMÁTICA DA ABA DE DADOS BRUTOS (NOVA)
         try:
-            # Lê a aba de insumos diretamente do arquivo enviado
             df_brutos = pd.read_excel(arquivo, sheet_name="Dados Brutos")
-            
-            # Normaliza os cabeçalhos para letras minúsculas (padrão SQLite)
-            df_brutos.columns = [normalizar_coluna(col) for col in df_brutos.columns]
-            
-            # Garante que as colunas críticas existam na tabela carregada
+            df_brutos.columns = [normalizar_coluna_sistema(col) for col in df_brutos.columns]
             colunas_obrigatorias = ["tsb", "glicerina", "tsa", "criotubo", "placa_de_petri", "fluxo_laminar", "ultrafreezer"]
             for col in colunas_obrigatorias:
-                if col not in df_brutos.columns:
-                    df_brutos[col] = ""
-                    
+                if col not in df_brutos.columns: df_brutos[col] = ""
             df_brutos = df_brutos.fillna("")
             
-            # Garante a existência física da tabela e limpa dados antigos para atualizar
-            conexao.execute("""
-                CREATE TABLE IF NOT EXISTS dados_brutos (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    tsb TEXT,
-                    glicerina TEXT,
-                    tsa TEXT,
-                    criotubo TEXT,
-                    placa_de_petri TEXT,
-                    fluxo_laminar TEXT,
-                    ultrafreezer TEXT,
-                    criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
             conexao.execute("DELETE FROM dados_brutos")
-            
-            # Grava as linhas da planilha de uma só vez no banco de dados
             for _, linha in df_brutos.iterrows():
-                conexao.execute(
-                    """
-                    INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (str(linha.get("tsb", "")), str(linha.get("glicerina", "")), str(linha.get("tsa", "")), 
-                     str(linha.get("criotubo", "")), str(linha.get("placa_de_petri", "")), str(linha.get("fluxo_laminar", "")), 
-                     str(linha.get("ultrafreezer", "")))
-                )
-            st.success(f"✔️ {len(df_brutos)} linhas da aba 'Dados Brutos' importadas automaticamente!")
+                conexao.execute("INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer) VALUES (?, ?, ?, ?, ?, ?, ?)", (str(linha.get("tsb", "")), str(linha.get("glicerina", "")), str(linha.get("tsa", "")), str(linha.get("criotubo", "")), str(linha.get("placa_de_petri", "")), str(linha.get("fluxo_laminar", "")), str(linha.get("ultrafreezer", ""))))
         except Exception:
-            st.info("ℹ️ Nenhuma aba com o nome 'Dados Brutos' foi localizada no arquivo Excel. Pulando atualização desta tabela.")
+            pass
 
-        # 🔵 2. LEITURA AUTOMÁTICA DAS ABAS REGISTRO E IDENTIFICAÇÃO (PADRÃO)
         try:
             arquivo.seek(0)
             registro = pd.read_excel(arquivo, sheet_name="Registro")
             arquivo.seek(0)
             identificacao = pd.read_excel(arquivo, sheet_name="Identification")
 
-            registro.columns = [normalizar_coluna(coluna) for coluna in registro.columns]
-            identificacao.columns = [normalizar_coluna(coluna) for coluna in identificacao.columns]
+            registro.columns = [normalizar_coluna_sistema(c) for c in registro.columns]
+            identificacao.columns = [normalizar_coluna_sistema(c) for c in identificacao.columns]
 
-            for coluna in COLUNAS_AMOSTRA:
-                if coluna not in registro.columns: registro[coluna] = ""
-            for coluna in COLUNAS_IDENTIFICACAO:
-                if coluna not in identificacao.columns: identificacao[coluna] = ""
-
-            registro = registro[COLUNAS_AMOSTRA].fillna("")
-            identificacao = identificacao[COLUNAS_IDENTIFICACAO].fillna("")
-
-            registro = registro[registro["code"].astype(str).str.strip() != ""]
-            identificacao = identificacao[identificacao["code"].astype(str).str.strip() != ""]
-
-            registro["data"] = pd.to_datetime(registro["data"], errors="coerce").dt.strftime("%Y-%m-%d").fillna("")
-            identificacao["end_date"] = pd.to_datetime(identificacao["end_date"], errors="coerce").dt.strftime("%Y-%m-%d").fillna("")
+            registro = registro.fillna("").loc[lambda d: d["code"].astype(str).str.strip().ne("")]
+            identificacao = identificacao.fillna("").loc[lambda d: d["code"].astype(str).str.strip().ne("")]
 
             conexao.execute("DELETE FROM identificacoes")
             conexao.execute("DELETE FROM amostras")
             
             for _, r in registro.iterrows():
-                conexao.execute(f"INSERT INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})", [r[c] for c in COLUNAS_AMOSTRA])
+                conexao.execute(f"INSERT INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})", [r.get(c, "") for c in COLUNAS_AMOSTRA])
             for _, i in identificacao.iterrows():
                 conexao.execute(f"INSERT INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})", [i[c] for c in COLUNAS_IDENTIFICACAO])
-                
         except Exception as e:
-            st.error(f"Erro crítico ao processar planilhas básicas: {e}")
+            st.error(f"Erro nas planilhas padrão: {e}")
+
+
+def pagina_dados():
+    st.title("Importação e Exportação")
+    st.download_button(label="Baixar dados em Excel", data=gerar_excel(), file_name="monitoramento_microbiologico.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+    st.divider()
+    st.subheader("Importar arquivo Excel")
+    st.warning("A importação substituirá os registros atuais. Faça backup antes.")
+
+    arquivo = st.file_uploader("Selecione o arquivo Excel", type=["xlsx"])
+    confirmar = st.checkbox("Confirmo a substituição total")
+
+    if arquivo is not None and confirmar and st.button("Importar dados", type="primary"):
+        try:
+            importar_excel(arquivo)
+            st.success("Dados importados com sucesso.")
+            st.rerun()
+        except Exception as erro: st.error(f"Erro na importação: {erro}")
 
 
 
