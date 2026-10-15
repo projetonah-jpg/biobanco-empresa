@@ -60,7 +60,7 @@ st.markdown(
         --white: #ffffff;
     }
 
-    /* 🚫 Oculta a barra branca superior, os botões do GitHub (Gato), Estrela e Compartilhar */
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
     .stAppHeader, [data-testid="stHeader"], header {
         display: none !important;
         visibility: hidden !important;
@@ -75,11 +75,22 @@ st.markdown(
         );
     }
 
-    /* 📏 Remove o espaço branco e cola o banner no teto do aplicativo */
+    /* 📏 ARRANCA TODO O ESPAÇO BRANCO E GRUDA O BANNER NO TETO DA TELA */
     .block-container {
         padding-top: 0rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
         margin-top: 0rem !important;
-        max-width: 1280px;
+        max-width: 100% !important;
+    }
+
+    [data-testid="stMain"] {
+        padding-top: 0rem !important;
+    }
+
+    [data-testid="stVerticalBlock"] > div:first-child {
+        margin-top: 0rem !important;
     }
 
     /* 💜 Menu Lateral Customizado */
