@@ -25,56 +25,57 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL (PALETA ROXA UNIFICADA COMPLETA)
+# ESTILO E IDENTIDADE VISUAL (PALETA COM A COR REAL DO BANNER)
 # ============================================================
 
 st.markdown(
     """
     <style>
     :root {
-        --purple-dark: #3a3260;
-        --purple-light: #6c5b9b;
-        --purple-bg: #f5f3f9;
+        --purple-dark: #612147;
+        --purple-light: #833161;
+        --purple-bg: #fdfafc;
         --white: #ffffff;
     }
 
-    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato, Estrela) */
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
     .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial do menu e do banner */
+    /* 💜 Pinta todas as laterais externas com a cor exata do fundo do seu banner */
     .stApp {
-        background-color: #3a3260 !important;
+        background-color: #612147 !important;
     }
 
-    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
-    [data-testid="stAppViewBlockContainer"] {
+    /* 🛡️ FORÇA A FOLHA CENTRAL INTERNA A FICAR BRANCA (Garante a leitura perfeita dos textos!) */
+    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {
         background-color: #ffffff !important;
-        padding: 0px 45px 35px 45px !important;
-        border-radius: 18px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
-        margin-top: 0px !important;
-        margin-bottom: 25px !important;
-        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
     }
 
-    /* 📏 Ajusta o container principal do Streamlit */
+    /* 📏 Cria o espaçamento elegante nas bordas para o conteúdo flutuar sobre o fundo */
     .block-container {
+        background-color: #ffffff !important;
         padding-top: 0rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 3rem !important;
+        padding-left: 45px !important;
+        padding-right: 45px !important;
+        margin-top: 0rem !important;
+        border-radius: 0px 0px 18px 18px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
     }
 
     [data-testid="stMain"] {
         padding-top: 0rem !important;
+        background-color: #612147 !important; /* Mantém o fundo de trás com a cor do banner */
     }
 
-    /* 💜 Menu Lateral Customizado com a cor roxa idêntica ao banner oficial */
+    /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
     [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
-        background-color: #3a3260 !important;
-        background-image: none !important; /* Remove o degradê antigo */
+        background-color: #612147 !important;
+        background-image: none !important;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
@@ -82,32 +83,32 @@ st.markdown(
         color: white !important;
     }
 
-    /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
+    /* 💜 Cards de Indicadores (Métricas) com Borda Combinando */
     [data-testid="stMetric"] {
-        background-color: white;
-        border: 1px solid #e1def2;
-        border-left: 5px solid #6c5b9b;
-        padding: 16px;
-        border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(74, 63, 117, 0.06);
+        background-color: white !important;
+        border: 1px solid #f5edf2 !important;
+        border-left: 5px solid #833161 !important;
+        padding: 16px !important;
+        border-radius: 14px !important;
+        box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
     }
 
-    /* 💜 Botões e Formulários Padronizados em Roxo */
+    /* 💜 Botões e Formulários Padronizados com o Tom do Banner */
     .stButton > button,
     .stFormSubmitButton > button {
-        border-radius: 10px;
-        border: 0;
-        background-color: #6c5b9b;
-        color: white;
-        font-weight: 700;
-        transition: all 0.3s ease;
+        border-radius: 10px !important;
+        border: 0 !important;
+        background-color: #833161 !important;
+        color: white !important;
+        font-weight: 700 !important;
+        transition: all 0.3s ease !important;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #4a3f75;
-        color: white;
-        box-shadow: 0 4px 12px rgba(108, 91, 155, 0.25);
+        background-color: #612147 !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
     }
 
     /* 💜 Tela de Login Estilizada */
@@ -123,7 +124,7 @@ st.markdown(
     }
 
     .logo-login p {
-        color: #dcd7ee;
+        color: #f5edf2;
         margin-top: 4px;
     }
 
@@ -136,20 +137,20 @@ st.markdown(
         place-items: center;
         background: linear-gradient(
             145deg,
-            #6c5b9b,
-            #3a3260
+            #833161,
+            #612147
         );
         color: white;
         font-size: 48px;
-        box-shadow: 0 12px 28px rgba(108, 91, 155, 0.3);
+        box-shadow: 0 12px 28px rgba(131, 49, 97, 0.3);
     }
 
     .caixa-login {
-        background-color: white;
-        padding: 28px 34px 20px 34px;
-        border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
-        border: 1px solid #e1def2;
+        background-color: white !important;
+        padding: 28px 34px 20px 34px !important;
+        border-radius: 22px !important;
+        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.12) !important;
+        border: 1px solid #f5edf2 !important;
     }
 
     .logo-menu {
@@ -163,7 +164,7 @@ st.markdown(
         display: block;
         font-size: 12px;
         font-weight: 400;
-        color: #dcd7ee;
+        color: #f5edf2;
     }
     </style>
     """,
