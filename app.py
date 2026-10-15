@@ -1894,10 +1894,10 @@ st.sidebar.caption(
 st.markdown(
     """
     <div style="
-        background-image: url('https://githubusercontent.com');
+        background-image: url('https://squarespace-cdn.com');
         background-size: cover;
         background-position: center;
-        padding: 35px 40px;
+        padding: 40px 45px;
         color: white;
         border-radius: 18px;
         margin-bottom: 25px;
@@ -1905,14 +1905,14 @@ st.markdown(
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: flex-end; /* 🌸 Empurra o texto para o lado direito limpo do banner */
+        align-items: flex-end; /* 🌸 Mantém o texto totalmente alinhado à direita */
         text-align: right;
     ">
         <div>
-            <h1 style="margin: 0; font-size: 32px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);">
+            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8);">
                 BIOBANK - NATALIA
             </h1>
-            <p style="margin: 6px 0 0 0; color: #f1eefc; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.6);">
+            <p style="margin: 6px 0 0 0; color: #ffffff; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.8);">
                 Gestão integrada de cepas, identificação e armazenamento.
             </p>
         </div>
