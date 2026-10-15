@@ -1894,9 +1894,15 @@ st.sidebar.caption(
 st.markdown(
     """
     <style>
-    /* Remove espaços superiores e laterais do conteúdo */
+    /* Reduz o espaço acima do conteúdo */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 0 !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* Deixa transparente o cabeçalho do Streamlit */
+    [data-testid="stHeader"] {
+        background: transparent !important;
     }
 
     /* Banner principal */
@@ -1904,25 +1910,26 @@ st.markdown(
         width: 100%;
         min-height: 145px;
         box-sizing: border-box;
+
         background-image:
-            linear-gradient(
-                90deg,
-                rgba(75, 20, 55, 0.12),
-                rgba(120, 30, 105, 0.12)
-            ),
             url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
+
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
-        border-radius: 0 0 18px 18px;
-        margin: 0 0 25px 0;
+
         padding: 25px 40px;
+        margin: 0 0 25px 0;
+
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: flex-end;
+
         text-align: right;
         color: white;
+
+        border-radius: 0 0 18px 18px;
         box-shadow: 0 8px 25px rgba(74, 63, 117, 0.12);
     }
 
@@ -1930,6 +1937,7 @@ st.markdown(
         margin: 0;
         padding: 0;
         color: white;
+        font-family: sans-serif;
         font-size: clamp(24px, 3vw, 34px);
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -1940,15 +1948,16 @@ st.markdown(
         margin: 8px 0 0 0;
         padding: 0;
         color: white;
+        font-family: sans-serif;
         font-size: 15px;
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
     }
 
+    /* Ajuste para celulares */
     @media (max-width: 600px) {
         .biobank-banner {
             min-height: 130px;
             padding: 20px;
-            background-position: center;
         }
 
         .biobank-banner h1 {
@@ -1963,11 +1972,12 @@ st.markdown(
 
     <div class="biobank-banner">
         <h1>BIOBANK - NATALIA</h1>
-        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
+        <p>
+            Gestão integrada de cepas, identificação e armazenamento.
+        </p>
     </div>
     """,
     unsafe_allow_html=True,
-)
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
