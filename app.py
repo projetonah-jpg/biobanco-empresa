@@ -54,17 +54,17 @@ st.markdown(
     """
     <style>
     :root {
-        --purple-dark: #4a3f75;
-        --purple-light: #6c5b9b;
-        --purple-bg: #f5f3f9;
+        --navy: #12343b;
+        --teal: #13877c;
+        --mint: #eaf5f2;
         --white: #ffffff;
     }
 
     .stApp {
         background: linear-gradient(
             135deg,
-            #fbfbfe 0%,
-            #f3f2f8 100%
+            #f8fcfb 0%,
+            #edf6f4 100%
         );
     }
 
@@ -73,12 +73,11 @@ st.markdown(
         max-width: 1280px;
     }
 
-    /* 💜 Menu Lateral Customizado */
     [data-testid="stSidebar"] {
         background: linear-gradient(
             180deg,
-            #3a3260,
-            #4a3f75
+            #12343b,
+            #0d5c58
         );
     }
 
@@ -86,38 +85,33 @@ st.markdown(
         color: white;
     }
 
-    /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
     [data-testid="stMetric"] {
         background-color: white;
-        border: 1px solid #e1def2;
-        border-left: 5px solid #6c5b9b;
+        border: 1px solid #dcebe7;
+        border-left: 5px solid #13877c;
         padding: 16px;
         border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(74, 63, 117, 0.06);
+        box-shadow: 0 6px 18px rgba(18, 52, 59, 0.07);
     }
 
-    /* 💜 Botões e Formulários Padronizados em Roxo */
     .stButton > button,
     .stFormSubmitButton > button {
         border-radius: 10px;
         border: 0;
-        background-color: #6c5b9b;
+        background-color: #13877c;
         color: white;
         font-weight: 700;
-        transition: all 0.3s ease;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #4a3f75;
+        background-color: #0f6f67;
         color: white;
-        box-shadow: 0 4px 12px rgba(108, 91, 155, 0.25);
     }
 
-    /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #4a3f75;
+        color: #12343b;
         margin: 3vh auto 18px auto;
     }
 
@@ -127,7 +121,7 @@ st.markdown(
     }
 
     .logo-login p {
-        color: #787299;
+        color: #5e7776;
         margin-top: 4px;
     }
 
@@ -140,25 +134,25 @@ st.markdown(
         place-items: center;
         background: linear-gradient(
             145deg,
-            #6c5b9b,
-            #3a3260
+            #13877c,
+            #12343b
         );
         color: white;
         font-size: 48px;
-        box-shadow: 0 12px 28px rgba(108, 91, 155, 0.3);
+        box-shadow: 0 12px 28px rgba(19, 135, 124, 0.28);
     }
 
     .caixa-login {
         background-color: white;
         padding: 28px 34px 20px 34px;
         border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
-        border: 1px solid #e1def2;
+        box-shadow: 0 24px 70px rgba(18, 52, 59, 0.14);
+        border: 1px solid #dfefeb;
     }
 
-    /* 💜 Cabeçalho Principal (Biobank) */
-    .cabecalho {
+        .cabecalho {
         padding: 20px 24px;
+        /* 💜 NOVO GRADIENTE ROXO SUAVE E PROFISSIONAL */
         background: linear-gradient(
             120deg,
             #4a3f75,
@@ -170,6 +164,7 @@ st.markdown(
         box-shadow: 0 12px 30px rgba(74, 63, 117, 0.14);
     }
 
+
     .cabecalho h1 {
         margin: 0;
         font-size: 29px;
@@ -177,7 +172,7 @@ st.markdown(
 
     .cabecalho p {
         margin: 5px 0 0 0;
-        color: #e9e6f5;
+        color: #d8efeb;
     }
 
     .logo-menu {
@@ -191,7 +186,7 @@ st.markdown(
         display: block;
         font-size: 12px;
         font-weight: 400;
-        color: #dcd7ee;
+        color: #cbe5e1;
     }
     </style>
     """,
@@ -507,29 +502,18 @@ COLUNAS_IDENTIFICACAO = [
 
 
 def conectar():
-    # 🩹 LIMPEZA RADICAL: Apaga o banco corrompido na nuvem para recriá-lo do zero sem erros
-    try:
-        if CAMINHO_BANCO.exists():
-            import os
-            os.remove(str(CAMINHO_BANCO))
-    except Exception:
-        pass
-
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
+
     return conexao
 
 
 def criar_banco():
     with conectar() as conexao:
-        # 🩹 CORREÇÃO DO BANCO: Recria a tabela caso ela esteja com colunas erradas na nuvem
-        try:
-            conexao.execute("SELECT start_date FROM identificacoes LIMIT 1")
-        except sqlite3.OperationalError:
-            # Se a coluna start_date não existir, removemos a tabela antiga travada para aplicar a nova limpa
-            conexao.execute("DROP TABLE IF EXISTS identificacoes")
-
+        # 🩹 Força a nuvem a limpar apenas a tabela de insumos travada para aplicar a nova estrutura
+        conexao.execute("DROP TABLE IF EXISTS dados_brutos")
+        
         conexao.executescript(
             """
             CREATE TABLE IF NOT EXISTS amostras (
@@ -567,59 +551,23 @@ def criar_banco():
                 FOREIGN KEY (code) REFERENCES amostras(code) ON DELETE CASCADE
             );
 
+            /* 🧪 CRIADA A NOVA TABELA ATUALIZADA COM AS VALIDADES COM CARDS */
             CREATE TABLE IF NOT EXISTS dados_brutos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tsb TEXT, tsb_val TEXT,
-                glicerina TEXT, glicerina_val TEXT,
-                tsa TEXT, tsa_val TEXT,
-                criotubo TEXT, placa_de_petri TEXT, fluxo_laminar TEXT, ultrafreezer TEXT,
+                tsb TEXT,
+                tsb_val TEXT,
+                glicerina TEXT,
+                tsa TEXT,
+                tsa_val TEXT,
+                criotubo TEXT,
+                placa_de_petri TEXT,
+                fluxo_laminar TEXT,
+                ultrafreezer TEXT,
                 criado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
             """
         )
 
-def inserir_dados_iniciais(conexao):
-    for amostra in AMOSTRAS_INICIAIS:
-        valores = [
-            amostra.get(coluna, "")
-            for coluna in COLUNAS_AMOSTRA
-        ]
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO amostras
-            ({",".join(COLUNAS_AMOSTRA)})
-            VALUES ({",".join("?" for _ in COLUNAS_AMOSTRA)})
-            """,
-            valores,
-        )
-
-    for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [
-            identificacao.get(coluna, "")
-            for coluna in COLUNAS_IDENTIFICACAO
-        ]
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO identificacoes
-            ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES (
-                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
-            )
-            """,
-            valores,
-        )
-
-
-def consultar(sql, parametros=()):
-    with conectar() as conexao:
-        linhas = conexao.execute(
-            sql,
-            parametros,
-        ).fetchall()
-
-        return [dict(linha) for linha in linhas]
 
 
 def salvar_amostra(registro):
@@ -815,35 +763,46 @@ def obter_amostras():
 
 
 def obter_identificacoes():
-    # 🩹 SEGURANÇA MÁXIMA: Descobre em tempo real quais colunas existem de fato na tabela para nunca dar erro de SQL
-    try:
-        with conectar() as conexao:
-            colunas_existentes = [info[1] for info in conexao.execute("PRAGMA table_info(identificacoes)").fetchall()]
-    except Exception:
-        colunas_existentes = []
+    sql_consulta = """
+        SELECT
+            a.code,
+            a.area,
+            a.collection_point,
+            a.data,
+            i.form,
+            i.margin,
+            i.pigment,
+            i.gram_stain,
+            i.catalase,
+            i.koh,
+            i.oxidase,
+            i.outsourced_method,
+            i.identification,
+            i.report,
+            i.company,
+            i.start_date,
+            i.end_date
+        FROM amostras a
 
-    # Lista de colunas desejadas que vamos tentar trazer se existirem no banco
-    colunas_possiveis = ["form", "margin", "pigment", "gram_stain", "catalase", "koh", "oxidase", "outsourced_method", "identification", "report", "company", "start_date", "end_date"]
-    colunas_validas = [f"i.{col}" for col in colunas_possiveis if col in colunas_existentes]
-    
-    # Monta o comando SQL dinâmico trazendo apenas o que o banco físico realmente possui
-    select_campos = ", " + ", ".join(colunas_validas) if colunas_validas else ""
-    sql_consulta = f"SELECT a.code, a.area, a.collection_point, a.data {select_campos} FROM amostras a LEFT JOIN identificacoes i ON i.code = a.code ORDER BY a.code"
-    
+        LEFT JOIN identificacoes i
+            ON i.code = a.code
+
+        ORDER BY a.code
+    """
     try:
         dados = consultar(sql_consulta)
     except sqlite3.OperationalError:
-        # Se mesmo assim falhar por conta de tabelas inconsistentes, traz o básico da tabela de amostras para o sistema abrir
-        dados = consultar("SELECT code, area, collection_point, data FROM amostras ORDER BY code")
-        
-    df_resultado = pd.DataFrame(dados)
-    
-    # Preenche de forma artificial as colunas que estiverem faltando para que as páginas do Streamlit não quebrem
-    for col in colunas_possiveis:
-        if col not in df_resultado.columns:
-            df_resultado[col] = ""
-            
-    return df_resultado
+        # Se a coluna start_date não existir ainda, cria ela agora automaticamente
+        with conectar() as conexao:
+            try:
+                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
+                conexao.commit()
+            except sqlite3.OperationalError:
+                pass
+        # Tenta consultar novamente após criar a coluna
+        dados = consultar(sql_consulta)
+
+    return pd.DataFrame(dados)
 
 
 
@@ -884,7 +843,7 @@ def pagina_dashboard():
         st.info("Sem dados cadastrados.")
         return
 
-    # Cálculos Matemáticos baseados no Banco de Dados
+    # 📊 Cálculos Matemáticos baseados no Banco de Dados
     total_amostras = len(df_amostras)
     
     codigos_identificados = []
@@ -906,7 +865,7 @@ def pagina_dashboard():
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # Módulos superiores de métricas (Cards com bordas roxas)
+    # 🟢 Módulos superiores de métricas
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -939,81 +898,59 @@ def pagina_dashboard():
         st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        # 💜 Gráfico de barras horizontal ocupando a largura total na cor roxa corporativa
-        if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-            resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-            if not resumo_micro.empty:
-                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#6c5b9b"])
-                st.plotly_chart(grafico_barras, use_container_width=True)
-            else:
-                st.info("Nenhum microrganismo identificado ainda.")
-        else:
-            st.info("Aguardando registros de identificação.")
+        esquerda, direita = st.columns(2)
 
-        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS
-        st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.subheader("📈 Análise de Tendência de Contaminação por Período")
-        
-        df_linha_dados = df_amostras.merge(df_identificacoes[["code", "identification"]], on="code", how="inner")
-        df_linha_dados = df_linha_dados[df_linha_dados["identification"].fillna("").str.strip() != ""]
-        
-        if df_linha_dados.empty:
-            st.info("Aguardando dados com identificações completas para renderizar o gráfico de linhas.")
-        else:
-            df_linha_dados["datetime"] = pd.to_datetime(df_linha_dados["data"], errors="coerce")
-            df_linha_dados = df_linha_dados.dropna(subset=["datetime"]).sort_values(by="datetime")
-            
-            nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
-            df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
-            df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
-            
-            # Filtros dinâmicos compactados em listas suspensas (Selectbox)
-            filt1, filt2 = st.columns(2)
-            
-            with filt1:
-                opcoes_area = ["Todas as Áreas"] + sorted(df_linha_dados["area"].unique().tolist())
-                area_sel = st.selectbox("🏢 Filtrar por Área:", opcoes_area)
-                
-            with filt2:
-                opcoes_ponto = ["Todos os Pontos"] + sorted(df_linha_dados["collection_point"].unique().tolist())
-                ponto_sel = st.selectbox("📍 Filtrar por Ponto de Coleta:", opcoes_ponto)
-            
-            if area_sel != "Todas as Áreas":
-                df_linha_dados = df_linha_dados[df_linha_dados["area"] == area_sel]
-            if ponto_sel != "Todos os Pontos":
-                df_linha_dados = df_linha_dados[df_linha_dados["collection_point"] == ponto_sel]
-                
-            df_agrupado_linha = df_linha_dados.groupby(["Mês_Num", "Mês", "identification"]).size().reset_index(name="Quantidade").sort_values(by="Mês_Num")
-            
-            if df_agrupado_linha.empty:
-                st.warning("Nenhum registro encontrado para essa combinação de filtros.")
+        with esquerda:
+            if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
+                resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
+                if not resumo_micro.empty:
+                    grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
+                    st.plotly_chart(grafico_barras, use_container_width=True)
+                else:
+                    st.info("Nenhum microrganismo identificado ainda.")
             else:
-                fig_linha_dinamica = px.line(
-                    df_agrupado_linha,
-                    x="Mês",
-                    y="Quantidade",
-                    color="identification",
-                    markers=True,
-                    title=f"Evolução Microbiológica — {area_sel} | {ponto_sel}",
-                    labels={"identification": "Gênero Isolado", "Quantidade": "Contagem de Colônias"},
-                    color_discrete_sequence=px.colors.qualitative.Safe
-                )
+                st.info("Aguardando registros de identificação.")
+
+        with direita:
+            grafico_pizza = px.pie(df_amostras, names="resultado_final", title="Status das Coletas (Conformidade)", hole=0.45, color_discrete_sequence=["#13877c", "#12343b"])
+            grafico_pizza.update_traces(textinfo="percent+label", textposition="inside", insidetextorientation="radial")
+            st.plotly_chart(grafico_pizza, use_container_width=True)
+
+        # 📈 Histórico de Tendência Microbiológica
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.subheader("📊 Histórico de Tendência Microbiológica")
+        
+        dados_tendencia = consultar("""
+            SELECT a.origin, a.data, i.identification
+            FROM amostras a
+            INNER JOIN identificacoes i ON a.code = i.code
+            WHERE i.identification IS NOT NULL AND i.identification != ''
+        """)
+        
+        if dados_tendencia:
+            df_t = pd.DataFrame(dados_tendencia)
+            df_t["datetime"] = pd.to_datetime(df_t["data"], errors="coerce")
+            df_t = df_t.dropna(subset=["datetime"])
+            
+            if not df_t.empty:
+                lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
+                origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
                 
-                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
-                fig_linha_dinamica.update_layout(
-                    plot_bgcolor="#f8fafc",
-                    paper_bgcolor="white",
-                    yaxis=dict(
-                        tickformat="d",
-                        dtick=1,
-                        autorange=True
-                    ),
-                    xaxis=dict(
-                        categoryorder='array', 
-                        categoryarray=list(nomes_meses.values())
-                    )
-                )
-                st.plotly_chart(fig_linha_dinamica, use_container_width=True)
+                if origem_selecionada != "Todas as Origens":
+                    df_t = df_t[df_t["origin"] == origem_selecionada]
+                
+                df_t["mes_num"] = df_t["datetime"].dt.month
+                nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
+                df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
+                
+                df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias").sort_values(by="mes_num")
+                
+                if not df_agrupado.empty:
+                    grafico_linha = px.line(df_agrupado, x="Mês", y="Colônias", color="identification", markers=True, title=f"Bacterial Identification by Genus — {origem_selecionada}", labels={"identification": "Genus"}, color_discrete_sequence=px.colors.qualitative.Bold)
+                    grafico_linha.update_layout(xaxis_title="Month", yaxis_title="# of Colonies Observed", xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())})
+                    st.plotly_chart(grafico_linha, use_container_width=True)
+
+
 
 
 
@@ -1394,47 +1331,71 @@ def pagina_registro():
 # ============================================================
 
 def pagina_armazenamento():
-    st.title("🧫 Armazenamento de Isolados Identificados")
-    st.caption("Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas.")
-
+    st.title("Armazenamento de Isolados Identificados")
     df = obter_identificacoes()
-    
+
     if df.empty:
-        st.info("Nenhuma amostra cadastrada no sistema até o momento.")
+        st.info("Nenhuma amostra cadastrada.")
         return
 
-    # Filtra apenas os registros que já possuem identificação preenchida
-    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
+    # Organiza a tabela principal de visualização
+    armazenamento = df[["code", "gram_stain", "identification"]].copy()
+    armazenamento.columns = ["CODE", "GRAM STAIN", "IDENTIFICATION"]
+    
+    # Exibe a tabela principal de isolados
+    st.dataframe(armazenamento, use_container_width=True, hide_index=True)
 
-    if df_filtrado.empty:
-        st.info("Nenhum microrganismo identificado e armazenado no banco de cepas ainda.")
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+    st.subheader("🦠 Resumo de Contaminantes em Banco de Cepas")
+
+    # Filtra e agrupa os microrganismos identificados
+    resumo = armazenamento["IDENTIFICATION"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
+
+    if resumo.empty:
+        st.info("Ainda não existem identificações preenchidas para gerar o resumo.")
         return
 
-    # Conta o total de registros válidos para mostrar no indicador superior
-    total_isolados = len(df_filtrado)
-    st.metric(label="🦠 Total de Isolados Preservados no Banco", value=f"{total_isolados} un")
+    # 💡 IDEIA 1: Renderizar o resumo em formatos de indicadores/cards modernos
+    colunas_cards = st.columns(min(len(resumo), 4))
+    for i, linha in resumo.iterrows():
+        idx_col = i % 4
+        with colunas_cards[idx_col]:
+            st.metric(
+                label=f"Total de {linha['IDENTIFICAÇÃO']}", 
+                value=f"{linha['OCORRÊNCIAS']} un"
+            )
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Prepara e formata a tabela com as colunas essenciais de rastreabilidade
-    armazenamento = df_filtrado[["code", "gram_stain", "identification", "area", "collection_point", "data"]].copy()
+    # 💡 IDEIA 2: Gráfico de barras horizontal estilizado com as cores do sistema
+    coluna1, coluna2 = st.columns([1, 2])
     
-    config_armazenamento = {
-        "code": "CODE",
-        "gram_stain": "GRAM STAIN",
-        "identification": "IDENTIFICATION",
-        "area": "AREA",
-        "collection_point": "COLLECTION POINT",
-        "data": "COLLECTION DATE"
-    }
-
-    st.dataframe(
-        armazenamento, 
-        use_container_width=True, 
-        hide_index=True, 
-        column_config=config_armazenamento
-    )
-    st.caption(f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos.")
-
+    with coluna1:
+        st.caption("📋 Detalhamento em formato tabular:")
+        st.dataframe(resumo, use_container_width=True, hide_index=True)
+        
+    with coluna2:
+        # Gráfico configurado com a paleta profissional verde do sistema
+        grafico = px.bar(
+            resumo, 
+            x="OCORRÊNCIAS", 
+            y="IDENTIFICAÇÃO", 
+            orientation="h", 
+            text_auto=True, 
+            title="Ocorrências por Tipo de Microrganismo",
+            color="IDENTIFICAÇÃO",
+            color_discrete_sequence=px.colors.qualitative.Safe
+        )
+        
+        # Deixa o fundo cinza clássico e as linhas limpas
+        grafico.update_layout(
+            plot_bgcolor="#f8fafc",
+            paper_bgcolor="white",
+            xaxis_title="Quantidade de Isolados",
+            yaxis_title="Microrganismo",
+            showlegend=False
+        )
+        st.plotly_chart(grafico, use_container_width=True)
 
 
 
@@ -1734,7 +1695,7 @@ def pagina_dados_brutos():
         """)
 
     try:
-        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
+        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, glicerina_val, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
     except Exception:
         linhas = []
         
@@ -1921,22 +1882,20 @@ st.sidebar.caption(
 # CABEÇALHO
 # ============================================================
 
-# 🖥️ Configuração do novo banner integrado por imagem
-caminho_do_banner = PASTA_APP / "banner_novo.png"
-
-if caminho_do_banner.exists():
-    st.image(str(caminho_do_banner), use_container_width=True)
-else:
-    st.markdown(
-        """
-        <div class="cabecalho">
-            <h1>BIOBANK - NATALIA</h1>
-            <p>Gestão integrada de cepas, identificação e armazenamento.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
+st.markdown(
+    """
+    <div class="cabecalho">
+        <h1>
+            BIOBANK - NATALIA
+        </h1>
+        <p>
+            Gestão integrada de cepas, identificação
+            e armazenamento.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ============================================================
