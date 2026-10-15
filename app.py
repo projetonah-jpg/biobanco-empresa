@@ -75,22 +75,31 @@ st.markdown(
         );
     }
 
-    /* 📏 ARRANCA TODO O ESPAÇO BRANCO E GRUDA O BANNER NO TETO DA TELA */
-    .block-container {
+    /* 📏 ELIMINA TODAS AS BORDAS: Gruda o banner no teto, no menu esquerdo e na lateral direita */
+    .block-container, [data-testid="stAppViewBlockContainer"] {
         padding-top: 0rem !important;
         padding-bottom: 1rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
         margin-top: 0rem !important;
+        margin-left: 0rem !important;
+        margin-right: 0rem !important;
         max-width: 100% !important;
+        width: 100% !important;
     }
 
+    /* 📦 Remove espaçamentos internos nativos da tela do Streamlit */
     [data-testid="stMain"] {
         padding-top: 0rem !important;
     }
 
-    [data-testid="stVerticalBlock"] > div:first-child {
-        margin-top: 0rem !important;
+    [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockRoot"] {
+        gap: 0rem !important;
+    }
+
+    /* 🌸 Remove o arredondamento superior do banner para colar perfeitamente nos cantos do teto */
+    [data-testid="stVerticalBlock"] > div:first-child div {
+        border-radius: 0px 0px 18px 18px !important;
     }
 
     /* 💜 Menu Lateral Customizado */
