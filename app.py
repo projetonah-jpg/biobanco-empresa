@@ -1919,15 +1919,15 @@ st.markdown(
         background-color: #3a3260 !important;
     }
 
-    /* 🛡️ Cria a folha central branca arredondada para os formulários e tabelas ficarem lindos e legíveis */
+    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
     [data-testid="stAppViewBlockContainer"] {
         background-color: #ffffff !important;
-        padding: 35px 45px !important;
+        padding: 0px 45px 35px 45px !important;
         border-radius: 18px !important;
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
-        margin-top: 25px !important;
+        margin-top: 0px !important;
         margin-bottom: 25px !important;
-        max-width: 94% !important; /* Deixa uma bordinha roxa charmosa nas duas laterais */
+        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
     }
 
     /* 📏 Ajusta o container principal do Streamlit */
@@ -1985,7 +1985,7 @@ st.markdown(
     /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #ffffff; /* Ajustado para branco para contrastar com o fundo roxo */
+        color: #ffffff;
         margin: 3vh auto 18px auto;
     }
 
