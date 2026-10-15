@@ -25,7 +25,7 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL (CORREÇÃO DE SETINHA DO MENU)
+# ESTILO E IDENTIDADE VISUAL (PALETA ROXA UNIFICADA COMPLETA)
 # ============================================================
 
 st.markdown(
@@ -38,61 +38,48 @@ st.markdown(
         --white: #ffffff;
     }
 
-    /* 🚫 Oculta os botões do GitHub da direita, mas libera a setinha do menu na esquerda */
-    [data-testid="stHeaderActionElements"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    
-    .stAppHeader, [data-testid="stHeader"], header {
-        background: transparent !important;
-        box-shadow: none !important;
-        pointer-events: none !important; /* Destrava o clique na tela */
-    }
-
-    [data-testid="stSidebarCollapseButton"] {
-        pointer-events: auto !important; /* Ativa o clique apenas na setinha do menu */
-    }
-
-    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial */
-    .stApp {
-        background-color: #3a3260 !important;
-    }
-    }
-
-    /* 🚫 Oculta a barra branca superior, os botões do GitHub (Gato), Estrela e Compartilhar */
-    .stAppHeader, [data-testid="stHeader"], header {
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato, Estrela) */
+    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
+    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial do menu e do banner */
     .stApp {
-        background: linear-gradient(
-            135deg,
-            #fbfbfe 0%,
-            #f3f2f8 100%
-        );
+        background-color: #3a3260 !important;
     }
 
-    /* 📏 Remove o espaço branco e cola o banner no teto do aplicativo */
+    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
+    [data-testid="stAppViewBlockContainer"] {
+        background-color: #ffffff !important;
+        padding: 0px 45px 35px 45px !important;
+        border-radius: 18px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
+        margin-top: 0px !important;
+        margin-bottom: 25px !important;
+        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
+    }
+
+    /* 📏 Ajusta o container principal do Streamlit */
     .block-container {
         padding-top: 0rem !important;
-        margin-top: 0rem !important;
-        max-width: 1280px;
+        padding-bottom: 2rem !important;
     }
 
-    /* 💜 Menu Lateral Customizado */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(
-            180deg,
-            #3a3260,
-            #4a3f75
-        );
+    [data-testid="stMain"] {
+        padding-top: 0rem !important;
+    }
+
+    /* 💜 Menu Lateral Customizado com a cor roxa idêntica ao banner oficial */
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+        background-color: #3a3260 !important;
+        background-image: none !important; /* Remove o degradê antigo */
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     [data-testid="stSidebar"] * {
-        color: white;
+        color: white !important;
     }
 
     /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
@@ -126,7 +113,7 @@ st.markdown(
     /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #4a3f75;
+        color: #ffffff;
         margin: 3vh auto 18px auto;
     }
 
@@ -136,7 +123,7 @@ st.markdown(
     }
 
     .logo-login p {
-        color: #787299;
+        color: #dcd7ee;
         margin-top: 4px;
     }
 
@@ -182,8 +169,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-
 # ============================================================
 # LISTAS DE VALIDAÇÃO
 # ============================================================
