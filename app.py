@@ -1891,83 +1891,94 @@ st.sidebar.caption(
 # CABEÇALHO
 # ============================================================
 
+# ==========================================
+# CABEÇALHO DO BIOBANK
+# ==========================================
+
 st.markdown(
     """
     <style>
-    /* Reduz o espaço superior da página */
-    [data-testid="stAppViewBlockContainer"] {
-        padding-top: 0 !important;
+    /* Reduz as margens e amplia a área principal */
+    .block-container {
+        max-width: 100% !important;
+        padding-top: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 1rem !important;
     }
 
-    /* Cabeçalho nativo do Streamlit */
-    [data-testid="stHeader"] {
-        height: 0 !important;
-        min-height: 0 !important;
-        background: transparent !important;
+    /* Evita espaços laterais desnecessários */
+    [data-testid="stMainBlockContainer"] {
+        max-width: 100% !important;
     }
 
-    /* Banner principal */
+    /* Banner ocupa toda a largura disponível */
     .biobank-banner {
         width: 100%;
-        min-height: 145px;
+        min-height: 150px;
         box-sizing: border-box;
-
-        background-image: url(
-            "https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg"
-        );
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(75, 20, 60, 0.12),
+                rgba(100, 20, 85, 0.18)
+            ),
+            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
         background-size: cover;
         background-position: center;
-        background-repeat: no-repeat;
-
-        padding: 25px 40px;
-        margin: 0 0 25px 0;
-
+        border-radius: 0 0 18px 18px;
+        margin: 0 0 24px 0;
+        padding: 28px 32px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: flex-end;
-
+        justify-content: center;
         text-align: right;
         color: white;
-
-        border-radius: 0 0 18px 18px;
-        box-shadow: 0 8px 25px rgba(74, 63, 117, 0.12);
+        box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
     }
 
     .biobank-banner h1 {
         margin: 0;
-        padding: 0;
+        font-size: clamp(24px, 2.5vw, 36px);
+        font-weight: 750;
         color: white;
-        font-family: sans-serif;
-        font-size: clamp(24px, 3vw, 34px);
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.4);
+        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
     }
 
     .biobank-banner p {
         margin: 8px 0 0 0;
-        padding: 0;
-        color: white;
-        font-family: sans-serif;
         font-size: 15px;
-        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+        color: white;
     }
 
-    /* Ajuste para celulares */
-    @media (max-width: 600px) {
+    /* Cartões e gráficos aproveitam a largura */
+    [data-testid="stMetric"],
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        width: 100%;
+    }
+
+    /* Ajustes para telas menores */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+
         .biobank-banner {
-            min-height: 130px;
-            padding: 20px;
+            min-height: 125px;
+            padding: 22px 18px;
             background-position: center;
         }
 
         .biobank-banner h1 {
-            font-size: 23px;
+            font-size: 24px;
         }
 
         .biobank-banner p {
-            font-size: 12px;
+            font-size: 13px;
         }
     }
     </style>
@@ -1979,7 +1990,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
