@@ -25,7 +25,7 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL (PALETA COM A COR REAL DO BANNER)
+# ESTILO E IDENTIDADE VISUAL (TELA DE LOGIN BIOBANK ULTRA AJUSTADA)
 # ============================================================
 
 st.markdown(
@@ -45,18 +45,19 @@ st.markdown(
         height: 0px !important;
     }
 
-    /* 💜 Pinta todas as laterais externas com a cor exata do fundo do seu banner */
+    /* 💜 Fundo geral do sistema com o tom exato do banner */
     .stApp {
         background-color: #612147 !important;
     }
 
-    /* 🛡️ FORÇA A FOLHA CENTRAL INTERNA A FICAR BRANCA (Garante a leitura perfeita dos textos!) */
-    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {
+    /* 🛡️ FOLHA CENTRAL BRANCA: Só ativa quando o painel principal está visível (evita quebrar o login) */
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] [data-testid="stCanvas"], 
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .main,
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .stVerticalBlockRoot {
         background-color: #ffffff !important;
     }
 
-    /* 📏 Cria o espaçamento elegante nas bordas para o conteúdo flutuar sobre o fundo */
-    .block-container {
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .block-container {
         background-color: #ffffff !important;
         padding-top: 0rem !important;
         padding-bottom: 3rem !important;
@@ -67,9 +68,21 @@ st.markdown(
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
     }
 
+    /* Configuração padrão da folha antes do login */
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 100% !important;
+    }
+
     [data-testid="stMain"] {
         padding-top: 0rem !important;
-        background-color: #612147 !important; /* Mantém o fundo de trás com a cor do banner */
+        background-color: transparent !important;
+    }
+
+    /* Força os rótulos de texto de dentro dos campos de input do login a ficarem escuros e legíveis */
+    [data-testid="stWidgetLabel"] p, label p {
+        color: #31333F !important;
+        font-weight: 500 !important;
     }
 
     /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
@@ -111,21 +124,25 @@ st.markdown(
         box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
     }
 
-    /* 💜 Tela de Login Estilizada */
+    /* 💜 Tela de Login Estilizada e Visível */
     .logo-login {
         text-align: center;
-        color: #ffffff;
+        color: #ffffff !important;
         margin: 3vh auto 18px auto;
     }
 
     .logo-login h1 {
-        font-size: 34px;
+        font-size: 38px;
         margin: 10px 0 0 0;
+        color: #ffffff !important;
+        font-weight: 700;
+        letter-spacing: 0.5px;
     }
 
     .logo-login p {
-        color: #f5edf2;
+        color: #f5edf2 !important;
         margin-top: 4px;
+        font-size: 15px;
     }
 
     .logo-icone {
@@ -140,7 +157,7 @@ st.markdown(
             #833161,
             #612147
         );
-        color: white;
+        color: white !important;
         font-size: 48px;
         box-shadow: 0 12px 28px rgba(131, 49, 97, 0.3);
     }
@@ -149,8 +166,16 @@ st.markdown(
         background-color: white !important;
         padding: 28px 34px 20px 34px !important;
         border-radius: 22px !important;
-        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.12) !important;
+        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.2) !important;
         border: 1px solid #f5edf2 !important;
+    }
+
+    .texto-rodape {
+        text-align: center;
+        color: #f5edf2 !important;
+        font-size: 13px;
+        margin-top: 15px;
+        opacity: 0.85;
     }
 
     .logo-menu {
