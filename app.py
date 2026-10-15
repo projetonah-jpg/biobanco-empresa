@@ -8,7 +8,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
 # ============================================================
 # CONFIGURAÇÃO GERAL
 # ============================================================
@@ -25,29 +24,8 @@ CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
-def campo_selecao(titulo, nome_lista, valor_atual=""):
-    opcoes = [""] + LISTAS.get(nome_lista, [])
-
-    if valor_atual and valor_atual not in opcoes:
-        opcoes.append(valor_atual)
-
-    indice = (
-        opcoes.index(valor_atual)
-        if valor_atual in opcoes
-        else 0
-    )
-
-    return st.selectbox(
-        titulo,
-        opcoes,
-        index=indice,
-    )
-
-
-
-
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL
+# ESTILO E IDENTIDADE VISUAL (CORREÇÃO DE SETINHA DO MENU)
 # ============================================================
 
 st.markdown(
@@ -58,6 +36,28 @@ st.markdown(
         --purple-light: #6c5b9b;
         --purple-bg: #f5f3f9;
         --white: #ffffff;
+    }
+
+    /* 🚫 Oculta os botões do GitHub da direita, mas libera a setinha do menu na esquerda */
+    [data-testid="stHeaderActionElements"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    .stAppHeader, [data-testid="stHeader"], header {
+        background: transparent !important;
+        box-shadow: none !important;
+        pointer-events: none !important; /* Destrava o clique na tela */
+    }
+
+    [data-testid="stSidebarCollapseButton"] {
+        pointer-events: auto !important; /* Ativa o clique apenas na setinha do menu */
+    }
+
+    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial */
+    .stApp {
+        background-color: #3a3260 !important;
+    }
     }
 
     /* 🚫 Oculta a barra branca superior, os botões do GitHub (Gato), Estrela e Compartilhar */
