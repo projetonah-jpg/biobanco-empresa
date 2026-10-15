@@ -1902,7 +1902,8 @@ if not caminho_do_banner.exists():
     caminho_do_banner = Path(os.getcwd()) / nome_arquivo_banner
 
 if caminho_do_banner.exists():
-    st.image(str(caminho_do_banner), use_container_width=True)
+    st.image("https://githubusercontent.com", use_container_width=True)
+
 else:
     st.markdown(
         """
