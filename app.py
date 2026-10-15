@@ -1919,7 +1919,7 @@ st.markdown(
         background-color: #3a3260 !important;
     }
 
-    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
+    /* 🛡️ Cria a folha central branca para os dados, perfeitamente alinhada */
     [data-testid="stAppViewBlockContainer"] {
         background-color: #ffffff !important;
         padding: 0px 45px 35px 45px !important;
@@ -2040,6 +2040,41 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
+)
+
+# 🖥️ CABEÇALHO DO SISTEMA COM BANNER DE FLORES NATALIA (FORÇADO NO TOPO ABSOLUTO)
+st.markdown(
+    """
+    <div style="
+        background-image: url('https://githubusercontent.com');
+        background-size: cover;
+        background-position: center;
+        padding: 50px 60px;
+        color: white;
+        margin-top: 0px !important;
+        margin-left: -45px !important; /* 📏 Cancela o recuo da folha branca para colar na lateral do menu */
+        margin-right: -45px !important; /* 📏 Cancela o recuo da folha branca para colar na lateral direita */
+        margin-bottom: 30px;
+        width: calc(100% + 90px) !important; /* 📐 Estica o banner de ponta a ponta perfeitamente */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end;
+        text-align: right;
+        border-radius: 0px 0px 18px 18px; /* Arredonda apenas as pontas de baixo */
+    ">
+        <div>
+            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
+                BIOBANK - NATALIA
+            </h1>
+            <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
+                Gestão integrada de cepas, identificação e armazenamento.
+            </p>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 # ============================================================
