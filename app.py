@@ -1891,21 +1891,34 @@ st.sidebar.caption(
 # CABEÇALHO
 # ============================================================
 
-# 🖥️ Configuração do novo banner integrado por imagem
-caminho_do_banner = PASTA_APP / "banner_novo.png"
-
-if caminho_do_banner.exists():
-    st.image(str(caminho_do_banner), use_container_width=True)
-else:
-    st.markdown(
-        """
-        <div class="cabecalho">
-            <h1>BIOBANK - NATALIA</h1>
-            <p>Gestão integrada de cepas, identificação e armazenamento.</p>
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg, #3a3260 0%, #6c5b9b 100%);
+        padding: 30px 35px;
+        color: white;
+        border-radius: 18px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 25px rgba(74, 63, 117, 0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    ">
+        <div>
+            <h1 style="margin: 0; font-size: 32px; color: white; font-weight: 700; letter-spacing: 0.5px;">
+                BIOBANK - NATALIA
+            </h1>
+            <p style="margin: 6px 0 0 0; color: #e9e6f5; font-size: 15px; font-weight: 400;">
+                Gestão integrada de cepas, identificação e armazenamento.
+            </p>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div style="font-size: 45px; opacity: 0.85; padding-right: 10px;">
+            🌸🧫
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 
