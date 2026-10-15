@@ -54,10 +54,17 @@ st.markdown(
     """
     <style>
     :root {
-        --purple-dark: #4a3f75;
+        --purple-dark: #3a3260;
         --purple-light: #6c5b9b;
         --purple-bg: #f5f3f9;
         --white: #ffffff;
+    }
+
+    /* 🚫 Oculta a barra branca superior, os botões do GitHub (Gato), Estrela e Compartilhar */
+    .stAppHeader, [data-testid="stHeader"], header {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
     }
 
     .stApp {
@@ -68,8 +75,10 @@ st.markdown(
         );
     }
 
+    /* 📏 Remove o espaço branco e cola o banner no teto do aplicativo */
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 0rem !important;
+        margin-top: 0rem !important;
         max-width: 1280px;
     }
 
@@ -154,30 +163,6 @@ st.markdown(
         border-radius: 22px;
         box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
         border: 1px solid #e1def2;
-    }
-
-    /* 💜 Cabeçalho Principal (Biobank) */
-    .cabecalho {
-        padding: 20px 24px;
-        background: linear-gradient(
-            120deg,
-            #4a3f75,
-            #6c5b9b
-        );
-        color: white;
-        border-radius: 18px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 30px rgba(74, 63, 117, 0.14);
-    }
-
-    .cabecalho h1 {
-        margin: 0;
-        font-size: 29px;
-    }
-
-    .cabecalho p {
-        margin: 5px 0 0 0;
-        color: #e9e6f5;
     }
 
     .logo-menu {
