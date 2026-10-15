@@ -1909,10 +1909,10 @@ st.markdown(
         text-align: right;
     ">
         <div>
-            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.85);">
+            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
                 BIOBANK - NATALIA
             </h1>
-            <p style="margin: 6px 0 0 0; color: #ffffff; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.85);">
+            <p style="margin: 6px 0 0 0; color: #ffffff; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
                 Gestão integrada de cepas, identificação e armazenamento.
             </p>
         </div>
@@ -1920,7 +1920,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
 # ============================================================
