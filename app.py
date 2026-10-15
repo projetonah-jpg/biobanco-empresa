@@ -1894,32 +1894,32 @@ st.sidebar.caption(
 st.markdown(
     """
     <div style="
-        background: linear-gradient(135deg, #3a3260 0%, #6c5b9b 100%);
-        padding: 30px 35px;
+        background-image: url('https://githubusercontent.com');
+        background-size: cover;
+        background-position: center;
+        padding: 35px 40px;
         color: white;
         border-radius: 18px;
         margin-bottom: 25px;
-        box-shadow: 0 10px 25px rgba(74, 63, 117, 0.15);
+        box-shadow: 0 12px 30px rgba(74, 63, 117, 0.15);
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end; /* 🌸 Empurra o texto para o lado direito limpo do banner */
+        text-align: right;
     ">
         <div>
-            <h1 style="margin: 0; font-size: 32px; color: white; font-weight: 700; letter-spacing: 0.5px;">
+            <h1 style="margin: 0; font-size: 32px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);">
                 BIOBANK - NATALIA
             </h1>
-            <p style="margin: 6px 0 0 0; color: #e9e6f5; font-size: 15px; font-weight: 400;">
+            <p style="margin: 6px 0 0 0; color: #f1eefc; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.6);">
                 Gestão integrada de cepas, identificação e armazenamento.
             </p>
-        </div>
-        <div style="font-size: 45px; opacity: 0.85; padding-right: 10px;">
-            🌸🧫
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
-
 
 
 # ============================================================
