@@ -1893,7 +1893,7 @@ st.sidebar.caption(
 
 st.markdown(
     """
-   
+    <div style="
         background-image: url('https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg');
         background-size: cover;
         background-position: center;
@@ -1901,25 +1901,18 @@ st.markdown(
         color: white;
         border-radius: 18px;
         margin-bottom: 25px;
-        box-shadow: 0 12px 30px rgba(74, 63, 117, 0.15);
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: flex-end; /* 🌸 Mantém o texto totalmente alinhado à direita */
+        align-items: flex-end;
         text-align: right;
     ">
-        <div>
-            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
-                BIOBANK - NATALIA
-            </h1>
-            <p style="margin: 6px 0 0 0; color: #ffffff; font-size: 15px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
-                Gestão integrada de cepas, identificação e armazenamento.
-            </p>
-        </div>
+        <h1>BIOBANK - NATALIA</h1>
+        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
     </div>
     """,
     unsafe_allow_html=True
 )
+
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
 # ============================================================
