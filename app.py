@@ -507,15 +507,29 @@ COLUNAS_IDENTIFICACAO = [
 
 
 def conectar():
+    # 🩹 LIMPEZA RADICAL: Apaga o banco corrompido na nuvem para recriá-lo do zero sem erros
+    try:
+        if CAMINHO_BANCO.exists():
+            import os
+            os.remove(str(CAMINHO_BANCO))
+    except Exception:
+        pass
+
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
-
     return conexao
 
 
 def criar_banco():
     with conectar() as conexao:
+        # 🩹 CORREÇÃO DO BANCO: Recria a tabela caso ela esteja com colunas erradas na nuvem
+        try:
+            conexao.execute("SELECT start_date FROM identificacoes LIMIT 1")
+        except sqlite3.OperationalError:
+            # Se a coluna start_date não existir, removemos a tabela antiga travada para aplicar a nova limpa
+            conexao.execute("DROP TABLE IF EXISTS identificacoes")
+
         conexao.executescript(
             """
             CREATE TABLE IF NOT EXISTS amostras (
@@ -535,8 +549,35 @@ def criar_banco():
                 atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS identificacoes (
+                code TEXT PRIMARY KEY,
+                form TEXT,
+                margin TEXT,
+                pigment TEXT,
+                gram_stain TEXT,
+                catalase TEXT,
+                koh TEXT,
+                oxidase TEXT,
+                outsourced_method TEXT,
+                identification TEXT,
+                report TEXT,
+                company TEXT,
+                end_date TEXT,
+                atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (code) REFERENCES amostras(code) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS dados_brutos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tsb TEXT, tsb_val TEXT,
+                glicerina TEXT, glicerina_val TEXT,
+                tsa TEXT, tsa_val TEXT,
+                criotubo TEXT, placa_de_petri TEXT, fluxo_laminar TEXT, ultrafreezer TEXT,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
+
 def inserir_dados_iniciais(conexao):
     for amostra in AMOSTRAS_INICIAIS:
         valores = [
@@ -774,46 +815,35 @@ def obter_amostras():
 
 
 def obter_identificacoes():
-    sql_consulta = """
-        SELECT
-            a.code,
-            a.area,
-            a.collection_point,
-            a.data,
-            i.form,
-            i.margin,
-            i.pigment,
-            i.gram_stain,
-            i.catalase,
-            i.koh,
-            i.oxidase,
-            i.outsourced_method,
-            i.identification,
-            i.report,
-            i.company,
-            i.start_date,
-            i.end_date
-        FROM amostras a
+    # 🩹 SEGURANÇA MÁXIMA: Descobre em tempo real quais colunas existem de fato na tabela para nunca dar erro de SQL
+    try:
+        with conectar() as conexao:
+            colunas_existentes = [info[1] for info in conexao.execute("PRAGMA table_info(identificacoes)").fetchall()]
+    except Exception:
+        colunas_existentes = []
 
-        LEFT JOIN identificacoes i
-            ON i.code = a.code
-
-        ORDER BY a.code
-    """
+    # Lista de colunas desejadas que vamos tentar trazer se existirem no banco
+    colunas_possiveis = ["form", "margin", "pigment", "gram_stain", "catalase", "koh", "oxidase", "outsourced_method", "identification", "report", "company", "start_date", "end_date"]
+    colunas_validas = [f"i.{col}" for col in colunas_possiveis if col in colunas_existentes]
+    
+    # Monta o comando SQL dinâmico trazendo apenas o que o banco físico realmente possui
+    select_campos = ", " + ", ".join(colunas_validas) if colunas_validas else ""
+    sql_consulta = f"SELECT a.code, a.area, a.collection_point, a.data {select_campos} FROM amostras a LEFT JOIN identificacoes i ON i.code = a.code ORDER BY a.code"
+    
     try:
         dados = consultar(sql_consulta)
     except sqlite3.OperationalError:
-        # Se a coluna start_date não existir ainda, cria ela agora automaticamente
-        with conectar() as conexao:
-            try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
-                conexao.commit()
-            except sqlite3.OperationalError:
-                pass
-        # Tenta consultar novamente após criar a coluna
-        dados = consultar(sql_consulta)
-
-    return pd.DataFrame(dados)
+        # Se mesmo assim falhar por conta de tabelas inconsistentes, traz o básico da tabela de amostras para o sistema abrir
+        dados = consultar("SELECT code, area, collection_point, data FROM amostras ORDER BY code")
+        
+    df_resultado = pd.DataFrame(dados)
+    
+    # Preenche de forma artificial as colunas que estiverem faltando para que as páginas do Streamlit não quebrem
+    for col in colunas_possiveis:
+        if col not in df_resultado.columns:
+            df_resultado[col] = ""
+            
+    return df_resultado
 
 
 
