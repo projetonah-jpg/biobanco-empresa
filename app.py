@@ -1897,7 +1897,7 @@ st.markdown(
         background-image: url('https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg');
         background-size: cover;
         background-position: center;
-        padding: 40px 45px;
+        padding: 24px 45px;
         color: white;
         border-radius: 18px;
         margin-bottom: 25px;
