@@ -1893,24 +1893,80 @@ st.sidebar.caption(
 
 st.markdown(
     """
-    <div style="
-        background-image: url('https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg');
+    <style>
+    /* Remove espaços superiores e laterais do conteúdo */
+    .block-container {
+        padding-top: 1rem;
+    }
+
+    /* Banner principal */
+    .biobank-banner {
+        width: 100%;
+        min-height: 145px;
+        box-sizing: border-box;
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(75, 20, 55, 0.12),
+                rgba(120, 30, 105, 0.12)
+            ),
+            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
         background-size: cover;
         background-position: center;
-        padding: 24px 45px;
-        color: white;
-        border-radius: 18px;
-        margin-bottom: 25px;
+        background-repeat: no-repeat;
+        border-radius: 0 0 18px 18px;
+        margin: 0 0 25px 0;
+        padding: 25px 40px;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         align-items: flex-end;
         text-align: right;
-    ">
+        color: white;
+        box-shadow: 0 8px 25px rgba(74, 63, 117, 0.12);
+    }
+
+    .biobank-banner h1 {
+        margin: 0;
+        padding: 0;
+        color: white;
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .biobank-banner p {
+        margin: 8px 0 0 0;
+        padding: 0;
+        color: white;
+        font-size: 15px;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 600px) {
+        .biobank-banner {
+            min-height: 130px;
+            padding: 20px;
+            background-position: center;
+        }
+
+        .biobank-banner h1 {
+            font-size: 23px;
+        }
+
+        .biobank-banner p {
+            font-size: 12px;
+        }
+    }
+    </style>
+
+    <div class="biobank-banner">
         <h1>BIOBANK - NATALIA</h1>
         <p>Gestão integrada de cepas, identificação e armazenamento.</p>
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # ============================================================
