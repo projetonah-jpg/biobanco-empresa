@@ -1894,37 +1894,49 @@ st.sidebar.caption(
 st.markdown(
     """
     <style>
-    .block-container {
+    /* Reduz o espaço superior da página */
+    [data-testid="stAppViewBlockContainer"] {
         padding-top: 0 !important;
-        padding-bottom: 1rem !important;
     }
 
+    /* Cabeçalho nativo do Streamlit */
     [data-testid="stHeader"] {
+        height: 0 !important;
+        min-height: 0 !important;
         background: transparent !important;
     }
 
+    /* Banner principal */
     .biobank-banner {
         width: 100%;
         min-height: 145px;
         box-sizing: border-box;
-        background-image: url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
+
+        background-image: url(
+            "https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg"
+        );
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
+
         padding: 25px 40px;
         margin: 0 0 25px 0;
+
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: flex-end;
+
         text-align: right;
         color: white;
+
         border-radius: 0 0 18px 18px;
         box-shadow: 0 8px 25px rgba(74, 63, 117, 0.12);
     }
 
     .biobank-banner h1 {
         margin: 0;
+        padding: 0;
         color: white;
         font-family: sans-serif;
         font-size: clamp(24px, 3vw, 34px);
@@ -1935,16 +1947,19 @@ st.markdown(
 
     .biobank-banner p {
         margin: 8px 0 0 0;
+        padding: 0;
         color: white;
         font-family: sans-serif;
         font-size: 15px;
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
     }
 
+    /* Ajuste para celulares */
     @media (max-width: 600px) {
         .biobank-banner {
             min-height: 130px;
             padding: 20px;
+            background-position: center;
         }
 
         .biobank-banner h1 {
@@ -1964,6 +1979,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
