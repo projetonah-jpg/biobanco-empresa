@@ -8,7 +8,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
 # ============================================================
 # CONFIGURAÇÃO GERAL
 # ============================================================
@@ -25,104 +24,125 @@ CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
-def campo_selecao(titulo, nome_lista, valor_atual=""):
-    opcoes = [""] + LISTAS.get(nome_lista, [])
-
-    if valor_atual and valor_atual not in opcoes:
-        opcoes.append(valor_atual)
-
-    indice = (
-        opcoes.index(valor_atual)
-        if valor_atual in opcoes
-        else 0
-    )
-
-    return st.selectbox(
-        titulo,
-        opcoes,
-        index=indice,
-    )
-
-
-
-
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL
+# ESTILO E IDENTIDADE VISUAL (TELA DE LOGIN BIOBANK ULTRA AJUSTADA)
 # ============================================================
 
 st.markdown(
     """
     <style>
     :root {
-        --navy: #12343b;
-        --teal: #13877c;
-        --mint: #eaf5f2;
+        --purple-dark: #612147;
+        --purple-light: #833161;
+        --purple-bg: #fdfafc;
         --white: #ffffff;
     }
 
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
+    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+
+    /* 💜 Fundo geral do sistema com o tom exato do banner */
     .stApp {
-        background: linear-gradient(
-            135deg,
-            #f8fcfb 0%,
-            #edf6f4 100%
-        );
+        background-color: #612147 !important;
     }
 
+    /* 🛡️ FOLHA CENTRAL BRANCA: Só ativa quando o painel principal está visível (evita quebrar o login) */
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] [data-testid="stCanvas"], 
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .main,
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .stVerticalBlockRoot {
+        background-color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .block-container {
+        background-color: #ffffff !important;
+        padding-top: 0rem !important;
+        padding-bottom: 3rem !important;
+        padding-left: 45px !important;
+        padding-right: 45px !important;
+        margin-top: 0rem !important;
+        border-radius: 0px 0px 18px 18px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Configuração padrão da folha antes do login */
     .block-container {
-        padding-top: 1.5rem;
-        max-width: 1280px;
+        padding-top: 2rem !important;
+        max-width: 100% !important;
     }
 
-    [data-testid="stSidebar"] {
-        background: linear-gradient(
-            180deg,
-            #12343b,
-            #0d5c58
-        );
+    [data-testid="stMain"] {
+        padding-top: 0rem !important;
+        background-color: transparent !important;
+    }
+
+    /* Força os rótulos de texto de dentro dos campos de input do login a ficarem escuros e legíveis */
+    [data-testid="stWidgetLabel"] p, label p {
+        color: #31333F !important;
+        font-weight: 500 !important;
+    }
+
+    /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+        background-color: #612147 !important;
+        background-image: none !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     [data-testid="stSidebar"] * {
-        color: white;
+        color: white !important;
     }
 
+    /* 💜 Cards de Indicadores (Métricas) com Borda Combinando */
     [data-testid="stMetric"] {
-        background-color: white;
-        border: 1px solid #dcebe7;
-        border-left: 5px solid #13877c;
-        padding: 16px;
-        border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(18, 52, 59, 0.07);
+        background-color: white !important;
+        border: 1px solid #f5edf2 !important;
+        border-left: 5px solid #833161 !important;
+        padding: 16px !important;
+        border-radius: 14px !important;
+        box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
     }
 
+    /* 💜 Botões e Formulários Padronizados com o Tom do Banner */
     .stButton > button,
     .stFormSubmitButton > button {
-        border-radius: 10px;
-        border: 0;
-        background-color: #13877c;
-        color: white;
-        font-weight: 700;
+        border-radius: 10px !important;
+        border: 0 !important;
+        background-color: #833161 !important;
+        color: white !important;
+        font-weight: 700 !important;
+        transition: all 0.3s ease !important;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #0f6f67;
-        color: white;
+        background-color: #612147 !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
     }
 
+    /* 💜 Tela de Login Estilizada e Visível */
     .logo-login {
         text-align: center;
-        color: #12343b;
+        color: #ffffff !important;
         margin: 3vh auto 18px auto;
     }
 
     .logo-login h1 {
-        font-size: 34px;
+        font-size: 38px;
         margin: 10px 0 0 0;
+        color: #ffffff !important;
+        font-weight: 700;
+        letter-spacing: 0.5px;
     }
 
     .logo-login p {
-        color: #5e7776;
+        color: #f5edf2 !important;
         margin-top: 4px;
+        font-size: 15px;
     }
 
     .logo-icone {
@@ -134,45 +154,28 @@ st.markdown(
         place-items: center;
         background: linear-gradient(
             145deg,
-            #13877c,
-            #12343b
+            #833161,
+            #612147
         );
-        color: white;
+        color: white !important;
         font-size: 48px;
-        box-shadow: 0 12px 28px rgba(19, 135, 124, 0.28);
+        box-shadow: 0 12px 28px rgba(131, 49, 97, 0.3);
     }
 
     .caixa-login {
-        background-color: white;
-        padding: 28px 34px 20px 34px;
-        border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(18, 52, 59, 0.14);
-        border: 1px solid #dfefeb;
+        background-color: white !important;
+        padding: 28px 34px 20px 34px !important;
+        border-radius: 22px !important;
+        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.2) !important;
+        border: 1px solid #f5edf2 !important;
     }
 
-        .cabecalho {
-        padding: 20px 24px;
-        /* 💜 NOVO GRADIENTE ROXO SUAVE E PROFISSIONAL */
-        background: linear-gradient(
-            120deg,
-            #4a3f75,
-            #6c5b9b
-        );
-        color: white;
-        border-radius: 18px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 30px rgba(74, 63, 117, 0.14);
-    }
-
-
-    .cabecalho h1 {
-        margin: 0;
-        font-size: 29px;
-    }
-
-    .cabecalho p {
-        margin: 5px 0 0 0;
-        color: #d8efeb;
+    .texto-rodape {
+        text-align: center;
+        color: #f5edf2 !important;
+        font-size: 13px;
+        margin-top: 15px;
+        opacity: 0.85;
     }
 
     .logo-menu {
@@ -186,14 +189,12 @@ st.markdown(
         display: block;
         font-size: 12px;
         font-weight: 400;
-        color: #cbe5e1;
+        color: #f5edf2;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-
 # ============================================================
 # LISTAS DE VALIDAÇÃO
 # ============================================================
@@ -530,38 +531,6 @@ def criar_banco():
                 atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS identificacoes (
-                code TEXT PRIMARY KEY,
-                form TEXT,
-                margin TEXT,
-                pigment TEXT,
-                gram_stain TEXT,
-                catalase TEXT,
-                koh TEXT,
-                oxidase TEXT,
-                outsourced_method TEXT,
-                identification TEXT,
-                report TEXT,
-                company TEXT,
-                end_date TEXT,
-                atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (code)
-                    REFERENCES amostras(code)
-                    ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS dados_brutos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tsb TEXT,
-                glicerina TEXT,
-                tsa TEXT,
-                criotubo TEXT,
-                placa_de_petri TEXT,
-                fluxo_laminar TEXT,
-                ultrafreezer TEXT,
-                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-            );
             """
         )
 def inserir_dados_iniciais(conexao):
@@ -881,7 +850,7 @@ def pagina_dashboard():
         st.info("Sem dados cadastrados.")
         return
 
-    # 📊 Cálculos Matemáticos baseados no Banco de Dados
+    # Cálculos Matemáticos baseados no Banco de Dados
     total_amostras = len(df_amostras)
     
     codigos_identificados = []
@@ -903,7 +872,7 @@ def pagina_dashboard():
             st.session_state.filtro_clique = "Todos"
             st.rerun()
 
-    # 🟢 Módulos superiores de métricas
+    # Módulos superiores de métricas (Cards com bordas roxas)
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -936,59 +905,81 @@ def pagina_dashboard():
         st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
         
     else:
-        esquerda, direita = st.columns(2)
-
-        with esquerda:
-            if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-                resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-                if not resumo_micro.empty:
-                    grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#13877c"])
-                    st.plotly_chart(grafico_barras, use_container_width=True)
-                else:
-                    st.info("Nenhum microrganismo identificado ainda.")
+        # 💜 Gráfico de barras horizontal ocupando a largura total na cor roxa corporativa
+        if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
+            resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
+            if not resumo_micro.empty:
+                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#6c5b9b"])
+                st.plotly_chart(grafico_barras, use_container_width=True)
             else:
-                st.info("Aguardando registros de identificação.")
+                st.info("Nenhum microrganismo identificado ainda.")
+        else:
+            st.info("Aguardando registros de identificação.")
 
-        with direita:
-            grafico_pizza = px.pie(df_amostras, names="resultado_final", title="Status das Coletas (Conformidade)", hole=0.45, color_discrete_sequence=["#13877c", "#12343b"])
-            grafico_pizza.update_traces(textinfo="percent+label", textposition="inside", insidetextorientation="radial")
-            st.plotly_chart(grafico_pizza, use_container_width=True)
-
-        # 📈 Histórico de Tendência Microbiológica
+        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS
         st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.subheader("📊 Histórico de Tendência Microbiológica")
+        st.subheader("📈 Análise de Tendência de Contaminação por Período")
         
-        dados_tendencia = consultar("""
-            SELECT a.origin, a.data, i.identification
-            FROM amostras a
-            INNER JOIN identificacoes i ON a.code = i.code
-            WHERE i.identification IS NOT NULL AND i.identification != ''
-        """)
+        df_linha_dados = df_amostras.merge(df_identificacoes[["code", "identification"]], on="code", how="inner")
+        df_linha_dados = df_linha_dados[df_linha_dados["identification"].fillna("").str.strip() != ""]
         
-        if dados_tendencia:
-            df_t = pd.DataFrame(dados_tendencia)
-            df_t["datetime"] = pd.to_datetime(df_t["data"], errors="coerce")
-            df_t = df_t.dropna(subset=["datetime"])
+        if df_linha_dados.empty:
+            st.info("Aguardando dados com identificações completas para renderizar o gráfico de linhas.")
+        else:
+            df_linha_dados["datetime"] = pd.to_datetime(df_linha_dados["data"], errors="coerce")
+            df_linha_dados = df_linha_dados.dropna(subset=["datetime"]).sort_values(by="datetime")
             
-            if not df_t.empty:
-                lista_origens = ["Todas as Origens"] + sorted(df_t["origin"].unique().tolist())
-                origem_selecionada = st.selectbox("Filtrar gráfico por origem:", lista_origens)
+            nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
+            df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
+            df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
+            
+            # Filtros dinâmicos compactados em listas suspensas (Selectbox)
+            filt1, filt2 = st.columns(2)
+            
+            with filt1:
+                opcoes_area = ["Todas as Áreas"] + sorted(df_linha_dados["area"].unique().tolist())
+                area_sel = st.selectbox("🏢 Filtrar por Área:", opcoes_area)
                 
-                if origem_selecionada != "Todas as Origens":
-                    df_t = df_t[df_t["origin"] == origem_selecionada]
+            with filt2:
+                opcoes_ponto = ["Todos os Pontos"] + sorted(df_linha_dados["collection_point"].unique().tolist())
+                ponto_sel = st.selectbox("📍 Filtrar por Ponto de Coleta:", opcoes_ponto)
+            
+            if area_sel != "Todas as Áreas":
+                df_linha_dados = df_linha_dados[df_linha_dados["area"] == area_sel]
+            if ponto_sel != "Todos os Pontos":
+                df_linha_dados = df_linha_dados[df_linha_dados["collection_point"] == ponto_sel]
                 
-                df_t["mes_num"] = df_t["datetime"].dt.month
-                nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
-                df_t["Mês"] = df_t["mes_num"].map(nomes_meses)
+            df_agrupado_linha = df_linha_dados.groupby(["Mês_Num", "Mês", "identification"]).size().reset_index(name="Quantidade").sort_values(by="Mês_Num")
+            
+            if df_agrupado_linha.empty:
+                st.warning("Nenhum registro encontrado para essa combinação de filtros.")
+            else:
+                fig_linha_dinamica = px.line(
+                    df_agrupado_linha,
+                    x="Mês",
+                    y="Quantidade",
+                    color="identification",
+                    markers=True,
+                    title=f"Evolução Microbiológica — {area_sel} | {ponto_sel}",
+                    labels={"identification": "Gênero Isolado", "Quantidade": "Contagem de Colônias"},
+                    color_discrete_sequence=px.colors.qualitative.Safe
+                )
                 
-                df_agrupado = df_t.groupby(["mes_num", "Mês", "identification"]).size().reset_index(name="Colônias").sort_values(by="mes_num")
-                
-                if not df_agrupado.empty:
-                    grafico_linha = px.line(df_agrupado, x="Mês", y="Colônias", color="identification", markers=True, title=f"Bacterial Identification by Genus — {origem_selecionada}", labels={"identification": "Genus"}, color_discrete_sequence=px.colors.qualitative.Bold)
-                    grafico_linha.update_layout(xaxis_title="Month", yaxis_title="# of Colonies Observed", xaxis={'categoryorder': 'array', 'categoryarray': list(nomes_meses.values())})
-                    st.plotly_chart(grafico_linha, use_container_width=True)
-
-
+                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
+                fig_linha_dinamica.update_layout(
+                    plot_bgcolor="#f8fafc",
+                    paper_bgcolor="white",
+                    yaxis=dict(
+                        tickformat="d",
+                        dtick=1,
+                        autorange=True
+                    ),
+                    xaxis=dict(
+                        categoryorder='array', 
+                        categoryarray=list(nomes_meses.values())
+                    )
+                )
+                st.plotly_chart(fig_linha_dinamica, use_container_width=True)
 
 
 
@@ -1369,71 +1360,47 @@ def pagina_registro():
 # ============================================================
 
 def pagina_armazenamento():
-    st.title("Armazenamento de Isolados Identificados")
+    st.title("🧫 Armazenamento de Isolados Identificados")
+    st.caption("Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas.")
+
     df = obter_identificacoes()
-
-    if df.empty:
-        st.info("Nenhuma amostra cadastrada.")
-        return
-
-    # Organiza a tabela principal de visualização
-    armazenamento = df[["code", "gram_stain", "identification"]].copy()
-    armazenamento.columns = ["CODE", "GRAM STAIN", "IDENTIFICATION"]
     
-    # Exibe a tabela principal de isolados
-    st.dataframe(armazenamento, use_container_width=True, hide_index=True)
-
-    st.markdown("<br><hr>", unsafe_allow_html=True)
-    st.subheader("🦠 Resumo de Contaminantes em Banco de Cepas")
-
-    # Filtra e agrupa os microrganismos identificados
-    resumo = armazenamento["IDENTIFICATION"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-
-    if resumo.empty:
-        st.info("Ainda não existem identificações preenchidas para gerar o resumo.")
+    if df.empty:
+        st.info("Nenhuma amostra cadastrada no sistema até o momento.")
         return
 
-    # 💡 IDEIA 1: Renderizar o resumo em formatos de indicadores/cards modernos
-    colunas_cards = st.columns(min(len(resumo), 4))
-    for i, linha in resumo.iterrows():
-        idx_col = i % 4
-        with colunas_cards[idx_col]:
-            st.metric(
-                label=f"Total de {linha['IDENTIFICAÇÃO']}", 
-                value=f"{linha['OCORRÊNCIAS']} un"
-            )
+    # Filtra apenas os registros que já possuem identificação preenchida
+    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
 
+    if df_filtrado.empty:
+        st.info("Nenhum microrganismo identificado e armazenado no banco de cepas ainda.")
+        return
+
+    # Conta o total de registros válidos para mostrar no indicador superior
+    total_isolados = len(df_filtrado)
+    st.metric(label="🦠 Total de Isolados Preservados no Banco", value=f"{total_isolados} un")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 💡 IDEIA 2: Gráfico de barras horizontal estilizado com as cores do sistema
-    coluna1, coluna2 = st.columns([1, 2])
+    # Prepara e formata a tabela com as colunas essenciais de rastreabilidade
+    armazenamento = df_filtrado[["code", "gram_stain", "identification", "area", "collection_point", "data"]].copy()
     
-    with coluna1:
-        st.caption("📋 Detalhamento em formato tabular:")
-        st.dataframe(resumo, use_container_width=True, hide_index=True)
-        
-    with coluna2:
-        # Gráfico configurado com a paleta profissional verde do sistema
-        grafico = px.bar(
-            resumo, 
-            x="OCORRÊNCIAS", 
-            y="IDENTIFICAÇÃO", 
-            orientation="h", 
-            text_auto=True, 
-            title="Ocorrências por Tipo de Microrganismo",
-            color="IDENTIFICAÇÃO",
-            color_discrete_sequence=px.colors.qualitative.Safe
-        )
-        
-        # Deixa o fundo cinza clássico e as linhas limpas
-        grafico.update_layout(
-            plot_bgcolor="#f8fafc",
-            paper_bgcolor="white",
-            xaxis_title="Quantidade de Isolados",
-            yaxis_title="Microrganismo",
-            showlegend=False
-        )
-        st.plotly_chart(grafico, use_container_width=True)
+    config_armazenamento = {
+        "code": "CODE",
+        "gram_stain": "GRAM STAIN",
+        "identification": "IDENTIFICATION",
+        "area": "AREA",
+        "collection_point": "COLLECTION POINT",
+        "data": "COLLECTION DATE"
+    }
+
+    st.dataframe(
+        armazenamento, 
+        use_container_width=True, 
+        hide_index=True, 
+        column_config=config_armazenamento
+    )
+    st.caption(f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos.")
+
 
 
 
@@ -1717,161 +1684,144 @@ def pagina_dados():
 
 def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
-    st.caption("Gerenciamento de lotes de insumos, meios de cultura e equipamentos mapeados na planilha.")
+    st.caption("Gerenciamento e monitoramento automático de validades de insumos e meios de cultura.")
 
-    # Garante a existência da tabela antes de ler os dados
+    # Garante a existência da tabela com suporte a formato de data nativo
     with conectar() as conexao:
         conexao.execute("""
             CREATE TABLE IF NOT EXISTS dados_brutos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tsb TEXT,
-                glicerina TEXT,
-                tsa TEXT,
-                criotubo TEXT,
-                placa_de_petri TEXT,
-                fluxo_laminar TEXT,
-                ultrafreezer TEXT,
+                tsb TEXT, tsb_val TEXT,
+                glicerina TEXT, glicerina_val TEXT,
+                tsa TEXT, tsa_val TEXT,
+                criotubo TEXT, placa_de_petri TEXT, fluxo_laminar TEXT, ultrafreezer TEXT,
                 criado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
-    # Busca as informações diretamente do banco de dados
     try:
-        linhas = consultar("""
-            SELECT id, tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer 
-            FROM dados_brutos 
-            ORDER BY id DESC
-        """)
+        linhas = consultar("SELECT id, tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
     except Exception:
         linhas = []
         
     df_brutos = pd.DataFrame(linhas)
     lista_ids = df_brutos["id"].tolist() if not df_brutos.empty else []
 
-    # 🎛️ Menu de Navegação interno da aba
-    modo = st.radio("Ação", ["📋 Visualizar Planilha", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
-
+    modo = st.radio("Ação", ["📋 Visualizar Planilha & Alertas", "➕ Inserir Linha Manual", "✏️ Editar Linha", "❌ Excluir Linha"], horizontal=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ============================================================
-    # MODO VISUALIZAR PLANILHA (COM CARDS DE ALERTA PROFISSIONAIS)
+    # MODO 1: VISUALIZAR PLANILHA COM ALERTAS COLORIDOS
     # ============================================================
-    if modo == "📋 Visualizar Planilha":
+    if modo == "📋 Visualizar Planilha & Alertas":
         if df_brutos.empty:
-            st.info("Nenhum dado bruto encontrado. Use a aba de inserção manual ou faça o upload da planilha para começar.")
+            st.info("Nenhum dado bruto encontrado. Cadastre manualmente ou via importação.")
         else:
-            # 💎 IDEIA DE OURO RENDERIZADA: Painel Visual de Insumos Críticos
-            st.markdown("### 🧪 Status de Insumos Críticos e Equipamentos")
+            st.markdown("### 🚦 Status e Alertas de Validade")
             
-            # Pega o registro mais recente para os Cards Indicadores
-            ultimo_registro = df_brutos.iloc[0]
-            
-            c1, c2, c3 = st.columns(3)
-            
-            with c1:
-                val_tsb = str(ultimo_registro['tsb']).strip()
-                st.metric(
-                    label="🧫 Meio de Cultura TSB (Lote Ativo)", 
-                    value=val_tsb if val_tsb else "Não Informado",
-                    delta="Dentro da Validade" if val_tsb else "Aviso: Sem Lote",
-                    delta_color="normal" if val_tsb else "inverse"
-                )
-                
-            with c2:
-                val_tsa = str(ultimo_registro['tsa']).strip()
-                st.metric(
-                    label="🧫 Meio de Cultura TSA (Lote Ativo)", 
-                    value=val_tsa if val_tsa else "Não Informado",
-                    delta="Aprovado no Controle" if val_tsa else "Pendente",
-                    delta_color="normal" if val_tsa else "off"
-                )
-                
-            with c3:
-                val_freezer = str(ultimo_registro['ultrafreezer']).strip()
-                st.metric(
-                    label="❄️ Monitoramento Ultra-Freezer", 
-                    value=val_freezer if val_freezer else "—", 
-                    delta="Temperatura Estável -80°C" if val_freezer else "Sem Registro",
-                    delta_color="normal" if val_freezer else "inverse"
-                )
-                
-            st.markdown("<br><hr>", unsafe_allow_html=True)
-            
-            # Exibição organizada da tabela principal
-            config_brutos = {
-                "id": "ID", "tsb": "TSB", "glicerina": "GLICERINA", "tsa": "TSA", "criotubo": "CRIOTUBO",
-                "placa_de_petri": "PLACA DE PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
-            }
-            st.dataframe(df_brutos, use_container_width=True, hide_index=True, column_config=config_brutos)
-            st.caption(f"Painel gerencial atualizado • Total de lotes monitorados: {len(df_brutos)} linhas.")
+            def mapear_status_validade(data_texto):
+                if not data_texto or data_texto == "—":
+                    return "⚪ Sem Data"
+                try:
+                    data_val = pd.to_datetime(data_texto).date()
+                    hoje = pd.Timestamp.now().date()
+                    dias_restantes = (data_val - hoje).days
+                    
+                    if dias_restantes < 0:
+                        return "🔴 VENCIDO"
+                    elif dias_restantes <= 30:
+                        return f"🟡 Vence em {dias_restantes} dias"
+                    else:
+                        return "🟢 Regular"
+                except Exception:
+                    return "⚪ Erro na data"
 
+            df_visualizacao = df_brutos.copy()
+            df_visualizacao["STATUS TSB"] = df_visualizacao["tsb_val"].apply(mapear_status_validade)
+            df_visualizacao["STATUS TSA"] = df_visualizacao["tsa_val"].apply(mapear_status_validade)
+            
+            st.dataframe(
+                df_visualizacao[[
+                    "id", "tsb", "tsb_val", "STATUS TSB", 
+                    "tsa", "tsa_val", "STATUS TSA", 
+                    "glicerina", "criotubo", "placa_de_petri", "fluxo_laminar", "ultrafreezer"
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "id": "ID", "tsb": "LOTE TSB", "tsb_val": "VALIDADE TSB",
+                    "tsa": "LOTE TSA", "tsa_val": "VALIDADE TSA",
+                    "glicerina": "GLICERINA", "criotubo": "CRIOTUBO",
+                    "placa_de_petri": "PLACA PETRI", "fluxo_laminar": "FLUXO LAMINAR", "ultrafreezer": "ULTRAFREEZER"
+                }
+            )
+            
     # ============================================================
-    # MODO EXCLUIR LINHA
+    # MODO 2: EXCLUIR REGISTRO
     # ============================================================
     elif modo == "❌ Excluir Linha":
-        if not lista_ids:
-            st.info("Nenhum registro bruto encontrado para excluir.")
-            return
-        id_selecionado = st.selectbox("Selecione o ID do registro que deseja remover:", lista_ids)
-        reg_excluir = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
-        
-        st.warning(f"⚠️ Atenção: Você está prestes a excluir definitivamente o registro de ID {id_selecionado}.")
-        st.markdown(f"**Dados do Registro:** TSB: `{reg_excluir['tsb']}` | TSA: `{reg_excluir['tsa']}` | Ultrafreezer: `{reg_excluir['ultrafreezer']}`")
-        
-        confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente o registro {id_selecionado}")
-        
-        if st.button("❌ Deletar Permanentemente", type="primary", disabled=not confirmar_exclusao, use_container_width=True):
-            with conectar() as conexao:
-                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_selecionado,))
-            st.success(f"Registro {id_selecionado} deletado com sucesso!")
+        if not lista_ids: return
+        id_sel = st.selectbox("Selecione o ID para remover:", lista_ids)
+        if st.button("❌ Deletar Permanentemente", type="primary", use_container_width=True):
+            with conectar() as conexao: 
+                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_sel,))
+            st.success("Deletado com sucesso!")
             st.rerun()
 
     # ============================================================
-    # MODO INSERIR OU EDITAR REGISTRO
+    # MODO 3: INSERIR OU EDITAR COM SELETOR DE CALENDÁRIO
     # ============================================================
     else:
-        if modo == "✏️ Editar Linha":
-            if not lista_ids:
-                st.info("Nenhum registro bruto encontrado para editar.")
-                return
-            id_selecionado = st.selectbox("Selecione o ID do registro que deseja editar:", lista_ids)
-            reg = df_brutos[df_brutos["id"] == id_selecionado].iloc[0].to_dict()
-        else:
-            reg = {}
+        reg = df_brutos[df_brutos["id"] == st.selectbox("Selecione o ID para editar:", lista_ids)].iloc[0].to_dict() if modo == "✏️ Editar Linha" and lista_ids else {}
+        
+        with st.form("form_brutos_validades"):
+            st.markdown("##### 🧫 Meios de Cultura (Lote e Validade)")
+            col_tsb1, col_tsb2 = st.columns([2, 1])
+            tsb = col_tsb1.text_input("Lote TSB", value=reg.get("tsb", ""))
+            dt_tsb = pd.to_datetime(reg.get("tsb_val", ""), errors="coerce")
+            tsb_val = col_tsb2.date_input("Validade TSB", value=None if pd.isna(dt_tsb) else dt_tsb.date(), format="DD/MM/YYYY")
 
-        with st.form("form_dados_brutos_avancado"):
-            c1, c2, c3 = st.columns(3)
-            tsb = c1.text_input("TSB", value=reg.get("tsb", ""), placeholder="Lote / Validade")
-            glicerina = c2.text_input("GLICERINA", value=reg.get("glicerina", ""))
-            tsa = c3.text_input("TSA", value=reg.get("tsa", ""))
+            col_tsa1, col_tsa2 = st.columns([2, 1])
+            tsa = col_tsa1.text_input("Lote TSA", value=reg.get("tsa", ""))
+            dt_tsa = pd.to_datetime(reg.get("tsa_val", ""), errors="coerce")
+            tsa_val = col_tsa2.date_input("Validade TSA", value=None if pd.isna(dt_tsa) else dt_tsa.date(), format="DD/MM/YYYY")
 
-            c4, c5, c6 = st.columns(3)
-            criotubo = c4.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
-            placa_de_petri = c5.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
-            fluxo_laminar = c6.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
+            st.markdown("---")
+            st.markdown("##### 📦 Outros Insumos e Equipamentos")
+            c1, c2, c3, c4 = st.columns(4)
+            glicerina = c1.text_input("GLICERINA", value=reg.get("glicerina", ""))
+            criotubo = c2.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
+            placa = c3.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
+            fluxo = c4.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
+            
+            ultrafreezer = st.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
+            
+            if st.form_submit_button("Salvar Dados e Monitorar Validades", type="primary"):
+                t_val = tsb_val.isoformat() if tsb_val else ""
+                a_val = tsa_val.isoformat() if tsa_val else ""
+                
+                with conectar() as conexao:
+                    # 🩹 SEGURANÇA INTERNA AUTOMÁTICA CONTRA ERROS DE SQLITE
+                    try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsb_val TEXT")
+                    except sqlite3.OperationalError: pass
+                    try: conexao.execute("ALTER TABLE dados_brutos ADD COLUMN tsa_val TEXT")
+                    except sqlite3.OperationalError: pass
+                    
+                    if modo == "✏️ Editar Linha":
+                        conexao.execute("""
+                            UPDATE dados_brutos 
+                            SET tsb=?, tsb_val=?, glicerina=?, tsa=?, tsa_val=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=? 
+                            WHERE id=?
+                        """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer, id_sel))
+                    else:
+                        conexao.execute("""
+                            INSERT INTO dados_brutos (tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (tsb, t_val, glicerina, tsa, a_val, criotubo, placa, fluxo, ultrafreezer))
+                st.success("Dados salvos e monitoramento ativado!")
+                st.rerun()
 
-            c7, _, _ = st.columns(3)
-            ultrafreezer = c7.text_input("ULTRAFREEZER", value=reg.get("ultrafreezer", ""))
 
-            texto_botao = "Salvar Alterações" if modo == "✏️ Editar Linha" else "Adicionar Linha aos Dados Brutos"
-            salvar_bruto = st.form_submit_button(texto_botao, type="primary")
-
-        if salvar_bruto:
-            with conectar() as conexao:
-                if modo == "✏️ Editar Linha":
-                    conexao.execute("""
-                        UPDATE dados_brutos 
-                        SET tsb=?, glicerina=?, tsa=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=?
-                        WHERE id=?
-                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer, id_selecionado))
-                    st.success("Alterações salvas com sucesso!")
-                else:
-                    conexao.execute("""
-                        INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer))
-                    st.success("Linha de dados brutos adicionada com sucesso!")
-            st.rerun()
 
 
 
@@ -1937,21 +1887,105 @@ st.sidebar.caption(
 # CABEÇALHO
 # ============================================================
 
+# ==========================================
+# CABEÇALHO DO BIOBANK
+# ==========================================
+
 st.markdown(
     """
-    <div class="cabecalho">
-        <h1>
-            BIOBANK - NATALIA
-        </h1>
-        <p>
-            Gestão integrada de cepas, identificação
-            e armazenamento.
-        </p>
+    <style>
+    /* Reduz as margens e amplia a área principal */
+    .block-container {
+        max-width: 100% !important;
+        padding-top: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 1rem !important;
+    }
+
+    /* Evita espaços laterais desnecessários */
+    [data-testid="stMainBlockContainer"] {
+        max-width: 100% !important;
+    }
+
+    /* Banner ocupa toda a largura disponível */
+    .biobank-banner {
+        width: 100%;
+        min-height: 150px;
+        box-sizing: border-box;
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(75, 20, 60, 0.12),
+                rgba(100, 20, 85, 0.18)
+            ),
+            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
+        background-size: cover;
+        background-position: center;
+        border-radius: 0 0 18px 18px;
+        margin: 0 0 24px 0;
+        padding: 28px 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        text-align: right;
+        color: white;
+        box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
+    }
+
+    .biobank-banner h1 {
+        margin: 0;
+        font-size: clamp(24px, 2.5vw, 36px);
+        font-weight: 750;
+        color: white;
+        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .biobank-banner p {
+        margin: 8px 0 0 0;
+        font-size: 15px;
+        color: white;
+    }
+
+    /* Cartões e gráficos aproveitam a largura */
+    [data-testid="stMetric"],
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        width: 100%;
+    }
+
+    /* Ajustes para telas menores */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+
+        .biobank-banner {
+            min-height: 125px;
+            padding: 22px 18px;
+            background-position: center;
+        }
+
+        .biobank-banner h1 {
+            font-size: 24px;
+        }
+
+        .biobank-banner p {
+            font-size: 13px;
+        }
+    }
+    </style>
+
+    <div class="biobank-banner">
+        <h1>BIOBANK - NATALIA</h1>
+        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
