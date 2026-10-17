@@ -25,70 +25,56 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL (TELA DE LOGIN BIOBANK ULTRA AJUSTADA)
+# ESTILO E IDENTIDADE VISUAL (PALETA ROXA UNIFICADA COMPLETA)
 # ============================================================
 
 st.markdown(
     """
     <style>
     :root {
-        --purple-dark: #612147;
-        --purple-light: #833161;
-        --purple-bg: #fdfafc;
+        --purple-dark: #3a3260;
+        --purple-light: #6c5b9b;
+        --purple-bg: #f5f3f9;
         --white: #ffffff;
     }
 
-    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato, Estrela) */
     .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 💜 Fundo geral do sistema com o tom exato do banner */
+    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial do menu e do banner */
     .stApp {
-        background-color: #612147 !important;
+        background-color: #3a3260 !important;
     }
 
-    /* 🛡️ FOLHA CENTRAL BRANCA: Só ativa quando o painel principal está visível (evita quebrar o login) */
-    [data-testid="stSidebar"] ~ [data-testid="stMainView"] [data-testid="stCanvas"], 
-    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .main,
-    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .stVerticalBlockRoot {
+    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
+    [data-testid="stAppViewBlockContainer"] {
         background-color: #ffffff !important;
+        padding: 0px 45px 35px 45px !important;
+        border-radius: 18px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
+        margin-top: 0px !important;
+        margin-bottom: 25px !important;
+        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
     }
 
-    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .block-container {
-        background-color: #ffffff !important;
-        padding-top: 0rem !important;
-        padding-bottom: 3rem !important;
-        padding-left: 45px !important;
-        padding-right: 45px !important;
-        margin-top: 0rem !important;
-        border-radius: 0px 0px 18px 18px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
-    }
-
-    /* Configuração padrão da folha antes do login */
+    /* 📏 Ajusta o container principal do Streamlit */
     .block-container {
-        padding-top: 2rem !important;
-        max-width: 100% !important;
+        padding-top: 0rem !important;
+        padding-bottom: 2rem !important;
     }
 
     [data-testid="stMain"] {
         padding-top: 0rem !important;
-        background-color: transparent !important;
     }
 
-    /* Força os rótulos de texto de dentro dos campos de input do login a ficarem escuros e legíveis */
-    [data-testid="stWidgetLabel"] p, label p {
-        color: #31333F !important;
-        font-weight: 500 !important;
-    }
-
-    /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
+    /* 💜 Menu Lateral Customizado com a cor roxa idêntica ao banner oficial */
     [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
-        background-color: #612147 !important;
-        background-image: none !important;
+        background-color: #3a3260 !important;
+        background-image: none !important; /* Remove o degradê antigo */
         border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
@@ -96,53 +82,49 @@ st.markdown(
         color: white !important;
     }
 
-    /* 💜 Cards de Indicadores (Métricas) com Borda Combinando */
+    /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
     [data-testid="stMetric"] {
-        background-color: white !important;
-        border: 1px solid #f5edf2 !important;
-        border-left: 5px solid #833161 !important;
-        padding: 16px !important;
-        border-radius: 14px !important;
-        box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
+        background-color: white;
+        border: 1px solid #e1def2;
+        border-left: 5px solid #6c5b9b;
+        padding: 16px;
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(74, 63, 117, 0.06);
     }
 
-    /* 💜 Botões e Formulários Padronizados com o Tom do Banner */
+    /* 💜 Botões e Formulários Padronizados em Roxo */
     .stButton > button,
     .stFormSubmitButton > button {
-        border-radius: 10px !important;
-        border: 0 !important;
-        background-color: #833161 !important;
-        color: white !important;
-        font-weight: 700 !important;
-        transition: all 0.3s ease !important;
+        border-radius: 10px;
+        border: 0;
+        background-color: #6c5b9b;
+        color: white;
+        font-weight: 700;
+        transition: all 0.3s ease;
     }
 
     .stButton > button:hover,
     .stFormSubmitButton > button:hover {
-        background-color: #612147 !important;
-        color: white !important;
-        box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
+        background-color: #4a3f75;
+        color: white;
+        box-shadow: 0 4px 12px rgba(108, 91, 155, 0.25);
     }
 
-    /* 💜 Tela de Login Estilizada e Visível */
+    /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #ffffff !important;
+        color: #ffffff;
         margin: 3vh auto 18px auto;
     }
 
     .logo-login h1 {
-        font-size: 38px;
+        font-size: 34px;
         margin: 10px 0 0 0;
-        color: #ffffff !important;
-        font-weight: 700;
-        letter-spacing: 0.5px;
     }
 
     .logo-login p {
-        color: #f5edf2 !important;
+        color: #dcd7ee;
         margin-top: 4px;
-        font-size: 15px;
     }
 
     .logo-icone {
@@ -154,28 +136,20 @@ st.markdown(
         place-items: center;
         background: linear-gradient(
             145deg,
-            #833161,
-            #612147
+            #6c5b9b,
+            #3a3260
         );
-        color: white !important;
+        color: white;
         font-size: 48px;
-        box-shadow: 0 12px 28px rgba(131, 49, 97, 0.3);
+        box-shadow: 0 12px 28px rgba(108, 91, 155, 0.3);
     }
 
     .caixa-login {
-        background-color: white !important;
-        padding: 28px 34px 20px 34px !important;
-        border-radius: 22px !important;
-        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.2) !important;
-        border: 1px solid #f5edf2 !important;
-    }
-
-    .texto-rodape {
-        text-align: center;
-        color: #f5edf2 !important;
-        font-size: 13px;
-        margin-top: 15px;
-        opacity: 0.85;
+        background-color: white;
+        padding: 28px 34px 20px 34px;
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
+        border: 1px solid #e1def2;
     }
 
     .logo-menu {
@@ -189,7 +163,7 @@ st.markdown(
         display: block;
         font-size: 12px;
         font-weight: 400;
-        color: #f5edf2;
+        color: #dcd7ee;
     }
     </style>
     """,
@@ -670,23 +644,74 @@ def substituir_dados(amostras, identificacoes):
 def mostrar_login():
     if st.session_state.get("autenticado"):
         return True
-    st.markdown('<div class="logo-login"><div class="logo-icone">🧫</div><h1>BioBank</h1><p>Monitoramento Microbiológico</p></div>', unsafe_allow_html=True)
-    _, centro, _ = st.columns([1.15, 1, 1.15])
+
+    st.markdown(
+        """
+        <div class="logo-login">
+            <div class="logo-icone">🧫</div>
+            <h1>Natalia</h1>
+            <p>Monitoramento Microbiológico</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    esquerda, centro, direita = st.columns(
+        [1.15, 1, 1.15]
+    )
+
     with centro:
-        st.markdown('<div class="caixa-login">', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="caixa-login">',
+            unsafe_allow_html=True,
+        )
+
         with st.form("formulario_login"):
-            usuario = st.text_input("Usuário", placeholder="Digite seu usuário")
-            senha = st.text_input("Senha", type="password", placeholder="Digite sua senha")
-            entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<div class="texto-rodape">Acesso restrito ao laboratório de microbiologia.</div>', unsafe_allow_html=True)
+            usuario = st.text_input(
+                "Usuário",
+                placeholder="Digite seu usuário",
+            )
+
+            senha = st.text_input(
+                "Senha",
+                type="password",
+                placeholder="Digite sua senha",
+            )
+
+            entrar = st.form_submit_button(
+                "Entrar",
+                type="primary",
+                use_container_width=True,
+            )
+
+        st.caption(
+            "Acesso restrito ao laboratório de microbiologia."
+        )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
         if entrar:
-            if hmac.compare_digest(usuario.strip(), USUARIO_PADRAO) and hmac.compare_digest(senha, SENHA_PADRAO):
+            usuario_correto = hmac.compare_digest(
+                usuario.strip(),
+                USUARIO_PADRAO,
+            )
+
+            senha_correta = hmac.compare_digest(
+                senha,
+                SENHA_PADRAO,
+            )
+
+            if usuario_correto and senha_correta:
                 st.session_state.autenticado = True
                 st.session_state.usuario = USUARIO_PADRAO
                 st.rerun()
+
             else:
                 st.error("Usuário ou senha inválidos.")
+
     return False
 
 
