@@ -25,156 +25,172 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL DINÂMICA (IMUNE A ERROS DE ABAS)
+# ESTILO E IDENTIDADE VISUAL (TELA DE LOGIN BIOBANK ULTRA AJUSTADA)
 # ============================================================
 
-# Define a cor da folha central dependendo se o usuário está logado ou não
-if not st.session_state.get("autenticado"):
-    # 💜 Visual da Tela de Login (Fundo roxo ameixa total)
-    cor_fundo_interna = "#612147"
-    cor_texto_login_h1 = "#ffffff"
-    cor_texto_login_p = "#f5edf2"
-    sombra_container = "none"
-    padding_container = "2rem"
-else:
-    # 📄 Visual do Painel Interno (Folha central branca perfeita e legível)
-    cor_fundo_interna = "#ffffff"
-    cor_texto_login_h1 = "#31333F"
-    cor_texto_login_p = "#31333F"
-    sombra_container = "0 12px 36px rgba(0, 0, 0, 0.25)"
-    padding_container = "0px 45px 35px 45px"
-
 st.markdown(
-    f"""
+    """
     <style>
-    :root {{
+    :root {
         --purple-dark: #612147;
         --purple-light: #833161;
         --purple-bg: #fdfafc;
         --white: #ffffff;
-    }}
+    }
 
     /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
-    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {{
+    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
-    }}
+    }
 
-    /* 💜 Pinta as laterais externas e o fundo geral com o roxo escuro oficial */
-    .stApp {{
+    /* 💜 Fundo geral do sistema com o tom exato do banner */
+    .stApp {
         background-color: #612147 !important;
-    }}
+    }
 
-    /* 🛡️ CONTROLE INTELIGENTE: Força a folha interna a seguir a decisão do Python */
-    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {{
-        background-color: {cor_fundo_interna} !important;
-    }}
+    /* 🛡️ FOLHA CENTRAL BRANCA: Só ativa quando o painel principal está visível (evita quebrar o login) */
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] [data-testid="stCanvas"], 
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .main,
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .stVerticalBlockRoot {
+        background-color: #ffffff !important;
+    }
 
-    /* 📏 Ajusta a folha central de trabalho de forma dinâmica */
-    .block-container {{
-        background-color: {cor_fundo_interna} !important;
-        padding: {padding_container} !important;
+    [data-testid="stSidebar"] ~ [data-testid="stMainView"] .block-container {
+        background-color: #ffffff !important;
+        padding-top: 0rem !important;
+        padding-bottom: 3rem !important;
+        padding-left: 45px !important;
+        padding-right: 45px !important;
         margin-top: 0rem !important;
         border-radius: 0px 0px 18px 18px !important;
-        box-shadow: {sombra_container} !important;
-        max-width: 94% !important;
-    }}
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
+    }
 
-    [data-testid="stMain"] {{
+    /* Configuração padrão da folha antes do login */
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 100% !important;
+    }
+
+    [data-testid="stMain"] {
         padding-top: 0rem !important;
-        background-color: #612147 !important;
-    }}
+        background-color: transparent !important;
+    }
 
-    /* Garante que todos os textos de inputs, labels e formulários internos fiquem escuros no fundo branco */
-    [data-testid="stWidgetLabel"] p, label p, .stMarkdown p, h1, h2, h3, stSubheader {{
+    /* Força os rótulos de texto de dentro dos campos de input do login a ficarem escuros e legíveis */
+    [data-testid="stWidgetLabel"] p, label p {
         color: #31333F !important;
-    }}
-    
-    /* Exceção: mantém os textos do menu lateral em branco */
-    [data-testid="stSidebar"] * {{
-        color: white !important;
-    }}
+        font-weight: 500 !important;
+    }
 
     /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
         background-color: #612147 !important;
         background-image: none !important;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
-    }}
+    }
+
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
 
     /* 💜 Cards de Indicadores (Métricas) com Borda Combinando */
-    [data-testid="stMetric"] {{
+    [data-testid="stMetric"] {
         background-color: white !important;
         border: 1px solid #f5edf2 !important;
         border-left: 5px solid #833161 !important;
         padding: 16px !important;
         border-radius: 14px !important;
         box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
-    }}
+    }
 
     /* 💜 Botões e Formulários Padronizados com o Tom do Banner */
     .stButton > button,
-    .stFormSubmitButton > button {{
+    .stFormSubmitButton > button {
         border-radius: 10px !important;
         border: 0 !important;
         background-color: #833161 !important;
         color: white !important;
         font-weight: 700 !important;
         transition: all 0.3s ease !important;
-    }}
+    }
 
     .stButton > button:hover,
-    .stFormSubmitButton > button:hover {{
+    .stFormSubmitButton > button:hover {
         background-color: #612147 !important;
         color: white !important;
         box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
-    }}
+    }
 
-    /* 💜 Estilos da Tela de Login */
-    .logo-login {{
+    /* 💜 Tela de Login Estilizada e Visível */
+    .logo-login {
         text-align: center;
-        color: {cor_texto_login_h1} !important;
+        color: #ffffff !important;
         margin: 3vh auto 18px auto;
-    }}
+    }
 
-    .logo-login h1 {{
+    .logo-login h1 {
         font-size: 38px;
         margin: 10px 0 0 0;
-        color: {cor_texto_login_h1} !important;
+        color: #ffffff !important;
         font-weight: 700;
-    }}
+        letter-spacing: 0.5px;
+    }
 
-    .logo-login p {{
-        color: {cor_texto_login_p} !important;
+    .logo-login p {
+        color: #f5edf2 !important;
         margin-top: 4px;
-    }}
+        font-size: 15px;
+    }
 
-    .logo-icone {{
+    .logo-icone {
         width: 96px;
         height: 96px;
         margin: auto;
         border-radius: 50%;
         display: grid;
         place-items: center;
-        background: linear-gradient(145deg, #833161, #612147);
+        background: linear-gradient(
+            145deg,
+            #833161,
+            #612147
+        );
         color: white !important;
         font-size: 48px;
-    }}
+        box-shadow: 0 12px 28px rgba(131, 49, 97, 0.3);
+    }
 
-    .caixa-login {{
+    .caixa-login {
         background-color: white !important;
         padding: 28px 34px 20px 34px !important;
         border-radius: 22px !important;
+        box-shadow: 0 24px 70px rgba(97, 33, 71, 0.2) !important;
         border: 1px solid #f5edf2 !important;
-    }}
+    }
 
-    .texto-rodape {{
+    .texto-rodape {
         text-align: center;
         color: #f5edf2 !important;
         font-size: 13px;
         margin-top: 15px;
-    }}
+        opacity: 0.85;
+    }
+
+    .logo-menu {
+        text-align: center;
+        padding: 10px 0 18px 0;
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .logo-menu span {
+        display: block;
+        font-size: 12px;
+        font-weight: 400;
+        color: #f5edf2;
+    }
     </style>
     """,
     unsafe_allow_html=True,
