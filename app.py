@@ -25,16 +25,19 @@ USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL DINÂMICA (CORREÇÃO TOTAL DE LEITURA)
+# ESTILO E IDENTIDADE VISUAL DINÂMICA (IMUNE A ERROS DE ABAS)
 # ============================================================
 
+# Define a cor da folha central dependendo se o usuário está logado ou não
 if not st.session_state.get("autenticado"):
+    # 💜 Visual da Tela de Login (Fundo roxo ameixa total)
     cor_fundo_interna = "#612147"
     cor_texto_login_h1 = "#ffffff"
     cor_texto_login_p = "#f5edf2"
     sombra_container = "none"
     padding_container = "2rem"
 else:
+    # 📄 Visual do Painel Interno (Folha central branca perfeita e legível)
     cor_fundo_interna = "#ffffff"
     cor_texto_login_h1 = "#31333F"
     cor_texto_login_p = "#31333F"
@@ -63,7 +66,7 @@ st.markdown(
         background-color: #612147 !important;
     }}
 
-    /* 🛡️ Força a folha interna a seguir a decisão do Python */
+    /* 🛡️ CONTROLE INTELIGENTE: Força a folha interna a seguir a decisão do Python */
     [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {{
         background-color: {cor_fundo_interna} !important;
     }}
@@ -83,29 +86,14 @@ st.markdown(
         background-color: #612147 !important;
     }}
 
-    /* 🎯 CORREÇÃO: Garante que APENAS os textos de dentro do formulário branco fiquem pretos */
-    [data-testid="stMainView"] [data-testid="stWidgetLabel"] p, 
-    [data-testid="stMainView"] label p, 
-    [data-testid="stMainView"] .stMarkdown p, 
-    [data-testid="stMainView"] h1, 
-    [data-testid="stMainView"] h2, 
-    [data-testid="stMainView"] h3, 
-    [data-testid="stMainView"] .stSubheader {{
+    /* Garante que todos os textos de inputs, labels e formulários internos fiquem escuros no fundo branco */
+    [data-testid="stWidgetLabel"] p, label p, .stMarkdown p, h1, h2, h3, stSubheader {{
         color: #31333F !important;
     }}
     
-    /* ⚪ FORÇA TEXTO BRANCO ABSOLUTO NO BANNER DO TOPO (Garante Biobank - Natalia e Gestão de Cepas legíveis) */
-    .banner-topo, .banner-topo h1, .banner-topo p, .banner-topo div {{
-        color: #ffffff !important;
-    }}
-    
-    /* ⚪ FORÇA TEXTO BRANCO ABSOLUTO NA BARRA LATERAL (Garante Natalia, Navegação, Conectado em branco) */
-    [data-testid="stSidebar"], 
-    [data-testid="stSidebar"] *, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label {{
-        color: #ffffff !important;
+    /* Exceção: mantém os textos do menu lateral em branco */
+    [data-testid="stSidebar"] * {{
+        color: white !important;
     }}
 
     /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
@@ -125,20 +113,21 @@ st.markdown(
         box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
     }}
 
-    /* 💜 Botões de ação com letras brancas forçadas sempre */
-    .stButton > button, .stFormSubmitButton > button, 
-    .stButton > button *, .stFormSubmitButton > button * {{
+    /* 💜 Botões e Formulários Padronizados com o Tom do Banner */
+    .stButton > button,
+    .stFormSubmitButton > button {{
         border-radius: 10px !important;
         border: 0 !important;
         background-color: #833161 !important;
-        color: #ffffff !important;
+        color: white !important;
         font-weight: 700 !important;
         transition: all 0.3s ease !important;
     }}
 
-    .stButton > button:hover, .stFormSubmitButton > button:hover {{
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover {{
         background-color: #612147 !important;
-        color: #ffffff !important;
+        color: white !important;
         box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
     }}
 
