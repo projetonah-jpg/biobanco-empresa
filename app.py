@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+
 # ============================================================
 # CONFIGURAÇÃO GERAL
 # ============================================================
@@ -24,8 +25,29 @@ CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
 SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
+def campo_selecao(titulo, nome_lista, valor_atual=""):
+    opcoes = [""] + LISTAS.get(nome_lista, [])
+
+    if valor_atual and valor_atual not in opcoes:
+        opcoes.append(valor_atual)
+
+    indice = (
+        opcoes.index(valor_atual)
+        if valor_atual in opcoes
+        else 0
+    )
+
+    return st.selectbox(
+        titulo,
+        opcoes,
+        index=indice,
+    )
+
+
+
+
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL (PALETA ROXA UNIFICADA COMPLETA)
+# ESTILO E IDENTIDADE VISUAL
 # ============================================================
 
 st.markdown(
@@ -38,48 +60,59 @@ st.markdown(
         --white: #ffffff;
     }
 
-    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato, Estrela) */
-    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
+    .stAppHeader, [data-testid="stHeader"], header {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial do menu e do banner */
     .stApp {
-        background-color: #3a3260 !important;
+        background: linear-gradient(
+            135deg,
+            #fbfbfe 0%,
+            #f3f2f8 100%
+        );
     }
 
-    /* 🛡️ Cria a folha central branca para os dados, tirando o espaço do topo pro banner voltar! */
-    [data-testid="stAppViewBlockContainer"] {
-        background-color: #ffffff !important;
-        padding: 0px 45px 35px 45px !important;
-        border-radius: 18px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
-        margin-top: 0px !important;
-        margin-bottom: 25px !important;
-        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
-    }
-
-    /* 📏 Ajusta o container principal do Streamlit */
-    .block-container {
+    /* 📏 ELIMINA TODAS AS BORDAS: Gruda o banner no teto, no menu esquerdo e na lateral direita */
+    .block-container, [data-testid="stAppViewBlockContainer"] {
         padding-top: 0rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
+        margin-top: 0rem !important;
+        margin-left: 0rem !important;
+        margin-right: 0rem !important;
+        max-width: 100% !important;
+        width: 100% !important;
     }
 
+    /* 📦 Remove espaçamentos internos nativos da tela do Streamlit */
     [data-testid="stMain"] {
         padding-top: 0rem !important;
     }
 
-    /* 💜 Menu Lateral Customizado com a cor roxa idêntica ao banner oficial */
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
-        background-color: #3a3260 !important;
-        background-image: none !important; /* Remove o degradê antigo */
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockRoot"] {
+        gap: 0rem !important;
+    }
+
+    /* 🌸 Remove o arredondamento superior do banner para colar perfeitamente nos cantos do teto */
+    [data-testid="stVerticalBlock"] > div:first-child div {
+        border-radius: 0px 0px 18px 18px !important;
+    }
+
+    /* 💜 Menu Lateral Customizado */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(
+            180deg,
+            #3a3260,
+            #4a3f75
+        );
     }
 
     [data-testid="stSidebar"] * {
-        color: white !important;
+        color: white;
     }
 
     /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
@@ -113,7 +146,7 @@ st.markdown(
     /* 💜 Tela de Login Estilizada */
     .logo-login {
         text-align: center;
-        color: #ffffff;
+        color: #4a3f75;
         margin: 3vh auto 18px auto;
     }
 
@@ -123,7 +156,7 @@ st.markdown(
     }
 
     .logo-login p {
-        color: #dcd7ee;
+        color: #787299;
         margin-top: 4px;
     }
 
@@ -169,6 +202,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
 # ============================================================
 # LISTAS DE VALIDAÇÃO
 # ============================================================
@@ -1857,9 +1892,6 @@ st.sidebar.caption(
 )
 
 
-# ============================================================
-# CABEÇALHO
-# ============================================================
 
 # ==========================================
 # CABEÇALHO DO BIOBANK
@@ -1868,97 +1900,181 @@ st.sidebar.caption(
 st.markdown(
     """
     <style>
-    /* Reduz as margens e amplia a área principal */
+    :root {
+        --purple-dark: #3a3260;
+        --purple-light: #6c5b9b;
+        --purple-bg: #f5f3f9;
+        --white: #ffffff;
+    }
+
+    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
+    .stAppHeader, [data-testid="stHeader"], header {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+
+    /* 💜 Pinta todas as laterais e o fundo geral com o roxo escuro oficial do menu e do banner */
+    .stApp {
+        background-color: #3a3260 !important;
+    }
+
+    /* 🛡️ Cria a folha central branca para os dados, perfeitamente alinhada */
+    [data-testid="stAppViewBlockContainer"] {
+        background-color: #ffffff !important;
+        padding: 0px 45px 35px 45px !important;
+        border-radius: 18px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
+        margin-top: 0px !important;
+        margin-bottom: 25px !important;
+        max-width: 94% !important; /* Mantém a bordinha roxa charmosa nas duas laterais */
+    }
+
+    /* 📏 Ajusta o container principal do Streamlit */
     .block-container {
-        max-width: 100% !important;
-        padding-top: 1rem !important;
-        padding-right: 1rem !important;
-        padding-bottom: 1rem !important;
-        padding-left: 1rem !important;
+        padding-top: 0rem !important;
+        padding-bottom: 2rem !important;
     }
 
-    /* Evita espaços laterais desnecessários */
-    [data-testid="stMainBlockContainer"] {
-        max-width: 100% !important;
+    [data-testid="stMain"] {
+        padding-top: 0rem !important;
     }
 
-    /* Banner ocupa toda a largura disponível */
-    .biobank-banner {
-        width: 100%;
-        min-height: 150px;
-        box-sizing: border-box;
-        background-image:
-            linear-gradient(
-                90deg,
-                rgba(75, 20, 60, 0.12),
-                rgba(100, 20, 85, 0.18)
-            ),
-            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
-        background-size: cover;
-        background-position: center;
-        border-radius: 0 0 18px 18px;
-        margin: 0 0 24px 0;
-        padding: 28px 32px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: center;
-        text-align: right;
-        color: white;
-        box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
+    /* 💜 Menu Lateral Customizado */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(
+            180deg,
+            #3a3260,
+            #4a3f75
+        );
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .biobank-banner h1 {
-        margin: 0;
-        font-size: clamp(24px, 2.5vw, 36px);
-        font-weight: 750;
-        color: white;
-        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
-    }
-
-    .biobank-banner p {
-        margin: 8px 0 0 0;
-        font-size: 15px;
+    [data-testid="stSidebar"] * {
         color: white;
     }
 
-    /* Cartões e gráficos aproveitam a largura */
-    [data-testid="stMetric"],
-    [data-testid="stPlotlyChart"],
-    [data-testid="stDataFrame"],
-    [data-testid="stTable"] {
-        width: 100%;
+    /* 💜 Cards de Indicadores (Métricas) com Borda Roxa */
+    [data-testid="stMetric"] {
+        background-color: white;
+        border: 1px solid #e1def2;
+        border-left: 5px solid #6c5b9b;
+        padding: 16px;
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(74, 63, 117, 0.06);
     }
 
-    /* Ajustes para telas menores */
-    @media (max-width: 768px) {
-        .block-container {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-        }
+    /* 💜 Botões e Formulários Padronizados em Roxo */
+    .stButton > button,
+    .stFormSubmitButton > button {
+        border-radius: 10px;
+        border: 0;
+        background-color: #6c5b9b;
+        color: white;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
 
-        .biobank-banner {
-            min-height: 125px;
-            padding: 22px 18px;
-            background-position: center;
-        }
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover {
+        background-color: #4a3f75;
+        color: white;
+        box-shadow: 0 4px 12px rgba(108, 91, 155, 0.25);
+    }
 
-        .biobank-banner h1 {
-            font-size: 24px;
-        }
+    /* 💜 Tela de Login Estilizada */
+    .logo-login {
+        text-align: center;
+        color: #ffffff;
+        margin: 3vh auto 18px auto;
+    }
 
-        .biobank-banner p {
-            font-size: 13px;
-        }
+    .logo-login h1 {
+        font-size: 34px;
+        margin: 10px 0 0 0;
+    }
+
+    .logo-login p {
+        color: #dcd7ee;
+        margin-top: 4px;
+    }
+
+    .logo-icone {
+        width: 96px;
+        height: 96px;
+        margin: auto;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(
+            145deg,
+            #6c5b9b,
+            #3a3260
+        );
+        color: white;
+        font-size: 48px;
+        box-shadow: 0 12px 28px rgba(108, 91, 155, 0.3);
+    }
+
+    .caixa-login {
+        background-color: white;
+        padding: 28px 34px 20px 34px;
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(74, 63, 117, 0.12);
+        border: 1px solid #e1def2;
+    }
+
+    .logo-menu {
+        text-align: center;
+        padding: 10px 0 18px 0;
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .logo-menu span {
+        display: block;
+        font-size: 12px;
+        font-weight: 400;
+        color: #dcd7ee;
     }
     </style>
-
-    <div class="biobank-banner">
-        <h1>BIOBANK - NATALIA</h1>
-        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
-    </div>
     """,
     unsafe_allow_html=True,
+)
+
+# 🖥️ CABEÇALHO DO SISTEMA COM BANNER DE FLORES NATALIA (FORÇADO NO TOPO ABSOLUTO)
+st.markdown(
+    """
+    <div style="
+        background-image: url('https://githubusercontent.com');
+        background-size: cover;
+        background-position: center;
+        padding: 50px 60px;
+        color: white;
+        margin-top: 0px !important;
+        margin-left: -45px !important; /* 📏 Cancela o recuo da folha branca para colar na lateral do menu */
+        margin-right: -45px !important; /* 📏 Cancela o recuo da folha branca para colar na lateral direita */
+        margin-bottom: 30px;
+        width: calc(100% + 90px) !important; /* 📐 Estica o banner de ponta a ponta perfeitamente */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end;
+        text-align: right;
+        border-radius: 0px 0px 18px 18px; /* Arredonda apenas as pontas de baixo */
+    ">
+        <div>
+            <h1 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 0.5px; text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
+                BIOBANK - NATALIA
+            </h1>
+            <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 400; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.85); font-family: sans-serif;">
+                Gestão integrada de cepas, identificação e armazenamento.
+            </p>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 # ============================================================
