@@ -189,7 +189,8 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-    input {{
+       /* 🎯 Ajusta apenas a cor do texto digitado nos campos sem alterar o fundo */
+    [data-testid="stTextInput"] input, [data-testid="stSelectbox"] div {{
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }}
