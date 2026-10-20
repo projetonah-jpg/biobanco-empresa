@@ -161,17 +161,21 @@ st.markdown(
         margin-top: 4px;
     }}
 
-    .logo-icone {{
-        width: 96px;
-        height: 96px;
-        margin: auto;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(145deg, #833161, #612147);
-        color: white !important;
-        font-size: 48px;
+       [data-testid="stForm"] {{
+        background-color: white !important;
+        padding: 28px 34px 20px 34px !important;
+        border-radius: 22px !important;
+        border: 1px solid #f5edf2 !important;
     }}
+
+    .texto-rodape {{
+        text-align: center;
+        color: #f5edf2 !important;
+        font-size: 13px;
+        margin-top: 15px;
+    }}
+
+
 
     .caixa-login {{
         background-color: white !important;
@@ -674,16 +678,19 @@ def substituir_dados(amostras, identificacoes):
 def mostrar_login():
     if st.session_state.get("autenticado"):
         return True
+    
     st.markdown('<div class="logo-login"><div class="logo-icone">🧫</div><h1>BioBank</h1><p>Monitoramento Microbiológico</p></div>', unsafe_allow_html=True)
+    
     _, centro, _ = st.columns([1.15, 1, 1.15])
     with centro:
-        st.markdown('<div class="caixa-login">', unsafe_allow_html=True)
+        # Removida a div externa duplicada para eliminar a barra branca vazia do topo
         with st.form("formulario_login"):
             usuario = st.text_input("Usuário", placeholder="Digite seu usuário")
             senha = st.text_input("Senha", type="password", placeholder="Digite sua senha")
             entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            
         st.markdown('<div class="texto-rodape">Acesso restrito ao laboratório de microbiologia.</div>', unsafe_allow_html=True)
+        
         if entrar:
             if hmac.compare_digest(usuario.strip(), USUARIO_PADRAO) and hmac.compare_digest(senha, SENHA_PADRAO):
                 st.session_state.autenticado = True
@@ -692,6 +699,7 @@ def mostrar_login():
             else:
                 st.error("Usuário ou senha inválidos.")
     return False
+
 
 
 # ============================================================
