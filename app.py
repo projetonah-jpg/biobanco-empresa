@@ -189,7 +189,10 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-
+    input {{
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }}
     </style>
     """,
     unsafe_allow_html=True,
