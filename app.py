@@ -189,10 +189,15 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-       /* 🎯 Ajusta apenas a cor do texto digitado nos campos sem alterar o fundo */
-    [data-testid="stTextInput"] input, [data-testid="stSelectbox"] div {{
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+        /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura nas caixas */
+    [data-testid="stTextInput"] input, 
+    [data-testid="stSelectbox"] div, 
+    [data-testid="stNumberInput"] input,
+    .stSelectbox div,
+    input {{
+        background-color: #ffffff !important;
+        color: #31333F !important;
+        -webkit-text-fill-color: #31333F !important;
     }}
     </style>
     """,
