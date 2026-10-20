@@ -507,24 +507,54 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
+        # 1. Garante a criação estrutural primária das tabelas caso não existam
         conexao.executescript(
             """
             CREATE TABLE IF NOT EXISTS amostras (
-                code TEXT PRIMARY KEY,
-                ponto TEXT,
-                origin TEXT,
-                area TEXT,
-                sample TEXT,
-                collection_point TEXT,
-                sampling TEXT,
-                method TEXT,
-                frequencia TEXT,
-                analista TEXT,
-                data TEXT,
-                resultado_final TEXT,
-                criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-                atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+                code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS identificacoes (
+                code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS dados_brutos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+        
+        # 2. MIGRATION: Adiciona as colunas na tabela 'amostras' se não existirem
+        colunas_amostras = {
+            "ponto": "TEXT", "origin": "TEXT", "area": "TEXT", "sample": "TEXT", 
+            "collection_point": "TEXT", "sampling": "TEXT", "method": "TEXT", 
+            "frequencia": "TEXT", "analista": "TEXT", "data": "TEXT", "resultado_final": "TEXT"
+        }
+        for col, tipo in colunas_amostras.items():
+            try: conexao.execute(f"ALTER TABLE amostras ADD COLUMN {col} {tipo}")
+            except sqlite3.OperationalError: pass
+                
+        # 3. MIGRATION: Adiciona as colunas na tabela 'identificacoes' se não existirem
+        colunas_identificacoes = {
+            "form": "TEXT", "margin": "TEXT", "pigment": "TEXT", "gram_stain": "TEXT", 
+            "catalase": "TEXT", "koh": "TEXT", "oxidase": "TEXT", "outsourced_method": "TEXT", 
+            "identification": "TEXT", "report": "TEXT", "company": "TEXT", "start_date": "TEXT", 
+            "end_date": "TEXT", "report_data": "BLOB"
+        }
+        for col, tipo in colunas_identificacoes.items():
+            try: conexao.execute(f"ALTER TABLE identificacoes ADD COLUMN {col} {tipo}")
+            except sqlite3.OperationalError: pass
+
+        # 4. MIGRATION: Adiciona as colunas na tabela 'dados_brutos' se não existirem
+        colunas_brutos = {
+            "tsb": "TEXT", "tsb_val": "TEXT", "glicerina": "TEXT", "glicerina_val": "TEXT", 
+            "tsa": "TEXT", "tsa_val": "TEXT", "criotubo": "TEXT", "placa_de_petri": "TEXT", 
+            "fluxo_laminar": "TEXT", "ultrafreezer": "TEXT"
+        }
+        for col, tipo in colunas_brutos.items():
+            try: conexao.execute(f"ALTER TABLE dados_brutos ADD COLUMN {col} {tipo}")
+            except sqlite3.OperationalError: pass
+                
+        inserir_dados_iniciais(conexao)
 
             """
         )
