@@ -143,25 +143,40 @@ st.markdown(
     }}
 
     /* 💜 Estilos da Tela de Login */
+          /* 💜 Estilos da Tela de Login */
     .logo-login {{
         text-align: center;
-        color: {cor_texto_login_h1} !important;
         margin: 3vh auto 18px auto;
     }}
 
     .logo-login h1 {{
-        font-size: 38px;
-        margin: 10px 0 0 0;
-        color: {cor_texto_login_h1} !important;
-        font-weight: 700;
+        font-size: 38px !important;
+        margin: 10px 0 0 0 !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
     }}
 
     .logo-login p {{
-        color: {cor_texto_login_p} !important;
-        margin-top: 4px;
+        color: #f5edf2 !important;
+        margin-top: 4px !important;
     }}
 
-       [data-testid="stForm"] {{
+    /* 🔬 CONFIGURAÇÃO DO ÍCONE GRANDE E EM 3D COM CHAVES DUPLAS */
+    .logo-icone {{
+        width: 140px !important;    /* Aumenta o tamanho do círculo */
+        height: 140px !important;   /* Aumenta o tamanho do círculo */
+        margin: auto !important;
+        border-radius: 50% !important;
+        display: grid !important;
+        place-items: center !important;
+        background: linear-gradient(145deg, #833161, #612147) !important;
+        color: white !important;
+        font-size: 72px !important; /* Deixa o microscópio bem grande dentro do círculo */
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important; /* Efeito de sombra marcante */
+        border: 3px solid rgba(255, 255, 255, 0.1) !important;
+    }}
+
+    [data-testid="stForm"] {{
         background-color: white !important;
         padding: 28px 34px 20px 34px !important;
         border-radius: 22px !important;
@@ -175,21 +190,6 @@ st.markdown(
         margin-top: 15px;
     }}
 
-
-
-    .caixa-login {{
-        background-color: white !important;
-        padding: 28px 34px 20px 34px !important;
-        border-radius: 22px !important;
-        border: 1px solid #f5edf2 !important;
-    }}
-
-    .texto-rodape {{
-        text-align: center;
-        color: #f5edf2 !important;
-        font-size: 13px;
-        margin-top: 15px;
-    }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -679,11 +679,11 @@ def mostrar_login():
     if st.session_state.get("autenticado"):
         return True
     
-    st.markdown('<div class="logo-login"><div class="logo-icone">🧫</div><h1>BioBank</h1><p>Monitoramento Microbiológico</p></div>', unsafe_allow_html=True)
+    # GARANTA QUE ESSA LINHA ABAIXO ESTEJA EXATAMENTE ASSIM COM O ÍCONE 🔬
+    st.markdown('<div class="logo-login"><div class="logo-icone">🔬</div><h1>BioBank</h1><p>Monitoramento Microbiológico</p></div>', unsafe_allow_html=True)
     
     _, centro, _ = st.columns([1.15, 1, 1.15])
     with centro:
-        # Removida a div externa duplicada para eliminar a barra branca vazia do topo
         with st.form("formulario_login"):
             usuario = st.text_input("Usuário", placeholder="Digite seu usuário")
             senha = st.text_input("Senha", type="password", placeholder="Digite sua senha")
@@ -699,6 +699,7 @@ def mostrar_login():
             else:
                 st.error("Usuário ou senha inválidos.")
     return False
+
 
 
 
