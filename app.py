@@ -195,10 +195,10 @@ st.markdown(
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
     .stDateInput button,
-    input {{
-        background-color: #ffffff !important;
-        color: #31333F !important;
-        -webkit-text-fill-color: #31333F !important;
+       input, select, button {{
+        background-color: #833161 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }}
     </style>
     
