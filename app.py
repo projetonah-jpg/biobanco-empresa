@@ -507,22 +507,16 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
-        # 1. Garante a criacao estrutural primaria das tabelas sem usar aspas triplas
-        sql_tabelas = (
-            "CREATE TABLE IF NOT EXISTS amostras (\n"
-            "    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP\n"
-            ");\n"
-            "CREATE TABLE IF NOT EXISTS identificacoes (\n"
-            "    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,\n"
-            "    FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE\n"
-            ");\n"
-            "CREATE TABLE IF NOT EXISTS dados_brutos (\n"
-            "    id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP\n"
-            ");"
-        )
-        conexao.executescript(sql_tabelas)
+        # 1. Criação direta das tabelas em linhas simples e limpas
+        q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
+        q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
+        q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
         
-        # 2. MIGRATION: Adiciona as colunas na tabela 'amostras' se nao existirem
+        conexao.execute(q1)
+        conexao.execute(q2)
+        conexao.execute(q3)
+        
+        # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
             "ponto": "TEXT", "origin": "TEXT", "area": "TEXT", "sample": "TEXT", 
             "collection_point": "TEXT", "sampling": "TEXT", "method": "TEXT", 
@@ -532,7 +526,7 @@ def criar_banco():
             try: conexao.execute(f"ALTER TABLE amostras ADD COLUMN {col} {tipo}")
             except sqlite3.OperationalError: pass
                 
-        # 3. MIGRATION: Adiciona as colunas na tabela 'identificacoes' se nao existirem
+        # 3. MIGRATION: Garante as colunas na tabela 'identificacoes'
         colunas_identificacoes = {
             "form": "TEXT", "margin": "TEXT", "pigment": "TEXT", "gram_stain": "TEXT", 
             "catalase": "TEXT", "koh": "TEXT", "oxidase": "TEXT", "outsourced_method": "TEXT", 
@@ -543,7 +537,7 @@ def criar_banco():
             try: conexao.execute(f"ALTER TABLE identificacoes ADD COLUMN {col} {tipo}")
             except sqlite3.OperationalError: pass
 
-        # 4. MIGRATION: Adiciona as colunas na tabela 'dados_brutos' se nao existirem
+        # 4. MIGRATION: Garante as colunas na tabela 'dados_brutos'
         colunas_brutos = {
             "tsb": "TEXT", "tsb_val": "TEXT", "glicerina": "TEXT", "glicerina_val": "TEXT", 
             "tsa": "TEXT", "tsa_val": "TEXT", "criotubo": "TEXT", "placa_de_petri": "TEXT", 
@@ -554,6 +548,7 @@ def criar_banco():
             except sqlite3.OperationalError: pass
                 
         inserir_dados_iniciais(conexao)
+
 
         )
 def inserir_dados_iniciais(conexao):
