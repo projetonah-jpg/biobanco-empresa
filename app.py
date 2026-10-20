@@ -507,19 +507,20 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
-        # 1. Garante a criacao estrutural primaria das tabelas caso nao existam
-        conexao.executescript("""
-CREATE TABLE IF NOT EXISTS amostras (
-    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS identificacoes (
-    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE
-);
-CREATE TABLE IF NOT EXISTS dados_brutos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-);
-        """)
+        # 1. Garante a criacao estrutural primaria das tabelas sem usar aspas triplas
+        sql_tabelas = (
+            "CREATE TABLE IF NOT EXISTS amostras (\n"
+            "    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP\n"
+            ");\n"
+            "CREATE TABLE IF NOT EXISTS identificacoes (\n"
+            "    code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP,\n"
+            "    FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE\n"
+            ");\n"
+            "CREATE TABLE IF NOT EXISTS dados_brutos (\n"
+            "    id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP\n"
+            ");"
+        )
+        conexao.executescript(sql_tabelas)
         
         # 2. MIGRATION: Adiciona as colunas na tabela 'amostras' se nao existirem
         colunas_amostras = {
@@ -554,7 +555,6 @@ CREATE TABLE IF NOT EXISTS dados_brutos (
                 
         inserir_dados_iniciais(conexao)
 
-            """
         )
 def inserir_dados_iniciais(conexao):
     for amostra in AMOSTRAS_INICIAIS:
