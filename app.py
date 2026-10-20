@@ -189,17 +189,19 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-        /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura nas caixas */
+     /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura em tudo, incluindo a DATA */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
+    .stDateInput button,
     input {{
         background-color: #ffffff !important;
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
     }}
     </style>
+    
     """,
     unsafe_allow_html=True,
 )
