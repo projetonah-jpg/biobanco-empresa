@@ -1880,7 +1880,7 @@ st.markdown(
                 rgba(75, 20, 60, 0.12),
                 rgba(100, 20, 85, 0.18)
             ),
-            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
+            url("https://githubusercontent.com");
         background-size: cover;
         background-position: center;
         border-radius: 0 0 18px 18px;
@@ -1909,41 +1909,33 @@ st.markdown(
         color: white;
     }
 
-    /* Cartões e gráficos aproveitam a largura */
-    [data-testid="stMetric"],
-    [data-testid="stPlotlyChart"],
-    [data-testid="stDataFrame"],
-    [data-testid="stTable"] {
-        width: 100%;
+    /* ==========================================
+       CORREÇÃO DO DESIGN DO LOGIN (MICROSCÓPIO)
+       ========================================== */
+    [data-testid="stForm"] {
+        background-color: white !important;
+        padding: 28px 34px 20px 34px !important;
+        border-radius: 22px !important;
+        border: 1px solid #f5edf2 !important;
     }
-
-    /* Ajustes para telas menores */
-    @media (max-width: 768px) {
-        .block-container {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-        }
-
-        .biobank-banner {
-            min-height: 125px;
-            padding: 22px 18px;
-            background-position: center;
-        }
-
-        .biobank-banner h1 {
-            font-size: 24px;
-        }
-
-        .biobank-banner p {
-            font-size: 13px;
-        }
+    .logo-icone {
+        width: 140px !important;
+        height: 140px !important;
+        font-size: 72px !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important;
     }
     </style>
-
+    
     <div class="biobank-banner">
         <h1>BIOBANK - NATALIA</h1>
         <p>Gestão integrada de cepas, identificação e armazenamento.</p>
     </div>
+
+    <script>
+    // Injeta o microscópio na tela de login de forma automática
+    const elementoIcone = document.querySelector('.logo-icone');
+    if (elementoIcone) { elementoIcone.innerHTML = '🔬'; }
+    </script>
     """,
     unsafe_allow_html=True,
 )
