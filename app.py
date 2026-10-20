@@ -507,7 +507,7 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
-        # 1. Criação direta das tabelas em linhas simples e limpas
+        # 1. Criação direta das tabelas em linhas limpas
         q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
         q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
         q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
@@ -550,28 +550,14 @@ def criar_banco():
         inserir_dados_iniciais(conexao)
 
 
-        )
 def inserir_dados_iniciais(conexao):
     for amostra in AMOSTRAS_INICIAIS:
-        valores = [
-            amostra.get(coluna, "")
-            for coluna in COLUNAS_AMOSTRA
-        ]
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO amostras
-            ({",".join(COLUNAS_AMOSTRA)})
-            VALUES ({",".join("?" for _ in COLUNAS_AMOSTRA)})
-            """,
-            valores,
-        )
+        valores = [amostra.get(coluna, "") for coluna in COLUNAS_AMOSTRA]
+        conexao.execute(f"INSERT OR IGNORE INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})", valores)
 
     for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [
-            identificacao.get(coluna, "")
-            for coluna in COLUNAS_IDENTIFICACAO
-        ]
+        valores = [identificacao.get(coluna, "") for coluna in COLUNAS_IDENTIFICACAO]
+        conexao.execute(f"INSERT OR IGNORE INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})", valores)
 
         conexao.execute(
             f"""
