@@ -1897,14 +1897,10 @@ st.markdown(
         padding-bottom: 1rem !important;
         padding-left: 1rem !important;
     }
-
-    /* Evita espaços laterais desnecessários */
     [data-testid="stMainBlockContainer"] {
         max-width: 100% !important;
     }
-
-    /* Banner ocupa toda a largura disponível */
-        .biobank-banner {
+    .biobank-banner {
         width: 100%;
         min-height: 150px;
         box-sizing: border-box;
@@ -1921,54 +1917,20 @@ st.markdown(
         text-align: right;
         color: white;
         box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
-    
     }
-
     .biobank-banner h1 {
         margin: 0;
         font-size: clamp(24px, 2.5vw, 36px);
         font-weight: 750;
-        color: white;
+        color: white !important;
         text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
     }
-
     .biobank-banner p {
         margin: 8px 0 0 0;
         font-size: 15px;
-        color: white;
-    }
-
-    /* Cartões e gráficos aproveitam a largura */
-    [data-testid="stMetric"],
-    [data-testid="stPlotlyChart"],
-    [data-testid="stDataFrame"],
-    [data-testid="stTable"] {
-        width: 100%;
-    }
-
-    /* Ajustes para telas menores */
-    @media (max-width: 768px) {
-        .block-container {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-        }
-
-        .biobank-banner {
-            min-height: 125px;
-            padding: 22px 18px;
-            background-position: center;
-        }
-
-        .biobank-banner h1 {
-            font-size: 24px;
-        }
-
-        .biobank-banner p {
-            font-size: 13px;
-        }
+        color: white !important;
     }
     </style>
-
     <div class="biobank-banner">
         <h1>BIOBANK - NATALIA</h1>
         <p>Gestão integrada de cepas, identificação e armazenamento.</p>
@@ -1976,6 +1938,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
