@@ -144,7 +144,6 @@ st.markdown(
 
     /* 💜 Estilos da Tela de Login */
           /* 💜 Estilos da Tela de Login */
-        /* 🎯 Ajustes visuais da tela de login */
     .logo-login {{
         text-align: center;
         margin: 3vh auto 18px auto;
@@ -162,17 +161,18 @@ st.markdown(
         margin-top: 4px !important;
     }}
 
+    /* 🔬 CONFIGURAÇÃO DO ÍCONE GRANDE E EM 3D COM CHAVES DUPLAS */
     .logo-icone {{
-        width: 140px !important;
-        height: 140px !important;
+        width: 140px !important;    /* Aumenta o tamanho do círculo */
+        height: 140px !important;   /* Aumenta o tamanho do círculo */
         margin: auto !important;
         border-radius: 50% !important;
         display: grid !important;
         place-items: center !important;
         background: linear-gradient(145deg, #833161, #612147) !important;
         color: white !important;
-        font-size: 72px !important;
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important;
+        font-size: 72px !important; /* Deixa o microscópio bem grande dentro do círculo */
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important; /* Efeito de sombra marcante */
         border: 3px solid rgba(255, 255, 255, 0.1) !important;
     }}
 
@@ -189,41 +189,19 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-    </style>
-    
-        /* 🎯 Coloca o roxo oficial nas caixas e a letra branca apenas no miolo do formulário */
+     /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura em tudo, incluindo a DATA */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
-    .stDateInput button {{
+    .stDateInput button,
+       input, select, button {{
         background-color: #833161 !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }}
-
-    /* 📅 Garante o fundo roxo e texto branco na caixa de data */
-    .stDateInput button div, .stDateInput button span {{
-        background-color: transparent !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }}
-
-    /* 🎯 AJUSTE DOS TÍTULOS: Remove o fundo roxo e bota a cor certa (Preto no painel claro / Branco no login) */
-    [data-testid="stWidgetLabel"] p, 
-    label p, 
-    .stMarkdown p {{
-        background-color: transparent !important;
-        background: transparent !important;
-        color: #31333F !important; /* Texto escuro clássico para aparecer perfeitamente no painel */
-    }}
-
-    /* ⚪ Injeta o texto branco nos títulos APENAS quando estiver na tela de login roxa */
-    .logo-login h1, .logo-login p, .texto-rodape {{
-        color: #ffffff !important;
-    }}
     </style>
-
+    
     """,
     unsafe_allow_html=True,
 )
@@ -1897,14 +1875,24 @@ st.markdown(
         padding-bottom: 1rem !important;
         padding-left: 1rem !important;
     }
+
+    /* Evita espaços laterais desnecessários */
     [data-testid="stMainBlockContainer"] {
         max-width: 100% !important;
     }
+
+    /* Banner ocupa toda a largura disponível */
     .biobank-banner {
         width: 100%;
         min-height: 150px;
         box-sizing: border-box;
-        background-image: linear-gradient(90deg, rgba(75, 20, 60, 0.12), rgba(100, 20, 85, 0.18)), url("https://githubusercontent.com");
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(75, 20, 60, 0.12),
+                rgba(100, 20, 85, 0.18)
+            ),
+            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
         background-size: cover;
         background-position: center;
         border-radius: 0 0 18px 18px;
@@ -1918,19 +1906,52 @@ st.markdown(
         color: white;
         box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
     }
+
     .biobank-banner h1 {
         margin: 0;
         font-size: clamp(24px, 2.5vw, 36px);
         font-weight: 750;
-        color: white !important;
+        color: white;
         text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
     }
+
     .biobank-banner p {
         margin: 8px 0 0 0;
         font-size: 15px;
-        color: white !important;
+        color: white;
+    }
+
+    /* Cartões e gráficos aproveitam a largura */
+    [data-testid="stMetric"],
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        width: 100%;
+    }
+
+    /* Ajustes para telas menores */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+
+        .biobank-banner {
+            min-height: 125px;
+            padding: 22px 18px;
+            background-position: center;
+        }
+
+        .biobank-banner h1 {
+            font-size: 24px;
+        }
+
+        .biobank-banner p {
+            font-size: 13px;
+        }
     }
     </style>
+
     <div class="biobank-banner">
         <h1>BIOBANK - NATALIA</h1>
         <p>Gestão integrada de cepas, identificação e armazenamento.</p>
@@ -1938,7 +1959,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
