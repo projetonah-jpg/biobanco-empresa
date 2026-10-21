@@ -189,16 +189,32 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-     /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura em tudo, incluindo a DATA */
+        /* 🎯 Aplica o roxo oficial e letra branca APENAS dentro das caixas, sem quebrar os títulos */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
-    .stDateInput button,
-       input, select, button {{
+    input {{
         background-color: #833161 !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
+    }}
+
+    /* 📅 Corrige especificamente as caixas de DATA (START DATE / END DATE) */
+    .stDateInput div, .stDateInput button, .stDateInput span, [data-testid="stHeader"] {{
+        background-color: #833161 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }}
+
+    /* ⚪ FORÇA TODOS OS TÍTULOS DE CIMA DAS CAIXAS A FICAREM BRANCOS E LEGÍVEIS */
+    [data-testid="stWidgetLabel"] p, 
+    [data-testid="stMarkdownContainer"] p,
+    label p,
+    span p,
+    .stMarkdown p {{
+        background-color: transparent !important;
+        color: #ffffff !important;
     }}
     </style>
     
