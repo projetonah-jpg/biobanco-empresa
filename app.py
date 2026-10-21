@@ -144,6 +144,7 @@ st.markdown(
 
     /* 💜 Estilos da Tela de Login */
           /* 💜 Estilos da Tela de Login */
+        /* 🎯 Ajustes visuais da tela de login */
     .logo-login {{
         text-align: center;
         margin: 3vh auto 18px auto;
@@ -161,18 +162,17 @@ st.markdown(
         margin-top: 4px !important;
     }}
 
-    /* 🔬 CONFIGURAÇÃO DO ÍCONE GRANDE E EM 3D COM CHAVES DUPLAS */
     .logo-icone {{
-        width: 140px !important;    /* Aumenta o tamanho do círculo */
-        height: 140px !important;   /* Aumenta o tamanho do círculo */
+        width: 140px !important;
+        height: 140px !important;
         margin: auto !important;
         border-radius: 50% !important;
         display: grid !important;
         place-items: center !important;
         background: linear-gradient(145deg, #833161, #612147) !important;
         color: white !important;
-        font-size: 72px !important; /* Deixa o microscópio bem grande dentro do círculo */
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important; /* Efeito de sombra marcante */
+        font-size: 72px !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important;
         border: 3px solid rgba(255, 255, 255, 0.1) !important;
     }}
 
@@ -189,6 +189,8 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
+    </style>
+    
         /* 🎯 Coloca o roxo oficial nas caixas e a letra branca apenas no miolo do formulário */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
