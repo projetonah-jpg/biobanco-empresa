@@ -189,35 +189,39 @@ st.markdown(
         font-size: 13px;
         margin-top: 15px;
     }}
-        /* 🎯 Aplica o roxo oficial e letra branca APENAS dentro das caixas, sem quebrar os títulos */
+        /* 🎯 Coloca o roxo oficial nas caixas e a letra branca apenas no miolo do formulário */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
-    input {{
+    .stDateInput button {{
         background-color: #833161 !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }}
 
-    /* 📅 Corrige especificamente as caixas de DATA (START DATE / END DATE) */
-    .stDateInput div, .stDateInput button, .stDateInput span, [data-testid="stHeader"] {{
-        background-color: #833161 !important;
+    /* 📅 Garante o fundo roxo e texto branco na caixa de data */
+    .stDateInput button div, .stDateInput button span {{
+        background-color: transparent !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }}
 
-    /* ⚪ FORÇA TODOS OS TÍTULOS DE CIMA DAS CAIXAS A FICAREM BRANCOS E LEGÍVEIS */
+    /* 🎯 AJUSTE DOS TÍTULOS: Remove o fundo roxo e bota a cor certa (Preto no painel claro / Branco no login) */
     [data-testid="stWidgetLabel"] p, 
-    [data-testid="stMarkdownContainer"] p,
-    label p,
-    span p,
+    label p, 
     .stMarkdown p {{
         background-color: transparent !important;
+        background: transparent !important;
+        color: #31333F !important; /* Texto escuro clássico para aparecer perfeitamente no painel */
+    }}
+
+    /* ⚪ Injeta o texto branco nos títulos APENAS quando estiver na tela de login roxa */
+    .logo-login h1, .logo-login p, .texto-rodape {{
         color: #ffffff !important;
     }}
     </style>
-    
+
     """,
     unsafe_allow_html=True,
 )
