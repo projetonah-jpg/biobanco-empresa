@@ -1904,17 +1904,11 @@ st.markdown(
     }
 
     /* Banner ocupa toda a largura disponível */
-    .biobank-banner {
+        .biobank-banner {
         width: 100%;
         min-height: 150px;
         box-sizing: border-box;
-        background-image:
-            linear-gradient(
-                90deg,
-                rgba(75, 20, 60, 0.12),
-                rgba(100, 20, 85, 0.18)
-            ),
-            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
+        background-image: linear-gradient(90deg, rgba(75, 20, 60, 0.12), rgba(100, 20, 85, 0.18)), url("https://githubusercontent.com");
         background-size: cover;
         background-position: center;
         border-radius: 0 0 18px 18px;
@@ -1927,6 +1921,7 @@ st.markdown(
         text-align: right;
         color: white;
         box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
+    
     }
 
     .biobank-banner h1 {
