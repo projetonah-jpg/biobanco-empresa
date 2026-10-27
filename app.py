@@ -1381,6 +1381,12 @@ def salvar_armazenamento(
             backup_used
         ))
 
+def excluir_armazenamento(code):
+    with conectar() as conexao:
+        conexao.execute(
+            "DELETE FROM armazenamento_cepas WHERE code = ?",
+            (code,)
+        )
 
 def excluir_armazenamento(code):
     with conectar() as conexao:
@@ -1459,11 +1465,11 @@ def pagina_armazenamento():
     if modo == "Excluir Registro":
 
         if dados.empty:
-            st.info("Nenhum registro para excluir.")
+            st.info("Nenhum registro encontrado.")
             return
 
         st.warning(
-            f"⚠️ O registro {registro['code']} será removido permanentemente."
+            f"⚠️ O registro {registro.get('code','')} será removido permanentemente."
         )
 
         confirmar = st.checkbox(
@@ -1477,11 +1483,11 @@ def pagina_armazenamento():
         ):
 
             excluir_armazenamento(
-                registro["code"]
+                registro.get("code")
             )
 
             st.toast(
-                "Registro excluído com sucesso!"
+                "Registro excluído com sucesso! ✅"
             )
 
             st.rerun()
@@ -1501,12 +1507,43 @@ def pagina_armazenamento():
                     codigos
                 )
 
+                valor_box = ""
+                valor_backup_box = ""
+                valor_freezer = ""
+                valor_analyst = ""
+                valor_backup_used = "No"
+
             else:
 
                 code = st.text_input(
                     "Code",
-                    registro["code"],
+                    value=str(
+                        registro.get("code", "")
+                    ),
                     disabled=True
+                )
+
+                valor_box = str(
+                    registro.get("box", "")
+                )
+
+                valor_backup_box = str(
+                    registro.get("backup_box", "")
+                )
+
+                valor_freezer = str(
+                    registro.get("freezer", "")
+                )
+
+                valor_analyst = str(
+                    registro.get("analyst", "")
+                )
+
+                valor_backup_used = str(
+                    registro.get(
+                        "backup_used",
+                        "No"
+                    )
                 )
 
             col1, col2 = st.columns(2)
@@ -1515,20 +1552,17 @@ def pagina_armazenamento():
 
                 box = st.text_input(
                     "Box",
-                    "" if modo == "Novo Registro"
-                    else registro["box"]
+                    value=valor_box
                 )
 
                 backup_box = st.text_input(
                     "Backup Box",
-                    "" if modo == "Novo Registro"
-                    else registro["backup_box"]
+                    value=valor_backup_box
                 )
 
                 freezer = st.text_input(
                     "Freezer",
-                    "" if modo == "Novo Registro"
-                    else registro["freezer"]
+                    value=valor_freezer
                 )
 
             with col2:
@@ -1539,20 +1573,15 @@ def pagina_armazenamento():
 
                 analyst = st.text_input(
                     "Analyst",
-                    "" if modo == "Novo Registro"
-                    else registro["analyst"]
+                    value=valor_analyst
                 )
 
                 backup_used = st.selectbox(
                     "Backup Used",
                     ["No", "Yes"],
                     index=0
-                    if modo == "Novo Registro"
-                    else ["No", "Yes"].index(
-                        str(
-                            registro["backup_used"]
-                        )
-                    )
+                    if valor_backup_used == "No"
+                    else 1
                 )
 
             salvar = st.form_submit_button(
@@ -1572,7 +1601,7 @@ def pagina_armazenamento():
                 )
 
                 st.toast(
-                    "Registro salvo com sucesso!"
+                    "Registro salvo com sucesso! ✅"
                 )
 
                 st.rerun()
@@ -1583,33 +1612,27 @@ def pagina_armazenamento():
 
     if not dados.empty:
 
+        total_isolados = len(dados)
+
         st.metric(
             "🦠 Total de Isolados Preservados no Banco",
-            len(dados)
+            f"{total_isolados} un"
         )
 
-        dados = dados.rename(columns={
-            "code": "CODE",
-            "box": "BOX",
-            "backup_box": "BACKUP BOX",
-            "freezer": "FREEZER",
-            "storage_date": "STORAGE DATE",
-            "analyst": "ANALYST",
-            "backup_used": "BACKUP USED"
-        })
+        dados_exibicao = dados.rename(
+            columns={
+                "code": "CODE",
+                "box": "BOX",
+                "backup_box": "BACKUP BOX",
+                "freezer": "FREEZER",
+                "storage_date": "STORAGE DATE",
+                "analyst": "ANALYST",
+                "backup_used": "BACKUP USED"
+            }
+        )
 
         st.dataframe(
-            dados[
-                [
-                    "CODE",
-                    "BOX",
-                    "BACKUP BOX",
-                    "FREEZER",
-                    "STORAGE DATE",
-                    "ANALYST",
-                    "BACKUP USED"
-                ]
-            ],
+            dados_exibicao,
             use_container_width=True,
             hide_index=True
         )
