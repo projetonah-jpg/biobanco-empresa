@@ -1382,6 +1382,15 @@ def salvar_armazenamento(
         ))
 
 
+def excluir_armazenamento(code):
+    with conectar() as conexao:
+        conexao.execute(
+            """
+            DELETE FROM armazenamento_cepas
+            WHERE code = ?
+            """,
+            (code,)
+
 def obter_armazenamento():
     with conectar() as conexao:
         return pd.read_sql_query(
