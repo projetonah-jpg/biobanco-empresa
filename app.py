@@ -1350,6 +1350,45 @@ def pagina_registro():
 # ARMAZENAMENTO
 # ============================================================
 
+def salvar_armazenamento(
+    code,
+    box,
+    backup_box,
+    freezer,
+    storage_date,
+    analyst,
+    backup_used
+):
+    with conectar() as conexao:
+        conexao.execute("""
+            INSERT OR REPLACE INTO armazenamento_cepas (
+                code,
+                box,
+                backup_box,
+                freezer,
+                storage_date,
+                analyst,
+                backup_used
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            code,
+            box,
+            backup_box,
+            freezer,
+            storage_date,
+            analyst,
+            backup_used
+        ))
+
+
+def obter_armazenamento():
+    with conectar() as conexao:
+        return pd.read_sql_query(
+            "SELECT * FROM armazenamento_cepas",
+            conexao
+        )
+
 def pagina_armazenamento():
     st.title("🧫 Armazenamento de Isolados Identificados")
     st.caption(
@@ -1627,37 +1666,50 @@ def importar_excel(arquivo):
 
 
 def gerar_excel():
+
     amostras = obter_amostras()
+
     identificacoes = obter_identificacoes()
-    
-    # Prepara a aba de armazenamento de isolados
-    armazenamento = identificacoes[["code", "gram_stain", "identification"]].copy() if not identificacoes.empty else pd.DataFrame(columns=["code", "gram_stain", "identification"])
-    
-    # Busca os dados brutos cadastrados para exportar junto no relatório
-    try:
-        linhas_brutas = consultar("SELECT tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC")
-        df_export_brutos = pd.DataFrame(linhas_brutas)
-    except Exception:
-        df_export_brutos = pd.DataFrame(columns=["tsb", "glicerina", "tsa", "criotubo", "placa_de_petri", "fluxo_laminar", "ultrafreezer"])
+
+    armazenamento = obter_armazenamento()
+
+    if not armazenamento.empty:
+        armazenamento = armazenamento.rename(columns={
+            "code": "CODE",
+            "box": "BOX",
+            "backup_box": "BACKUP BOX",
+            "freezer": "FREEZER",
+            "storage_date": "STORAGE DATE",
+            "analyst": "ANALYST",
+            "backup_used": "BACKUP USED"
+        })
 
     arquivo = BytesIO()
 
-    with pd.ExcelWriter(arquivo, engine="openpyxl") as writer:
-        amostras.to_excel(writer, sheet_name="Registro", index=False)
-        identificacoes.to_excel(writer, sheet_name="Identification", index=False)
-        armazenamento.to_excel(writer, sheet_name="Storage", index=False)
-        df_export_brutos.to_excel(writer, sheet_name="Dados Brutos", index=False)
+    with pd.ExcelWriter(
+        arquivo,
+        engine="openpyxl"
+    ) as writer:
 
-        for planilha in writer.book.worksheets:
-            planilha.freeze_panes = "A2"
-            planilha.auto_filter.ref = planilha.dimensions
-            for coluna in planilha.columns:
-                maior_tamanho = max(len(str(celula.value or "")) for celula in coluna)
-                planilha.column_dimensions[coluna[0].column_letter].width = min(maior_tamanho + 2, 38)
+        amostras.to_excel(
+            writer,
+            sheet_name="Registro",
+            index=False
+        )
 
-                
+        identificacoes.to_excel(
+            writer,
+            sheet_name="Identification",
+            index=False
+        )
+
+        armazenamento.to_excel(
+            writer,
+            sheet_name="Storage",
+            index=False
+        )
+
     return arquivo.getvalue()
-
 
 def normalizar_coluna_sistema(nome):
     conversoes = {
