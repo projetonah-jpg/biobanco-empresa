@@ -1620,22 +1620,23 @@ def pagina_armazenamento():
         )
 
         dados_exibicao = dados.rename(
-            columns={
-                "code": "CODE",
-                "box": "BOX",
-                "backup_box": "BACKUP BOX",
-                "freezer": "FREEZER",
-                "storage_date": "STORAGE DATE",
-                "analyst": "ANALYST",
-                "backup_used": "BACKUP USED"
-            }
-        )
+    columns={
+        "code": "CODE",
+        "box": "BOX",
+        "backup_box": "BACKUP BOX",
+        "freezer": "FREEZER",
+        "storage_date": "STORAGE DATE",
+        "analyst": "ANALYST",
+        "backup_used": "BACKUP USED"
+    }
+)
 
-        st.dataframe(
-            dados_exibicao,
-            use_container_width=True,
-            hide_index=True
-        )
+st.dataframe(
+    dados_exibicao,
+    use_container_width=True,
+    hide_index=True
+)
+
 # ============================================================
 # EXPORTAÇÃO PARA EXCEL
 # ============================================================
