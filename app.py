@@ -1606,11 +1606,11 @@ def pagina_armazenamento():
 
                 st.rerun()
 
-    st.divider()
+       st.divider()
 
     dados = obter_armazenamento()
 
-       if not dados.empty:
+    if not dados.empty:
 
         total_isolados = len(dados)
 
