@@ -1606,7 +1606,7 @@ def pagina_armazenamento():
 
                 st.rerun()
 
-       st.divider()
+        st.divider()
 
     dados = obter_armazenamento()
 
