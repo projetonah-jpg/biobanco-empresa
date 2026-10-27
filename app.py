@@ -523,13 +523,29 @@ def conectar():
 def criar_banco():
     with conectar() as conexao:
         # 1. Criação direta das tabelas em linhas limpas
-        q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
-        q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
-        q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
-        
-        conexao.execute(q1)
-        conexao.execute(q2)
-        conexao.execute(q3)
+q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
+
+q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
+
+q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
+
+q4 = """
+CREATE TABLE IF NOT EXISTS armazenamento_cepas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE,
+    box TEXT,
+    backup_box TEXT,
+    freezer TEXT,
+    storage_date TEXT,
+    analyst TEXT,
+    backup_used TEXT
+);
+"""
+
+conexao.execute(q1)
+conexao.execute(q2)
+conexao.execute(q3)
+conexao.execute(q4)
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
@@ -1355,51 +1371,87 @@ def pagina_armazenamento():
         )
         return
 
-    # Indicador superior
-    total_isolados = len(df_filtrado)
+    codigos = sorted(df_filtrado["code"].unique())
 
-    st.metric(
-        label="🦠 Total de Isolados Preservados no Banco",
-        value=f"{total_isolados} un"
-    )
+    st.subheader("Novo Registro de Armazenamento")
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    with st.form("form_armazenamento"):
 
-    # Tabela de armazenamento
-    armazenamento = df_filtrado[
-        [
-            "code",
-            "gram_stain",
-            "identification",
-            "area",
-            "collection_point",
-            "data"
-        ]
-    ].copy()
+        code = st.selectbox(
+            "Code",
+            codigos
+        )
 
-    # Renomeia as colunas
-    armazenamento.columns = [
-        "CODE",
-        "BOX",
-        "BACKUP BOX",
-        "FREEZER",
-        "STORAGE DATE",
-        "ANALYST"
-    ]
+        col1, col2 = st.columns(2)
 
-    # Nova coluna
-    armazenamento["BACKUP USED"] = "No"
+        with col1:
+            box = st.text_input("Box")
+            backup_box = st.text_input("Backup Box")
+            freezer = st.text_input("Freezer")
 
-    st.dataframe(
-        armazenamento,
-        use_container_width=True,
-        hide_index=True
-    )
+        with col2:
+            storage_date = st.date_input("Storage Date")
+            analyst = st.text_input("Analyst")
 
-    st.caption(
-        f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos."
-    )
+            backup_used = st.selectbox(
+                "Backup Used",
+                ["No", "Yes"]
+            )
 
+        salvar = st.form_submit_button("Salvar")
+
+        if salvar:
+
+            salvar_armazenamento(
+                code,
+                box,
+                backup_box,
+                freezer,
+                str(storage_date),
+                analyst,
+                backup_used
+            )
+
+            st.success("Registro salvo com sucesso!")
+
+    st.divider()
+
+    dados = obter_armazenamento()
+
+    if not dados.empty:
+
+        total_isolados = len(dados)
+
+        st.metric(
+            "🦠 Total de Isolados Preservados no Banco",
+            f"{total_isolados} un"
+        )
+
+        dados = dados.rename(columns={
+            "code": "CODE",
+            "box": "BOX",
+            "backup_box": "BACKUP BOX",
+            "freezer": "FREEZER",
+            "storage_date": "STORAGE DATE",
+            "analyst": "ANALYST",
+            "backup_used": "BACKUP USED"
+        })
+
+        st.dataframe(
+            dados[
+                [
+                    "CODE",
+                    "BOX",
+                    "BACKUP BOX",
+                    "FREEZER",
+                    "STORAGE DATE",
+                    "ANALYST",
+                    "BACKUP USED"
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
 # ============================================================
 # EXPORTAÇÃO PARA EXCEL
 # ============================================================
