@@ -522,30 +522,32 @@ def conectar():
 
 def criar_banco():
     with conectar() as conexao:
-        # 1. Criação direta das tabelas em linhas limpas
-q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
 
-q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
+        # 1. Criação direta das tabelas
+        q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
 
-q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
+        q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
 
-q4 = """
-CREATE TABLE IF NOT EXISTS armazenamento_cepas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT UNIQUE,
-    box TEXT,
-    backup_box TEXT,
-    freezer TEXT,
-    storage_date TEXT,
-    analyst TEXT,
-    backup_used TEXT
-);
-"""
+        q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
 
-conexao.execute(q1)
-conexao.execute(q2)
-conexao.execute(q3)
-conexao.execute(q4)
+        q4 = """
+        CREATE TABLE IF NOT EXISTS armazenamento_cepas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE,
+            box TEXT,
+            backup_box TEXT,
+            freezer TEXT,
+            storage_date TEXT,
+            analyst TEXT,
+            backup_used TEXT
+        );
+        """
+
+        conexao.execute(q1)
+        conexao.execute(q2)
+        conexao.execute(q3)
+        conexao.execute(q4)
+
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
