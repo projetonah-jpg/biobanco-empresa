@@ -1390,70 +1390,182 @@ def obter_armazenamento():
         )
 
 def pagina_armazenamento():
+
     st.title("🧫 Armazenamento de Isolados Identificados")
     st.caption(
-        "Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas."
+        "Gestão do banco de cepas e rastreabilidade dos isolados."
     )
 
     df = obter_identificacoes()
 
     if df.empty:
-        st.info("Nenhuma amostra cadastrada no sistema até o momento.")
+        st.info("Nenhuma identificação cadastrada.")
         return
 
-    # Filtra apenas os registros com identificação preenchida
     df_filtrado = df[
         df["identification"].fillna("").str.strip() != ""
     ].copy()
 
     if df_filtrado.empty:
         st.info(
-            "Nenhum microrganismo identificado e armazenado no banco de cepas ainda."
+            "Nenhum microrganismo identificado disponível."
         )
         return
 
     codigos = sorted(df_filtrado["code"].unique())
 
-    st.subheader("Novo Registro de Armazenamento")
+    dados = obter_armazenamento()
 
-    with st.form("form_armazenamento"):
+    modo = st.radio(
+        "Ação",
+        [
+            "Novo Registro",
+            "Editar Registro",
+            "Excluir Registro"
+        ],
+        horizontal=True
+    )
 
-        code = st.selectbox(
-            "Code",
-            codigos
+    registro = {}
+
+    if (
+        modo in ["Editar Registro", "Excluir Registro"]
+        and not dados.empty
+    ):
+
+        codigo_selecionado = st.selectbox(
+            "Selecione o CODE",
+            dados["code"].tolist()
         )
 
-        col1, col2 = st.columns(2)
+        registro = dados[
+            dados["code"] == codigo_selecionado
+        ].iloc[0]
 
-        with col1:
-            box = st.text_input("Box")
-            backup_box = st.text_input("Backup Box")
-            freezer = st.text_input("Freezer")
+    # =====================================================
+    # EXCLUIR
+    # =====================================================
 
-        with col2:
-            storage_date = st.date_input("Storage Date")
-            analyst = st.text_input("Analyst")
+    if modo == "Excluir Registro":
 
-            backup_used = st.selectbox(
-                "Backup Used",
-                ["No", "Yes"]
+        if dados.empty:
+            st.info("Nenhum registro para excluir.")
+            return
+
+        st.warning(
+            f"⚠️ O registro {registro['code']} será removido permanentemente."
+        )
+
+        confirmar = st.checkbox(
+            "Confirmo a exclusão deste registro"
+        )
+
+        if st.button(
+            "🗑️ Excluir Registro",
+            disabled=not confirmar,
+            use_container_width=True
+        ):
+
+            excluir_armazenamento(
+                registro["code"]
             )
 
-        salvar = st.form_submit_button("Salvar")
-
-        if salvar:
-
-            salvar_armazenamento(
-                code,
-                box,
-                backup_box,
-                freezer,
-                str(storage_date),
-                analyst,
-                backup_used
+            st.toast(
+                "Registro excluído com sucesso!"
             )
 
-            st.success("Registro salvo com sucesso!")
+            st.rerun()
+
+    # =====================================================
+    # NOVO / EDITAR
+    # =====================================================
+
+    else:
+
+        with st.form("form_armazenamento"):
+
+            if modo == "Novo Registro":
+
+                code = st.selectbox(
+                    "Code",
+                    codigos
+                )
+
+            else:
+
+                code = st.text_input(
+                    "Code",
+                    registro["code"],
+                    disabled=True
+                )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                box = st.text_input(
+                    "Box",
+                    "" if modo == "Novo Registro"
+                    else registro["box"]
+                )
+
+                backup_box = st.text_input(
+                    "Backup Box",
+                    "" if modo == "Novo Registro"
+                    else registro["backup_box"]
+                )
+
+                freezer = st.text_input(
+                    "Freezer",
+                    "" if modo == "Novo Registro"
+                    else registro["freezer"]
+                )
+
+            with col2:
+
+                storage_date = st.date_input(
+                    "Storage Date"
+                )
+
+                analyst = st.text_input(
+                    "Analyst",
+                    "" if modo == "Novo Registro"
+                    else registro["analyst"]
+                )
+
+                backup_used = st.selectbox(
+                    "Backup Used",
+                    ["No", "Yes"],
+                    index=0
+                    if modo == "Novo Registro"
+                    else ["No", "Yes"].index(
+                        str(
+                            registro["backup_used"]
+                        )
+                    )
+                )
+
+            salvar = st.form_submit_button(
+                "💾 Salvar"
+            )
+
+            if salvar:
+
+                salvar_armazenamento(
+                    code,
+                    box,
+                    backup_box,
+                    freezer,
+                    str(storage_date),
+                    analyst,
+                    backup_used
+                )
+
+                st.toast(
+                    "Registro salvo com sucesso!"
+                )
+
+                st.rerun()
 
     st.divider()
 
@@ -1461,11 +1573,9 @@ def pagina_armazenamento():
 
     if not dados.empty:
 
-        total_isolados = len(dados)
-
         st.metric(
             "🦠 Total de Isolados Preservados no Banco",
-            f"{total_isolados} un"
+            len(dados)
         )
 
         dados = dados.rename(columns={
