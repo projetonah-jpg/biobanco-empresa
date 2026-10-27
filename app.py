@@ -1334,48 +1334,71 @@ def pagina_registro():
 
 def pagina_armazenamento():
     st.title("🧫 Armazenamento de Isolados Identificados")
-    st.caption("Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas.")
+    st.caption(
+        "Consulte abaixo a listagem completa de microrganismos preservados e mapeados no banco de cepas."
+    )
 
     df = obter_identificacoes()
-    
+
     if df.empty:
         st.info("Nenhuma amostra cadastrada no sistema até o momento.")
         return
 
-    # Filtra apenas os registros que já possuem identificação preenchida
-    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
+    # Filtra apenas os registros com identificação preenchida
+    df_filtrado = df[
+        df["identification"].fillna("").str.strip() != ""
+    ].copy()
 
     if df_filtrado.empty:
-        st.info("Nenhum microrganismo identificado e armazenado no banco de cepas ainda.")
+        st.info(
+            "Nenhum microrganismo identificado e armazenado no banco de cepas ainda."
+        )
         return
 
-    # Conta o total de registros válidos para mostrar no indicador superior
+    # Indicador superior
     total_isolados = len(df_filtrado)
-    st.metric(label="🦠 Total de Isolados Preservados no Banco", value=f"{total_isolados} un")
+
+    st.metric(
+        label="🦠 Total de Isolados Preservados no Banco",
+        value=f"{total_isolados} un"
+    )
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Prepara e formata a tabela com as colunas essenciais de rastreabilidade
-    armazenamento = df_filtrado[["code", "gram_stain", "identification", "area", "collection_point", "data"]].copy()
-    
-    config_armazenamento = {
-        "code": "CODE",
-        "gram_stain": "GRAM STAIN",
-        "identification": "IDENTIFICATION",
-        "area": "AREA",
-        "collection_point": "COLLECTION POINT",
-        "data": "COLLECTION DATE"
-    }
+    # Tabela de armazenamento
+    armazenamento = df_filtrado[
+        [
+            "code",
+            "gram_stain",
+            "identification",
+            "area",
+            "collection_point",
+            "data"
+        ]
+    ].copy()
+
+    # Renomeia as colunas
+    armazenamento.columns = [
+        "CODE",
+        "BOX",
+        "BACKUP BOX",
+        "FREEZER",
+        "STORAGE DATE",
+        "ANALYST"
+    ]
+
+    # Nova coluna
+    armazenamento["BACKUP USED"] = "No"
 
     st.dataframe(
-        armazenamento, 
-        use_container_width=True, 
-        hide_index=True, 
-        column_config=config_armazenamento
+        armazenamento,
+        use_container_width=True,
+        hide_index=True
     )
-    st.caption(f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos.")
 
-
-
+    st.caption(
+        f"Listagem gerencial • Rastreabilidade ativa para {total_isolados} microrganismos."
+    )
 
 # ============================================================
 # EXPORTAÇÃO PARA EXCEL
