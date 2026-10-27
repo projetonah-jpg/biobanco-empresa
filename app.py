@@ -1390,6 +1390,7 @@ def excluir_armazenamento(code):
             WHERE code = ?
             """,
             (code,)
+        )
 
 def obter_armazenamento():
     with conectar() as conexao:
