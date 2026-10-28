@@ -548,33 +548,39 @@ def criar_banco():
         conexao.execute(q3)
         conexao.execute(q4)
 
-       try:
-    conexao.execute(
-        "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_box INTEGER"
-    )
-except:
-    pass
+              conexao.execute(q1)
+        conexao.execute(q2)
+        conexao.execute(q3)
+        conexao.execute(q4)
 
-       try:
-    conexao.execute(
-        "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
-    )
-except:
-    pass
+        try:
+            conexao.execute(
+                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_box INTEGER"
+            )
+        except sqlite3.OperationalError:
+            pass
 
-       try:
-    conexao.execute(
-        "ALTER TABLE armazenamento_cepas ADD COLUMN status TEXT DEFAULT 'ARMAZENADO'"
-    )
-except:
-    pass
+        try:
+            conexao.execute(
+                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
+            )
+        except sqlite3.OperationalError:
+            pass
 
-       try:
-    conexao.execute(
-        "ALTER TABLE armazenamento_cepas ADD COLUMN data_retirada TEXT"
-    )
-except:
-    pass
+        try:
+            conexao.execute(
+                "ALTER TABLE armazenamento_cepas ADD COLUMN status TEXT DEFAULT 'ARMAZENADO'"
+            )
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            conexao.execute(
+                "ALTER TABLE armazenamento_cepas ADD COLUMN data_retirada TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
+
         
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
