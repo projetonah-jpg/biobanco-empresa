@@ -548,11 +548,6 @@ def criar_banco():
         conexao.execute(q3)
         conexao.execute(q4)
 
-              conexao.execute(q1)
-        conexao.execute(q2)
-        conexao.execute(q3)
-        conexao.execute(q4)
-
         try:
             conexao.execute(
                 "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_box INTEGER"
