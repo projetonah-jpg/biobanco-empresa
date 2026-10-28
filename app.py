@@ -548,6 +548,34 @@ def criar_banco():
         conexao.execute(q3)
         conexao.execute(q4)
 
+       try:
+    conexao.execute(
+        "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_box INTEGER"
+    )
+except:
+    pass
+
+try:
+    conexao.execute(
+        "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
+    )
+except:
+    pass
+
+try:
+    conexao.execute(
+        "ALTER TABLE armazenamento_cepas ADD COLUMN status TEXT DEFAULT 'ARMAZENADO'"
+    )
+except:
+    pass
+
+try:
+    conexao.execute(
+        "ALTER TABLE armazenamento_cepas ADD COLUMN data_retirada TEXT"
+    )
+except:
+    pass
+        
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
@@ -1350,15 +1378,44 @@ def pagina_registro():
 # ARMAZENAMENTO
 # ============================================================
 
+def desenhar_caixa(chave):
+
+    posicao = st.session_state.get(chave)
+
+    for linha in range(9):
+
+        cols = st.columns(9)
+
+        for coluna in range(9):
+
+            numero = linha * 9 + coluna + 1
+
+            selecionado = (
+                posicao == numero
+            )
+
+            cor = "🔴" if selecionado else "🟢"
+
+            with cols[coluna]:
+
+                if st.form_submit_button(
+                    f"{cor}{numero}"
+                ):
+                    st.session_state[chave] = numero
+
+    return st.session_state.get(chave)
+
+
 def salvar_armazenamento(
     code,
     box,
     backup_box,
     freezer,
-    storage_date,
+    str(storage_date),
     analyst,
     backup_used
-):
+)
+
     with conectar() as conexao:
         conexao.execute("""
             INSERT OR REPLACE INTO armazenamento_cepas (
@@ -1547,24 +1604,42 @@ def pagina_armazenamento():
                 )
 
             col1, col2 = st.columns(2)
+    
+           with col1:
 
-            with col1:
-
-                box = st.text_input(
-                    "Box",
-                    value=valor_box
+             box = st.selectbox(
+                   "Box",
+             ["C1", "C2", "C3", "C4", "C5"],
+                 index=0
                 )
 
-                backup_box = st.text_input(
-                    "Backup Box",
-                    value=valor_backup_box
+             posicao_box = st.number_input(
+                 "Posição da Caixa",
+                   min_value=1,
+                   max_value=81,
+                    value=1,
+                      step=1
                 )
 
-                freezer = st.text_input(
+             backup_box = st.selectbox(
+                   "Backup Box",
+             ["C1", "C2", "C3", "C4", "C5"],
+                 index=0
+             )
+
+               posicao_backup = st.number_input(
+                     "Posição do Backup",
+                      min_value=1,
+                      max_value=81,
+                        value=1,
+                         step=1
+                )
+
+                 freezer = st.text_input(
                     "Freezer",
-                    value=valor_freezer
-                )
-
+                  value=valor_freezer
+                ) 
+           
             with col2:
 
                 storage_date = st.date_input(
