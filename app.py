@@ -1609,38 +1609,26 @@ def pagina_armazenamento():
     
            with col1:
 
-             box = st.selectbox(
-                   "Box",
-             ["C1", "C2", "C3", "C4", "C5"],
-                 index=0
-                )
+    box = st.selectbox(
+        "Box",
+        ["C1", "C2", "C3", "C4", "C5"],
+        index=0
+    )
 
-             posicao_box = st.number_input(
-                 "Posição da Caixa",
-                   min_value=1,
-                   max_value=81,
-                    value=1,
-                      step=1
-                )
+    st.markdown("#### Posição da Caixa")
 
-             backup_box = st.selectbox(
-                   "Backup Box",
-             ["C1", "C2", "C3", "C4", "C5"],
-                 index=0
-             )
+    backup_box = st.selectbox(
+        "Backup Box",
+        ["C1", "C2", "C3", "C4", "C5"],
+        index=0
+    )
 
-               posicao_backup = st.number_input(
-                     "Posição do Backup",
-                      min_value=1,
-                      max_value=81,
-                        value=1,
-                         step=1
-                )
+    st.markdown("#### Posição do Backup")
 
-                 freezer = st.text_input(
-                    "Freezer",
-                  value=valor_freezer
-                ) 
+    freezer = st.text_input(
+        "Freezer",
+        value=valor_freezer
+    )
            
             with col2:
 
