@@ -1412,11 +1412,12 @@ def salvar_armazenamento(
     box,
     backup_box,
     freezer,
-    str(storage_date),
+    storage_date,
     analyst,
-    backup_used
-)
-
+    backup_used,
+    posicao_box,
+    posicao_backup
+):
     with conectar() as conexao:
         conexao.execute("""
             INSERT OR REPLACE INTO armazenamento_cepas (
