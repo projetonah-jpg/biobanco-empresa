@@ -555,21 +555,21 @@ def criar_banco():
 except:
     pass
 
-try:
+       try:
     conexao.execute(
         "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
     )
 except:
     pass
 
-try:
+       try:
     conexao.execute(
         "ALTER TABLE armazenamento_cepas ADD COLUMN status TEXT DEFAULT 'ARMAZENADO'"
     )
 except:
     pass
 
-try:
+       try:
     conexao.execute(
         "ALTER TABLE armazenamento_cepas ADD COLUMN data_retirada TEXT"
     )
