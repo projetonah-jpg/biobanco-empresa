@@ -1550,20 +1550,10 @@ def pagina_armazenamento():
 
             with col1:
 
-                box = st.text_input(
-                    "Box",
-                    value=valor_box
-                )
-
-                backup_box = st.text_input(
-                    "Backup Box",
-                    value=valor_backup_box
-                )
-
-                freezer = st.text_input(
-                    "Freezer",
-                    value=valor_freezer
-                )
+             freezer = st.text_input(
+                   "Freezer",
+               value=valor_freezer
+              )
 
             with col2:
 
@@ -1584,6 +1574,11 @@ def pagina_armazenamento():
                     else 1
                 )
 
+
+               st.info(
+     "Mapa do Backup aparecerá aqui"
+            )
+            
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
