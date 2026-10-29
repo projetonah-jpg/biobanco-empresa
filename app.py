@@ -1560,7 +1560,7 @@ with col1:
         value=valor_analyst
     )
 
- with col2:
+with col2:
 
     storage_date = st.date_input(
         "Storage Date"
