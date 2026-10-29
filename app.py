@@ -1570,8 +1570,7 @@ with col2:
         "Backup Used",
         ["No", "Yes"],
         index=0 if valor_backup_used == "No" else 1
-    )          
-    
+    )           st.markdown("---")
 
             box = st.selectbox(
                 "Box",
