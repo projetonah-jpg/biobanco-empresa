@@ -1544,105 +1544,99 @@ def pagina_armazenamento():
     # =====================================================
     # NOVO / EDITAR
     # =====================================================
+     else:
 
-    else:
+        with st.form("form_armazenamento"):
 
-    with st.form("form_armazenamento"):
+            if modo == "Novo Registro":
 
-if modo == "Novo Registro":
+                code = st.selectbox(
+                    "Code",
+                    codigos
+                )
 
-        code = st.selectbox(
-            "Code",
-            codigos
-        )
+                valor_freezer = ""
+                valor_analyst = ""
+                valor_backup_used = "No"
 
-        valor_freezer = ""
-        valor_analyst = ""
-        valor_backup_used = "No"
+            else:
 
-    else:
+                code = st.text_input(
+                    "Code",
+                    value=str(registro.get("code", "")),
+                    disabled=True
+                )
 
-        code = st.text_input(
-            "Code",
-            value=str(
-                registro.get("code", "")
-            ),
-            disabled=True
-        )
+                valor_freezer = str(
+                    registro.get("freezer", "")
+                )
 
-        valor_freezer = str(
-            registro.get("freezer", "")
-        )
+                valor_analyst = str(
+                    registro.get("analyst", "")
+                )
 
-        valor_analyst = str(
-            registro.get("analyst", "")
-        )
+                valor_backup_used = str(
+                    registro.get("backup_used", "No")
+                )
 
-        valor_backup_used = str(
-            registro.get(
-                "backup_used",
-                "No"
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                box = st.selectbox(
+                    "Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
+
+                backup_box = st.selectbox(
+                    "Backup Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
+
+                freezer = st.text_input(
+                    "Freezer",
+                    value=valor_freezer
+                )
+
+            with col2:
+
+                storage_date = st.date_input(
+                    "Storage Date"
+                )
+
+                analyst = st.text_input(
+                    "Analyst",
+                    value=valor_analyst
+                )
+
+                backup_used = st.selectbox(
+                    "Backup Used",
+                    ["No", "Yes"],
+                    index=0 if valor_backup_used == "No" else 1
+                )
+
+            salvar = st.form_submit_button(
+                "💾 Salvar"
             )
-        )
 
-    col1, col2 = st.columns(2)
+            if salvar:
 
-    with col1:
+                salvar_armazenamento(
+                    code,
+                    box,
+                    backup_box,
+                    freezer,
+                    str(storage_date),
+                    analyst,
+                    backup_used
+                )
 
-        box = st.selectbox(
-            "Box",
-            ["C1", "C2", "C3", "C4", "C5"]
-        )
+                st.toast(
+                    "Registro salvo com sucesso! ✅"
+                )
 
-        backup_box = st.selectbox(
-            "Backup Box",
-            ["C1", "C2", "C3", "C4", "C5"]
-        )
+                st.rerun()
 
-        freezer = st.text_input(
-            "Freezer",
-            value=valor_freezer
-        )
-
-    with col2:
-
-        storage_date = st.date_input(
-            "Storage Date"
-        )
-
-        analyst = st.text_input(
-            "Analyst",
-            value=valor_analyst
-        )
-
-        backup_used = st.selectbox(
-            "Backup Used",
-            ["No", "Yes"],
-            index=0 if valor_backup_used == "No" else 1
-        )
-
-    salvar = st.form_submit_button(
-        "💾 Salvar"
-    )
-
-    if salvar:
-
-        salvar_armazenamento(
-            code,
-            box,
-            backup_box,
-            freezer,
-            str(storage_date),
-            analyst,
-            backup_used
-        )
-
-        st.toast(
-            "Registro salvo com sucesso! ✅"
-        )
-
-        st.rerun()
-        
         st.divider()
 
     dados = obter_armazenamento()
