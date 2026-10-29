@@ -1575,43 +1575,23 @@ def pagina_armazenamento():
                 )
             st.markdown("---")
 
-                        box = st.selectbox(
+            box = st.selectbox(
                 "Box",
                 ["C1", "C2", "C3", "C4", "C5"]
             )
 
-            st.markdown("### Mapa da Caixa")
-
-            for linha in range(9):
-
-                cols = st.columns(9)
-
-                for coluna in range(9):
-
-                    pos = linha * 9 + coluna + 1
-
-                    cols[coluna].write(
-                        f"🟢 {pos:02d}"
-                    )
+            st.info(
+                "Mapa da Caixa aparecerá aqui"
+            )
 
             backup_box = st.selectbox(
                 "Backup Box",
                 ["C1", "C2", "C3", "C4", "C5"]
             )
 
-            st.markdown("### Mapa do Backup")
-
-            for linha in range(9):
-
-                cols = st.columns(9)
-
-                for coluna in range(9):
-
-                    pos = linha * 9 + coluna + 1
-
-                    cols[coluna].write(
-                        f"🟢 {pos:02d}"
-                    )
+            st.info(
+                "Mapa do Backup aparecerá aqui"
+            )
 
             
             salvar = st.form_submit_button(
