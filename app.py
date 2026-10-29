@@ -1641,27 +1641,27 @@ def pagina_armazenamento():
                     index=0 if valor_backup_used == "No" else 1
                 )
 
-            salvar = st.form_submit_button(
+                        salvar = st.form_submit_button(
                 "💾 Salvar"
             )
 
-        if salvar:
+            if salvar:
 
-    salvar_armazenamento(
-        code,
-        box,
-        backup_box,
-        freezer,
-        str(storage_date),
-        analyst,
-        backup_used
-    )
+                salvar_armazenamento(
+                    code,
+                    box,
+                    backup_box,
+                    freezer,
+                    str(storage_date),
+                    analyst,
+                    backup_used
+                )
 
-    st.toast(
-        "Registro salvo com sucesso! ✅"
-    )
+                st.toast(
+                    "Registro salvo com sucesso! ✅"
+                )
 
-    st.rerun()
+                st.rerun()
         
         st.divider()
 
