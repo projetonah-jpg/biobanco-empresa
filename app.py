@@ -1605,31 +1605,33 @@ def pagina_armazenamento():
                     )
                 )
 
-            col1, col2 = st.columns(2)
-    
-           with col1:
+               col1, col2 = st.columns(2)
 
-    box = st.selectbox(
-        "Box",
-        ["C1", "C2", "C3", "C4", "C5"],
-        index=0
-    )
+                    col1, col2 = st.columns(2)
 
-    st.markdown("#### Posição da Caixa")
+            with col1:
 
-    backup_box = st.selectbox(
-        "Backup Box",
-        ["C1", "C2", "C3", "C4", "C5"],
-        index=0
-    )
+                box = st.selectbox(
+                    "Box",
+                    ["C1", "C2", "C3", "C4", "C5"],
+                    index=0
+                )
 
-    st.markdown("#### Posição do Backup")
+                st.markdown("#### Posição da Caixa")
 
-    freezer = st.text_input(
-        "Freezer",
-        value=valor_freezer
-    )
-           
+                backup_box = st.selectbox(
+                    "Backup Box",
+                    ["C1", "C2", "C3", "C4", "C5"],
+                    index=0
+                )
+
+                st.markdown("#### Posição do Backup")
+
+                freezer = st.text_input(
+                    "Freezer",
+                    value=valor_freezer
+                )
+
             with col2:
 
                 storage_date = st.date_input(
@@ -1644,9 +1646,7 @@ def pagina_armazenamento():
                 backup_used = st.selectbox(
                     "Backup Used",
                     ["No", "Yes"],
-                    index=0
-                    if valor_backup_used == "No"
-                    else 1
+                    index=0 if valor_backup_used == "No" else 1
                 )
 
             salvar = st.form_submit_button(
