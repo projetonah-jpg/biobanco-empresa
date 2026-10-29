@@ -1573,7 +1573,7 @@ def pagina_armazenamento():
                     if valor_backup_used == "No"
                     else 1
                 )
-                        st.markdown("---")
+            st.markdown("---")
 
             box = st.selectbox(
                 "Box",
