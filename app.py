@@ -1597,30 +1597,30 @@ def pagina_armazenamento():
 
 col1, col2 = st.columns(2)
 
-  with col1:
+                 with col1:
 
-    box = st.selectbox(
-        "Box",
-        ["C1", "C2", "C3", "C4", "C5"]
-    )
+                box = st.selectbox(
+                    "Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
 
-    desenhar_caixa(
-        f"BOX {box}"
-    )
+                desenhar_caixa(
+                    f"BOX {box}"
+                )
 
-    backup_box = st.selectbox(
-        "Backup Box",
-        ["C1", "C2", "C3", "C4", "C5"]
-    )
+                backup_box = st.selectbox(
+                    "Backup Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
 
-    desenhar_caixa(
-        f"BACKUP {backup_box}"
-    )
+                desenhar_caixa(
+                    f"BACKUP {backup_box}"
+                )
 
-    freezer = st.text_input(
-        "Freezer",
-        value=valor_freezer
-    )
+                freezer = st.text_input(
+                    "Freezer",
+                    value=valor_freezer
+                )
 
                with col2:
 
