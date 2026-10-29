@@ -1379,9 +1379,9 @@ def pagina_registro():
 # ARMAZENAMENTO
 # ============================================================
 
-def desenhar_caixa(chave):
+def desenhar_caixa(nome):
 
-    posicao = st.session_state.get(chave)
+    st.markdown(f"### {nome}")
 
     for linha in range(9):
 
@@ -1389,23 +1389,15 @@ def desenhar_caixa(chave):
 
         for coluna in range(9):
 
-            numero = linha * 9 + coluna + 1
-
-            selecionado = (
-                posicao == numero
-            )
-
-            cor = "🔴" if selecionado else "🟢"
+            pos = linha * 9 + coluna + 1
 
             with cols[coluna]:
 
-                if st.form_submit_button(
-                    f"{cor}{numero}"
-                ):
-                    st.session_state[chave] = numero
-
-    return st.session_state.get(chave)
-
+                st.button(
+                    f"🟢 {pos}",
+                    key=f"{nome}_{pos}",
+                    use_container_width=True
+                )
 
 def salvar_armazenamento(
     code,
@@ -1607,21 +1599,28 @@ def pagina_armazenamento():
 
             with col1:
 
-                box = st.selectbox(
-                    "Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
-                
-                backup_box = st.selectbox(
-                    "Backup Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
+    box = st.selectbox(
+        "Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
 
-                
-                freezer = st.text_input(
-                    "Freezer",
-                    value=valor_freezer
-                )
+    desenhar_caixa(
+        f"BOX {box}"
+    )
+
+    backup_box = st.selectbox(
+        "Backup Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
+
+    desenhar_caixa(
+        f"BACKUP {backup_box}"
+    )
+
+    freezer = st.text_input(
+        "Freezer",
+        value=valor_freezer
+    )
 
             with col2:
 
