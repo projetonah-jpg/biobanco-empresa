@@ -1414,9 +1414,7 @@ def salvar_armazenamento(
     freezer,
     storage_date,
     analyst,
-    backup_used,
-    posicao_box,
-    posicao_backup
+    backup_used
 ):
     with conectar() as conexao:
         conexao.execute("""
@@ -1649,21 +1647,21 @@ def pagina_armazenamento():
 
             if salvar:
 
-                salvar_armazenamento(
-                    code,
-                    box,
-                    backup_box,
-                    freezer,
-                    str(storage_date),
-                    analyst,
-                    backup_used
-                )
+    salvar_armazenamento(
+        code,
+        box,
+        backup_box,
+        freezer,
+        str(storage_date),
+        analyst,
+        backup_used
+    )
 
-                st.toast(
-                    "Registro salvo com sucesso! ✅"
-                )
+    st.toast(
+        "Registro salvo com sucesso! ✅"
+    )
 
-                st.rerun()
+    st.rerun()
         
         st.divider()
 
