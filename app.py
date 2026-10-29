@@ -1353,20 +1353,19 @@ def pagina_registro():
 
 def mapa_caixa():
 
-    st.markdown("### Posições")
+    st.markdown("##### Posições")
 
     for linha in range(9):
 
-        cols = st.columns(9)
+        texto = ""
 
         for coluna in range(9):
 
             pos = linha * 9 + coluna + 1
 
-            cols[coluna].write(
-                f"🟢{pos:02d}"
-            )
+            texto += f"🟢{pos:02d} "
 
+        st.write(texto)
 
 
 def salvar_armazenamento(
