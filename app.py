@@ -1605,7 +1605,7 @@ def pagina_armazenamento():
                     )
                 )
 
-                            col1, col2 = st.columns(2)
+                         col1, col2 = st.columns(2)
 
             with col1:
 
@@ -1615,15 +1615,11 @@ def pagina_armazenamento():
                     index=0
                 )
 
-                st.markdown("#### Posição da Caixa")
-
                 backup_box = st.selectbox(
                     "Backup Box",
                     ["C1", "C2", "C3", "C4", "C5"],
                     index=0
                 )
-
-                st.markdown("#### Posição do Backup")
 
                 freezer = st.text_input(
                     "Freezer",
