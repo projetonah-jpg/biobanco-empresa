@@ -1513,40 +1513,32 @@ def pagina_armazenamento():
 
     if modo == "Excluir Registro":
 
-        if dados.empty:
-            st.info("Nenhum registro encontrado.")
-            return
+    if dados.empty:
+        st.info("Nenhum registro encontrado.")
+        return
 
-        st.warning(
-            f"⚠️ O registro {registro.get('code','')} será removido permanentemente."
+    ...
+
+    if st.button(...):
+
+        excluir_armazenamento(
+            registro.get("code")
         )
 
-        confirmar = st.checkbox(
-            "Confirmo a exclusão deste registro"
+        st.toast(
+            "Registro excluído com sucesso! ✅"
         )
 
-        if st.button(
-            "🗑️ Excluir Registro",
-            disabled=not confirmar,
-            use_container_width=True
-        ):
-
-            excluir_armazenamento(
-                registro.get("code")
-            )
-
-            st.toast(
-                "Registro excluído com sucesso! ✅"
-            )
-
-            st.rerun()
+        st.rerun()
 
     # =====================================================
     # NOVO / EDITAR
     # =====================================================
-      else:
 
-        with st.form("form_armazenamento"):
+else:
+
+    with st.form("form_armazenamento"):
+    
 
             if modo == "Novo Registro":
 
