@@ -548,35 +548,6 @@ def criar_banco():
         conexao.execute(q3)
         conexao.execute(q4)
 
-        try:
-            conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_box INTEGER"
-            )
-        except sqlite3.OperationalError:
-            pass
-
-        try:
-            conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
-            )
-        except sqlite3.OperationalError:
-            pass
-
-        try:
-            conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN status TEXT DEFAULT 'ARMAZENADO'"
-            )
-        except sqlite3.OperationalError:
-            pass
-
-        try:
-            conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN data_retirada TEXT"
-            )
-        except sqlite3.OperationalError:
-            pass
-
-        
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
@@ -1379,26 +1350,6 @@ def pagina_registro():
 # ARMAZENAMENTO
 # ============================================================
 
-def desenhar_caixa(nome):
-
-    st.markdown(f"### {nome}")
-
-    for linha in range(9):
-
-        cols = st.columns(9)
-
-        for coluna in range(9):
-
-            pos = linha * 9 + coluna + 1
-
-            with cols[coluna]:
-
-                st.button(
-                    f"🟢 {pos}",
-                    key=f"{nome}_{pos}",
-                    use_container_width=True
-                )
-
 def salvar_armazenamento(
     code,
     box,
@@ -1513,32 +1464,41 @@ def pagina_armazenamento():
 
     if modo == "Excluir Registro":
 
-    if dados.empty:
-        st.info("Nenhum registro encontrado.")
-        return
+        if dados.empty:
+            st.info("Nenhum registro encontrado.")
+            return
 
-    ...
-
-    if st.button(...):
-
-        excluir_armazenamento(
-            registro.get("code")
+        st.warning(
+            f"⚠️ O registro {registro.get('code','')} será removido permanentemente."
         )
 
-        st.toast(
-            "Registro excluído com sucesso! ✅"
+        confirmar = st.checkbox(
+            "Confirmo a exclusão deste registro"
         )
 
-        st.rerun()
+        if st.button(
+            "🗑️ Excluir Registro",
+            disabled=not confirmar,
+            use_container_width=True
+        ):
+
+            excluir_armazenamento(
+                registro.get("code")
+            )
+
+            st.toast(
+                "Registro excluído com sucesso! ✅"
+            )
+
+            st.rerun()
 
     # =====================================================
     # NOVO / EDITAR
     # =====================================================
 
-else:
+    else:
 
-    with st.form("form_armazenamento"):
-    
+        with st.form("form_armazenamento"):
 
             if modo == "Novo Registro":
 
@@ -1547,6 +1507,8 @@ else:
                     codigos
                 )
 
+                valor_box = ""
+                valor_backup_box = ""
                 valor_freezer = ""
                 valor_analyst = ""
                 valor_backup_used = "No"
@@ -1559,6 +1521,14 @@ else:
                         registro.get("code", "")
                     ),
                     disabled=True
+                )
+
+                valor_box = str(
+                    registro.get("box", "")
+                )
+
+                valor_backup_box = str(
+                    registro.get("backup_box", "")
                 )
 
                 valor_freezer = str(
@@ -1580,14 +1550,14 @@ else:
 
             with col1:
 
-                box = st.selectbox(
+                box = st.text_input(
                     "Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
+                    value=valor_box
                 )
 
-                backup_box = st.selectbox(
+                backup_box = st.text_input(
                     "Backup Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
+                    value=valor_backup_box
                 )
 
                 freezer = st.text_input(
@@ -1609,7 +1579,9 @@ else:
                 backup_used = st.selectbox(
                     "Backup Used",
                     ["No", "Yes"],
-                    index=0 if valor_backup_used == "No" else 1
+                    index=0
+                    if valor_backup_used == "No"
+                    else 1
                 )
 
             salvar = st.form_submit_button(
@@ -1635,6 +1607,7 @@ else:
                 st.rerun()
 
         st.divider()
+
     dados = obter_armazenamento()
 
     if not dados.empty:
