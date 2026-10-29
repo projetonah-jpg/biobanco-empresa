@@ -1595,9 +1595,9 @@ def pagina_armazenamento():
                     )
                 )
 
-col1, col2 = st.columns(2)
+               col1, col2 = st.columns(2)
 
-                 with col1:
+            with col1:
 
                 box = st.selectbox(
                     "Box",
@@ -1621,6 +1621,24 @@ col1, col2 = st.columns(2)
                     "Freezer",
                     value=valor_freezer
                 )
+
+            with col2:
+
+                storage_date = st.date_input(
+                    "Storage Date"
+                )
+
+                analyst = st.text_input(
+                    "Analyst",
+                    value=valor_analyst
+                )
+
+                backup_used = st.selectbox(
+                    "Backup Used",
+                    ["No", "Yes"],
+                    index=0 if valor_backup_used == "No" else 1
+                )
+
 
                with col2:
 
