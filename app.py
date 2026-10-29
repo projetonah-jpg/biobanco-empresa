@@ -1547,7 +1547,7 @@ def pagina_armazenamento():
 
     else:
 
-        with st.form("form_armazenamento"):
+                with st.form("form_armazenamento"):
 
             if modo == "Novo Registro":
 
@@ -1556,8 +1556,6 @@ def pagina_armazenamento():
                     codigos
                 )
 
-                valor_box = ""
-                valor_backup_box = ""
                 valor_freezer = ""
                 valor_analyst = ""
                 valor_backup_used = "No"
@@ -1570,14 +1568,6 @@ def pagina_armazenamento():
                         registro.get("code", "")
                     ),
                     disabled=True
-                )
-
-                valor_box = str(
-                    registro.get("box", "")
-                )
-
-                valor_backup_box = str(
-                    registro.get("backup_box", "")
                 )
 
                 valor_freezer = str(
@@ -1595,7 +1585,8 @@ def pagina_armazenamento():
                     )
                 )
 
-               col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
+
 
             with col1:
 
