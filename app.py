@@ -1605,7 +1605,7 @@ def pagina_armazenamento():
                     )
                 )
 
-                col1, col2 = st.columns(2)
+                            col1, col2 = st.columns(2)
 
             with col1:
 
@@ -1646,6 +1646,7 @@ def pagina_armazenamento():
                     ["No", "Yes"],
                     index=0 if valor_backup_used == "No" else 1
                 )
+
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
@@ -1667,7 +1668,7 @@ def pagina_armazenamento():
                 )
 
                 st.rerun()
-
+        
         st.divider()
 
     dados = obter_armazenamento()
