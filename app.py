@@ -1573,11 +1573,26 @@ def pagina_armazenamento():
                     if valor_backup_used == "No"
                     else 1
                 )
+                        st.markdown("---")
 
+            box = st.selectbox(
+                "Box",
+                ["C1", "C2", "C3", "C4", "C5"]
+            )
 
             st.info(
-     "Mapa do Backup aparecerá aqui"
+                "Mapa da Caixa aparecerá aqui"
             )
+
+            backup_box = st.selectbox(
+                "Backup Box",
+                ["C1", "C2", "C3", "C4", "C5"]
+            )
+
+            st.info(
+                "Mapa do Backup aparecerá aqui"
+            )
+
             
             salvar = st.form_submit_button(
                 "💾 Salvar"
