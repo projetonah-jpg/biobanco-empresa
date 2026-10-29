@@ -1575,12 +1575,12 @@ def pagina_armazenamento():
                 )
             st.markdown("---")
 
-            box = st.selectbox(
+                        box = st.selectbox(
                 "Box",
                 ["C1", "C2", "C3", "C4", "C5"]
             )
 
-                    st.markdown("### Mapa da Caixa")
+            st.markdown("### Mapa da Caixa")
 
             for linha in range(9):
 
@@ -1590,7 +1590,7 @@ def pagina_armazenamento():
 
                     pos = linha * 9 + coluna + 1
 
-                    cols[coluna].markdown(
+                    cols[coluna].write(
                         f"🟢 {pos:02d}"
                     )
 
@@ -1609,13 +1609,9 @@ def pagina_armazenamento():
 
                     pos = linha * 9 + coluna + 1
 
-                    cols[coluna].markdown(
+                    cols[coluna].write(
                         f"🟢 {pos:02d}"
                     )
-
-            salvar = st.form_submit_button(
-                "💾 Salvar"
-            )
 
             
             salvar = st.form_submit_button(
