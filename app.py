@@ -1611,47 +1611,12 @@ def pagina_armazenamento():
                     "Box",
                     ["C1", "C2", "C3", "C4", "C5"]
                 )
-
-                st.markdown("### Mapa do Box")
-
-                for linha in range(9):
-
-                    cols = st.columns(9)
-
-                    for coluna in range(9):
-
-                        pos = linha * 9 + coluna + 1
-
-                        with cols[coluna]:
-
-                            st.button(
-                                f"🟢 {pos}",
-                                key=f"box_{box}_{pos}",
-                                use_container_width=True
-                            )
                 
                 backup_box = st.selectbox(
                     "Backup Box",
                     ["C1", "C2", "C3", "C4", "C5"]
                 )
 
-                st.markdown("### Mapa do Backup Box")
-
-                for linha in range(9):
-
-                    cols = st.columns(9)
-
-                    for coluna in range(9):
-
-                        pos = linha * 9 + coluna + 1
-
-                        with cols[coluna]:
-
-                            st.button(
-                                f"🟢 {pos}",
-                                key=f"backup_{backup_box}_{pos}",
-                                use_container_width=True
-                            )
                 
                 freezer = st.text_input(
                     "Freezer",
