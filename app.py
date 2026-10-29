@@ -1350,6 +1350,25 @@ def pagina_registro():
 # ARMAZENAMENTO
 # ============================================================
 
+
+def mapa_caixa():
+
+    st.markdown("### Posições")
+
+    for linha in range(9):
+
+        cols = st.columns(9)
+
+        for coluna in range(9):
+
+            pos = linha * 9 + coluna + 1
+
+            cols[coluna].write(
+                f"🟢{pos:02d}"
+            )
+
+
+
 def salvar_armazenamento(
     code,
     box,
@@ -1580,18 +1599,15 @@ def pagina_armazenamento():
                 ["C1", "C2", "C3", "C4", "C5"]
             )
 
-            st.info(
-                "Mapa da Caixa aparecerá aqui"
-            )
+            mapa_caixa()
 
+            
             backup_box = st.selectbox(
                 "Backup Box",
                 ["C1", "C2", "C3", "C4", "C5"]
             )
 
-            st.info(
-                "Mapa do Backup aparecerá aqui"
-            )
+            mapa_caixa()
 
             
             salvar = st.form_submit_button(
