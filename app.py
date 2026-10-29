@@ -1544,7 +1544,7 @@ def pagina_armazenamento():
     # =====================================================
     # NOVO / EDITAR
     # =====================================================
-     else:
+      else:
 
         with st.form("form_armazenamento"):
 
@@ -1563,7 +1563,9 @@ def pagina_armazenamento():
 
                 code = st.text_input(
                     "Code",
-                    value=str(registro.get("code", "")),
+                    value=str(
+                        registro.get("code", "")
+                    ),
                     disabled=True
                 )
 
@@ -1576,7 +1578,10 @@ def pagina_armazenamento():
                 )
 
                 valor_backup_used = str(
-                    registro.get("backup_used", "No")
+                    registro.get(
+                        "backup_used",
+                        "No"
+                    )
                 )
 
             col1, col2 = st.columns(2)
@@ -1638,7 +1643,6 @@ def pagina_armazenamento():
                 st.rerun()
 
         st.divider()
-
     dados = obter_armazenamento()
 
     if not dados.empty:
