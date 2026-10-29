@@ -1591,22 +1591,27 @@ def pagina_armazenamento():
                     if valor_backup_used == "No"
                     else 1
                 )
-            st.markdown("---")
+                        st.markdown("---")
 
-            box = st.selectbox(
-                "Box",
-                ["C1", "C2", "C3", "C4", "C5"]
-            )
+            col_box, col_backup = st.columns(2)
 
-            mapa_caixa()
+            with col_box:
 
-            
-            backup_box = st.selectbox(
-                "Backup Box",
-                ["C1", "C2", "C3", "C4", "C5"]
-            )
+                box = st.selectbox(
+                    "Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
 
-            mapa_caixa()
+                mapa_caixa()
+
+            with col_backup:
+
+                backup_box = st.selectbox(
+                    "Backup Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
+
+                mapa_caixa()
 
             
             salvar = st.form_submit_button(
