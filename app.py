@@ -1547,9 +1547,9 @@ def pagina_armazenamento():
 
     else:
 
-        with st.form("form_armazenamento"):
+    with st.form("form_armazenamento"):
 
-    if modo == "Novo Registro":
+if modo == "Novo Registro":
 
         code = st.selectbox(
             "Code",
