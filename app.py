@@ -1575,7 +1575,7 @@ def pagina_armazenamento():
                 )
 
 
-               st.info(
+            st.info(
      "Mapa do Backup aparecerá aqui"
             )
             
