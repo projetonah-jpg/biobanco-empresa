@@ -1351,21 +1351,35 @@ def pagina_registro():
 # ============================================================
 
 
-def mapa_caixa():
+def mapa_caixa(chave):
 
-    st.markdown("##### Posições")
+    posicao = st.session_state.get(chave)
 
     for linha in range(9):
 
-        texto = ""
+        cols = st.columns(9)
 
         for coluna in range(9):
 
             pos = linha * 9 + coluna + 1
 
-            texto += f"🟢{pos:02d} "
+            with cols[coluna]:
 
-        st.write(texto)
+                if st.button(
+                    f"🟢{pos:02d}",
+                    key=f"{chave}_{pos}"
+                ):
+                    st.session_state[chave] = pos
+
+                    posicao = pos
+
+    if posicao:
+
+        st.success(
+            f"Posição selecionada: {posicao}"
+        )
+
+    return posicao
 
 
 def salvar_armazenamento(
@@ -1566,6 +1580,8 @@ def pagina_armazenamento():
 
             col1, col2 = st.columns(2)
 
+                        col1, col2 = st.columns(2)
+
             with col1:
 
                 freezer = st.text_input(
@@ -1593,24 +1609,27 @@ def pagina_armazenamento():
 
             col_box, col_backup = st.columns(2)
 
-            with col_box:
+           with col_box:
 
-                box = st.selectbox(
-                    "Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
+    box = st.selectbox(
+        "Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
 
-                mapa_caixa()
+    posicao_box = mapa_caixa(
+        "posicao_box"
+    )
 
-            with col_backup:
+with col_backup:
 
-                backup_box = st.selectbox(
-                    "Backup Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
+    backup_box = st.selectbox(
+        "Backup Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
 
-                mapa_caixa()
-
+    posicao_backup = mapa_caixa(
+        "posicao_backup"
+    )
             
             salvar = st.form_submit_button(
                 "💾 Salvar"
