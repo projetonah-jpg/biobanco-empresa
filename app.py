@@ -1365,7 +1365,8 @@ def mapa_caixa():
 
             texto += f"🟢{pos:02d} "
 
-        st.caption(texto)
+        st.write(texto)
+
 
 def salvar_armazenamento(
     code,
@@ -1610,6 +1611,7 @@ def pagina_armazenamento():
 
                 mapa_caixa()
 
+            
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
@@ -1631,16 +1633,8 @@ def pagina_armazenamento():
                 )
 
                 st.rerun()
-       
+
         st.divider()
-
-   st.subheader(f"📦 Box {box}")
-
-mapa_caixa()
-
-st.subheader(f"🧊 Backup Box {backup_box}")
-
-mapa_caixa()
 
     dados = obter_armazenamento()
 
