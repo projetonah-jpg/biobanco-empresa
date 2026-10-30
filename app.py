@@ -1591,21 +1591,25 @@ def pagina_armazenamento():
                 )                       
                        
 
-col_box, col_backup = st.columns(2)
+            col_box, col_backup = st.columns(2)
 
-with col_box:
+            with col_box:
 
-    box = st.selectbox(
-        "Box",
-        ["C1", "C2", "C3", "C4", "C5"]
-    )
+                box = st.selectbox(
+                    "Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
 
-with col_backup:
+                mapa_caixa()
 
-    backup_box = st.selectbox(
-        "Backup Box",
-        ["C1", "C2", "C3", "C4", "C5"]
-    )
+            with col_backup:
+
+                backup_box = st.selectbox(
+                    "Backup Box",
+                    ["C1", "C2", "C3", "C4", "C5"]
+                )
+
+                mapa_caixa()
 
             salvar = st.form_submit_button(
                 "💾 Salvar"
@@ -1628,7 +1632,6 @@ with col_backup:
                 )
 
                 st.rerun()
-
         st.divider()
 
     st.subheader(f"📦 Box {box}")
