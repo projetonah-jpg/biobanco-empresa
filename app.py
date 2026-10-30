@@ -1566,6 +1566,8 @@ def pagina_armazenamento():
 
             col1, col2 = st.columns(2)
 
+                        col1, col2 = st.columns(2)
+
             with col1:
 
                 freezer = st.text_input(
@@ -1589,8 +1591,7 @@ def pagina_armazenamento():
                     ["No", "Yes"],
                     index=0 if valor_backup_used == "No" else 1
                 )                       
-                          
-                st.markdown("---")
+                       
 
             col_box, col_backup = st.columns(2)
 
