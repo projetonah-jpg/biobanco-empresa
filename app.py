@@ -1615,9 +1615,7 @@ def pagina_armazenamento():
                     ["C1", "C2", "C3", "C4", "C5"]
                 )
 
-                posicao_box = mapa_caixa(
-                    "posicao_box"
-                )
+                mapa_caixa()
 
             with col_backup:
 
@@ -1626,15 +1624,11 @@ def pagina_armazenamento():
                     ["C1", "C2", "C3", "C4", "C5"]
                 )
 
-                posicao_backup = mapa_caixa(
-                    "posicao_backup"
-                )
-
+                mapa_caixa()
 
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
-           
             if salvar:
 
                 salvar_armazenamento(
