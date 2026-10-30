@@ -1589,7 +1589,8 @@ def pagina_armazenamento():
                     ["No", "Yes"],
                     index=0 if valor_backup_used == "No" else 1
                 )                       
-                          st.markdown("---")
+                          
+                st.markdown("---")
 
             col_box, col_backup = st.columns(2)
 
