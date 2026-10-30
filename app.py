@@ -1571,19 +1571,23 @@ def pagina_armazenamento():
              freezer = st.text_input(
                    "Freezer",
                value=valor_freezer
-              )
+             
+                )
 
-            with col2:
+            analyst = st.text_input(
+                   "Analyst",
+               value=valor_analyst
+               
+                )
+              
+         
+             with col2:
 
                 storage_date = st.date_input(
                     "Storage Date"
                 )
 
-                analyst = st.text_input(
-                    "Analyst",
-                    value=valor_analyst
-                )
-
+           
                 backup_used = st.selectbox(
                     "Backup Used",
                     ["No", "Yes"],
@@ -1591,6 +1595,7 @@ def pagina_armazenamento():
                     if valor_backup_used == "No"
                     else 1
                 )
+                        st.markdown("---")
 
             col_box, col_backup = st.columns(2)
 
