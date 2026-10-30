@@ -1591,7 +1591,7 @@ def pagina_armazenamento():
                 )                       
                        
 
-            col_box, col_backup = st.columns(2)
+                        col_box, col_backup = st.columns(2)
 
             with col_box:
 
@@ -1632,6 +1632,7 @@ def pagina_armazenamento():
                 )
 
                 st.rerun()
+       
         st.divider()
 
     st.subheader(f"📦 Box {box}")
