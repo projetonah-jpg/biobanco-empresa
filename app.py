@@ -1636,6 +1636,18 @@ def pagina_armazenamento():
 
         st.divider()
 
+st.subheader(f"📦 Box {box}")
+
+posicao_box = mapa_caixa(
+    "posicao_box"
+)
+
+st.subheader(f"🧊 Backup Box {backup_box}")
+
+posicao_backup = mapa_caixa(
+    "posicao_backup"
+)
+    
     dados = obter_armazenamento()
 
     if not dados.empty:
