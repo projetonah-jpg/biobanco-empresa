@@ -1593,7 +1593,7 @@ def pagina_armazenamento():
                 )                       
                           st.markdown("---")
 
-                    col_box, col_backup = st.columns(2)
+            col_box, col_backup = st.columns(2)
 
             with col_box:
 
