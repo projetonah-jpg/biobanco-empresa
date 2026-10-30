@@ -1606,7 +1606,7 @@ def pagina_armazenamento():
                 )                       
                        
 
-                      col_box, col_backup = st.columns(2)
+            col_box, col_backup = st.columns(2)
 
             with col_box:
 
@@ -1629,6 +1629,7 @@ def pagina_armazenamento():
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
+           
             if salvar:
 
                 salvar_armazenamento(
