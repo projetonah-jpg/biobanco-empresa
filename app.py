@@ -1566,8 +1566,6 @@ def pagina_armazenamento():
 
             col1, col2 = st.columns(2)
 
-                        col1, col2 = st.columns(2)
-
             with col1:
 
                 freezer = st.text_input(
