@@ -1578,8 +1578,9 @@ def pagina_armazenamento():
                     )
                 )
 
-
             col1, col2 = st.columns(2)
+
+                        col1, col2 = st.columns(2)
 
             with col1:
 
@@ -1608,27 +1609,32 @@ def pagina_armazenamento():
 
             col_box, col_backup = st.columns(2)
 
-            with col_box:
+           with col_box:
 
-                box = st.selectbox(
-                    "Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
+    box = st.selectbox(
+        "Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
 
-                mapa_caixa()
+    posicao_box = mapa_caixa(
+        "posicao_box"
+    )
 
-            with col_backup:
+with col_backup:
 
-                backup_box = st.selectbox(
-                    "Backup Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
+    backup_box = st.selectbox(
+        "Backup Box",
+        ["C1", "C2", "C3", "C4", "C5"]
+    )
 
-                mapa_caixa()
-
+    posicao_backup = mapa_caixa(
+        "posicao_backup"
+    )
+            
             salvar = st.form_submit_button(
                 "💾 Salvar"
             )
+
             if salvar:
 
                 salvar_armazenamento(
