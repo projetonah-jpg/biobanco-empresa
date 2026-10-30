@@ -1365,8 +1365,7 @@ def mapa_caixa():
 
             texto += f"🟢{pos:02d} "
 
-        st.write(texto)
-
+        st.caption(texto)
 
 def salvar_armazenamento(
     code,
@@ -1591,7 +1590,7 @@ def pagina_armazenamento():
                 )                       
                        
 
-                        col_box, col_backup = st.columns(2)
+            col_box, col_backup = st.columns(2)
 
             with col_box:
 
