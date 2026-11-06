@@ -1606,8 +1606,19 @@ hide_index=True
                     st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
                 else:
                     salvar_armazenamento(
-                        code, box, backup_box, freezer, 
-                        storage_date.isoformat() if storage_date else "", 
+                        code=code,
+                        box=box,
+                        backup_box=backup_box,
+                        freezer=freezer,
+                        storage_date=(storage_date.isoformat() if storage_date else ""),
+                        analyst=analyst,
+                        backup_used=backup_used,
+                        posicao=int(posicao_escolhida_main),
+                        posicao_backup=int(posicao_escolhida_backup)
+                    )
+                    st.toast("Registro salvo com sucesso! ✅")
+                    st.rerun()
+
 
                         
 # ============================================================
