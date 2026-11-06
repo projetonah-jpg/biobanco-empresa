@@ -1425,7 +1425,7 @@ def pagina_armazenamento():
 
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
         codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
-        registro = dados[dados["code"] == codigo_selecionado].iloc.to_dict()
+        registro = dados[dados["code"] == codigo_selecionado].iloc[0].to_dict()
 
     if modo == "Excluir Registro":
         if dados.empty:
@@ -1515,7 +1515,9 @@ def pagina_armazenamento():
             st.subheader("📦 Caixa Principal")
             box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
             
-            ocupadas_main = {int(r["posicao"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("box") == box and r.get("posicao") and r["code"] != code}
+            ocupadas_main = {}
+            if not dados_persistidos.empty and "posicao" in dados_persistidos.columns:
+                ocupadas_main = {int(r["posicao"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("box") == box and r.get("posicao") and r["code"] != code}
             
             st.markdown("<p style='font-size:13px; font-weight:bold; color:#31333F; margin-bottom:10px;'>Selecione a posição clicando na bolinha:</p>", unsafe_allow_html=True)
             for i in range(0, 81, 9):
@@ -1544,7 +1546,9 @@ def pagina_armazenamento():
             st.subheader("🛡️ Caixa de Backup")
             backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
             
-            ocupadas_backup = {int(r["posicao_backup"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("backup_box") == backup_box and r.get("posicao_backup") and r["code"] != code}
+            ocupadas_backup = {}
+            if not dados_persistidos.empty and "posicao_backup" in dados_persistidos.columns:
+                ocupadas_backup = {int(r["posicao_backup"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("backup_box") == backup_box and r.get("posicao_backup") and r["code"] != code}
             
             st.markdown("<p style='font-size:13px; font-weight:bold; color:#31333F; margin-bottom:10px;'>Selecione a posição clicando na bolinha:</p>", unsafe_allow_html=True)
             for i in range(0, 81, 9):
@@ -1595,26 +1599,12 @@ def pagina_armazenamento():
         st.divider()
 
     dados = obter_armazenamento()
-    if not dados.empty:
-        total_isolados = len(dados)
-        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-
-        dados_exibicao = dados.rename(
-            columns={
-"code": "CODE", "box": "BOX", "posicao": "POSITION",
-"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-"freezer": "FREEZER", "storage_date": "STORAGE DATE",
-"analyst": "ANALYST", "backup_used": "BACKUP USED"
-}
-)
-st.dataframe(
-dados_exibicao[[
-"CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
-"FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
-]],
-use_container_width=True,
-hide_index=True
-)
+if not dados.empty:
+total_isolados = len(dados)
+st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+# Segurança estrutural: Garante que as colunas novas existam no DataFrame para evitar erros de exibição
+if "posicao" not in dados.columns: dados["posicao"] = ""
+if "posicao_backup" not in dados.columns: dados["posicao_backup"] = ""
 
 
 # ============================================================
