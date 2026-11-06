@@ -1404,7 +1404,6 @@ def obter_armazenamento():
         return pd.read_sql_query("SELECT * FROM armazenamento_cepas", conexao)
 
 def pagina_armazenamento():
-def pagina_armazenamento():
     st.title("🧫 Armazenamento de Isolados Identificados")
     st.caption("Gestão do banco de cepas e rastreabilidade dos isolados.")
 
