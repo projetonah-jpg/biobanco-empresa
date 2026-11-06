@@ -1599,23 +1599,15 @@ hide_index=True
                         cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
             st.markdown("---")
+
             salvar = st.form_submit_button("💾 Salvar Registro")
 
             if salvar:
                 if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
                     st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
                 else:
-                    salvar_armazenamento(
-                        code=code,
-                        box=box,
-                        backup_box=backup_box,
-                        freezer=freezer,
-                        storage_date=(storage_date.isoformat() if storage_date else ""),
-                        analyst=analyst,
-                        backup_used=backup_used,
-                        posicao=int(posicao_escolhida_main),
-                        posicao_backup=int(posicao_escolhida_backup)
-                    )
+                    data_iso = storage_date.isoformat() if storage_date else ""
+                    salvar_armazenamento(code, box, backup_box, freezer, data_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
                     st.toast("Registro salvo com sucesso! ✅")
                     st.rerun()
 
