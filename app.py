@@ -1598,13 +1598,34 @@ def pagina_armazenamento():
 
         st.divider()
 
-    dados = obter_armazenamento()
-if not dados.empty:
-total_isolados = len(dados)
-st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-# Segurança estrutural: Garante que as colunas novas existam no DataFrame para evitar erros de exibição
-if "posicao" not in dados.columns: dados["posicao"] = ""
-if "posicao_backup" not in dados.columns: dados["posicao_backup"] = ""
+        dados = obter_armazenamento()
+    if not dados.empty:
+        total_isolados = len(dados)
+        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+
+        # Garante que as colunas necessárias existam no DataFrame antes de renomear
+        colunas_existentes = dados.columns
+        mapeamento = {
+            "code": "CODE", "box": "BOX", "posicao": "POSITION",
+            "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+            "freezer": "FREEZER", "storage_date": "STORAGE DATE",
+            "analyst": "ANALYST", "backup_used": "BACKUP USED"
+        }
+        
+        # Filtra apenas as chaves que realmente existem no banco de dados para evitar NameError/KeyError
+        mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
+        dados_exibicao = dados.rename(columns=mapeamento_valido)
+
+        # Monta a lista de colunas para exibição baseada no que foi renomeado com sucesso
+        colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
+
+        if colunas_exibir:
+            st.dataframe(
+                dados_exibicao[colunas_exibir],
+                use_container_width=True,
+                hide_index=True
+            )
+
 
 
 # ============================================================
