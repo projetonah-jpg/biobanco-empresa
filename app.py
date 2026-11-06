@@ -1402,6 +1402,8 @@ def obter_armazenamento():
         try: conexao.execute("ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER")
         except sqlite3.OperationalError: pass
         return pd.read_sql_query("SELECT * FROM armazenamento_cepas", conexao)
+
+def pagina_armazenamento():
 def pagina_armazenamento():
     st.title("🧫 Armazenamento de Isolados Identificados")
     st.caption("Gestão do banco de cepas e rastreabilidade dos isolados.")
@@ -1424,7 +1426,7 @@ def pagina_armazenamento():
 
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
         codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
-        registro = dados[dados["code"] == codigo_selecionado].iloc[0].to_dict()
+        registro = dados[dados["code"] == codigo_selecionado].iloc.to_dict()
 
     if modo == "Excluir Registro":
         if dados.empty:
@@ -1471,22 +1473,32 @@ def pagina_armazenamento():
 
             st.markdown("---")
             
-            # 📐 [4, 1, 4] cria uma coluna central vazia de tamanho '1' que serve como o espaçamento que você pediu
-            col_box_principal, col_espaco, col_box_backup = st.columns([4, 1, 4])
+            # Divide as caixas criando um espaçamento controlado entre elas
+            col_box_principal, col_espaco, col_box_backup = st.columns([10, 1, 10])
 
             # --- 📦 CAIXA PRINCIPAL ---
             with col_box_principal:
                 st.subheader("📦 Caixa Principal")
                 box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
                 
+                # CORREÇÃO: Mapeia as posições ocupadas lendo o banco de dados atualizado em tempo real
                 dados_persistidos = obter_armazenamento()
                 ocupadas_main = {}
-                for _, reg_db in dados_persistidos.iterrows():
-                    if reg_db.get("box") == box and reg_db.get("posicao"):
-                        ocupadas_main[int(reg_db["posicao"])] = reg_db["code"]
+                if not dados_persistidos.empty:
+                    for _, reg_db in dados_persistidos.iterrows():
+                        if str(reg_db.get("box")) == str(box) and pd.notna(reg_db.get("posicao")) and str(reg_db.get("posicao")).strip() != "":
+                            ocupadas_main[int(reg_db["posicao"])] = reg_db["code"]
                 
-                opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main or (pos_salva_principal and p == int(pos_salva_principal))]
-                idx_main = opcoes_pos_main.index(int(pos_salva_principal)) if pos_salva_principal and int(pos_salva_principal) in opcoes_pos_main else 0
+                # Remove a posição atual do filtro de ocupadas para permitir que ela apareça na edição
+                if modo == "Editar Registro" and pos_salva_principal and int(pos_salva_principal) in ocupadas_main:
+                    ocupadas_main.pop(int(pos_salva_principal), None)
+
+                opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main]
+                
+                # Garante que o índice inicial do selectbox seja mapeado corretamente
+                idx_main = 0
+                if pos_salva_principal and int(pos_salva_principal) in opcoes_pos_main:
+                    idx_main = opcoes_pos_main.index(int(pos_salva_principal))
                 
                 posicao_escolhida_main = st.selectbox(
                     f"Posição na Caixa {box} *",
@@ -1501,14 +1513,14 @@ def pagina_armazenamento():
                     cols_m = st.columns(9)
                     for j in range(9):
                         pos = i + j + 1
-                        if pos == posicao_escolhida_main:
-                            cor = "#3498db"
+                        if posicao_escolhida_main != "" and pos == int(posicao_escolhida_main):
+                            cor = "#3498db"  # Azul (Selecionada no formulário atual)
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_main:
-                            cor = "#e74c3c"
+                            cor = "#e74c3c"  # Vermelho (Ocupada permanentemente no banco)
                             label_html = f"🔴 {pos:02d}"
                         else:
-                            cor = "#2ecc71"
+                            cor = "#2ecc71"  # Verde (Disponível)
                             label_html = f"🟢 {pos:02d}"
                         
                         cols_m[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
@@ -1518,14 +1530,24 @@ def pagina_armazenamento():
                 st.subheader("🛡️ Caixa de Backup")
                 backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
                 
+                # CORREÇÃO: Mapeia as posições de backup ocupadas lendo o banco de dados atualizado em tempo real
                 ocupadas_backup = {}
-                for _, reg_db in dados_persistidos.iterrows():
-                    if reg_db.get("backup_box") == backup_box and reg_db.get("posicao_backup"):
-                        ocupadas_backup[int(reg_db["posicao_backup"])] = reg_db["code"]
+                if not dados_persistidos.empty:
+                    for _, reg_db in dados_persistidos.iterrows():
+                        if str(reg_db.get("backup_box")) == str(backup_box) and pd.notna(reg_db.get("posicao_backup")) and str(reg_db.get("posicao_backup")).strip() != "":
+                            ocupadas_backup[int(reg_db["posicao_backup"])] = reg_db["code"]
+
+                # Remove a posição atual do filtro de ocupadas para permitir que ela apareça na edição
+                if modo == "Editar Registro" and pos_salva_backup and int(pos_salva_backup) in ocupadas_backup:
+                    ocupadas_backup.pop(int(pos_salva_backup), None)
+
+                opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup]
                 
-                opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup or (pos_salva_backup and p == int(pos_salva_backup))]
-                idx_backup = opcoes_pos_backup.index(int(pos_salva_backup)) if pos_salva_backup and int(pos_salva_backup) in opcoes_pos_backup else 0
-                
+                # Garante que o índice inicial do selectbox de backup seja mapeado corretamente
+                idx_backup = 0
+                if pos_salva_backup and int(pos_salva_backup) in opcoes_pos_backup:
+                    idx_backup = opcoes_pos_backup.index(int(pos_salva_backup))
+
                 posicao_escolhida_backup = st.selectbox(
                     f"Posição na Caixa de Backup {backup_box} *",
                     opcoes_pos_backup,
@@ -1539,14 +1561,40 @@ def pagina_armazenamento():
                     cols_b = st.columns(9)
                     for j in range(9):
                         pos = i + j + 1
-                        if pos == posicao_escolhida_backup:
-                            cor = "#3498db"
+                        if posicao_escolhida_backup != "" and pos == int(posicao_escolhida_backup):
+   analyst, backup_used,
+posicao=int(posicao_escolhida_main),
+posicao_backup=int(posicao_escolhida_backup)
+)
+st.toast("Registro salvo com sucesso! ✅")
+st.rerun()
+st.divider()
+dados = obter_armazenamento()
+if not dados.empty:
+total_isolados = len(dados)
+st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+dados_exibicao = dados.rename(
+columns={
+"code": "CODE", "box": "BOX", "posicao": "POSITION",
+"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+"freezer": "FREEZER", "storage_date": "STORAGE DATE",
+"analyst": "ANALYST", "backup_used": "BACKUP USED"
+}
+)
+st.dataframe(
+dados_exibicao[[
+"CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
+"FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
+]],
+use_container_width=True,
+hide_index=True
+)                         cor = "#3498db"  # Azul (Selecionada no formulário atual)
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_backup:
-                            cor = "#e74c3c"
+                            cor = "#e74c3c"  # Vermelho (Ocupada permanentemente no banco)
                             label_html = f"🔴 {pos:02d}"
                         else:
-                            cor = "#2ecc71"
+                            cor = "#2ecc71"  # Verde (Disponível)
                             label_html = f"🟢 {pos:02d}"
                         
                         cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
@@ -1561,39 +1609,8 @@ def pagina_armazenamento():
                     salvar_armazenamento(
                         code, box, backup_box, freezer, 
                         storage_date.isoformat() if storage_date else "", 
-                        analyst, backup_used, 
-                        posicao=int(posicao_escolhida_main), 
-                        posicao_backup=int(posicao_escolhida_backup)
-                    )
-                    st.toast("Registro salvo com sucesso! ✅")
-                    st.rerun()
 
-        st.divider()
-
-    dados = obter_armazenamento()
-    if not dados.empty:
-        total_isolados = len(dados)
-        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-
-        dados_exibicao = dados.rename(
-            columns={
-                "code": "CODE", "box": "BOX", "posicao": "POSITION",
-                "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-                "freezer": "FREEZER", "storage_date": "STORAGE DATE",
-                "analyst": "ANALYST", "backup_used": "BACKUP USED"
-            }
-        )
-
-        st.dataframe(
-            dados_exibicao[[
-                "CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION", 
-                "FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-
+                        
 # ============================================================
 # EXPORTAÇÃO PARA EXCEL
 # ============================================================
