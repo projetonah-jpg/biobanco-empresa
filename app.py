@@ -1562,10 +1562,10 @@ def pagina_armazenamento():
                         posicao=int(posicao_escolhida_main), 
                         posicao_backup=int(posicao_escolhida_backup)
                     )
+                    st.toast("Registro salvo com sucesso! ✅")
+                    st.rerun()
 
-            texto += f"🟢{pos:02d} "
-
-        st.write(texto)
+        st.divider()
 
     dados = obter_armazenamento()
     if not dados.empty:
@@ -1589,6 +1589,7 @@ def pagina_armazenamento():
             use_container_width=True,
             hide_index=True
         )
+
 
 
 
