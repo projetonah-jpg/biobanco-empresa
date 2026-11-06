@@ -1472,24 +1472,14 @@ def pagina_armazenamento():
 
             st.markdown("---")
             
-            # 1. IMPLEMENTAÇÃO DA LEGENDA VISUAL
-            st.markdown(
-                """
-                <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; background-color: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <span style="font-weight: bold; color: #31333F;">📌 Legenda do Mapa:</span>
-                    <span style="color: #2ecc71; font-weight: bold;">🟢 Livre / Disponível</span>
-                    <span style="color: #3498db; font-weight: bold;">🔵 Selecionado Agora</span>
-                    <span style="color: #e74c3c; font-weight: bold;">🔴 Ocupado por outra Cepa</span>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-            
+            # Espaçamento lateral controlado entre as colunas
             col_box_principal, col_espaco, col_box_backup = st.columns([1, 0.1, 1])
 
             # --- 📦 CAIXA PRINCIPAL ---
             with col_box_principal:
                 st.subheader("📦 Caixa Principal")
+                st.markdown("<p style='font-size:12px; margin-top:-10px; color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴 Ocupado</p>", unsafe_allow_html=True)
+                
                 box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
                 
                 dados_persistidos = obter_armazenamento()
@@ -1507,7 +1497,6 @@ def pagina_armazenamento():
                     except ValueError: pass
 
                 opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main]
-                
                 idx_main = 0
                 if pos_salva_principal:
                     try:
@@ -1539,18 +1528,11 @@ def pagina_armazenamento():
                             label_html = f"🟢 {pos:02d}"
                         cols_m[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
-                # 2. IMPLEMENTAÇÃO DO RESUMO DE OCUPAÇÃO DA CAIXA PRINCIPAL
-                st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander(f"🔍 Ver ocupação detalhada da Caixa {box}"):
-                    if ocupadas_main:
-                        for p_ocupada, c_ocupado in sorted(ocupadas_main.items()):
-                            st.write(f"🔴 Posição {p_ocupada:02d}: Ocupada pela Cepa **{c_ocupado}**")
-                    else:
-                        st.write("🟢 Esta caixa está completamente vazia.")
-
             # --- 🛡️ CAIXA DE BACKUP ---
             with col_box_backup:
                 st.subheader("🛡️ Caixa de Backup")
+                st.markdown("<p style='font-size:12px; margin-top:-10px; color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴 Ocupado</p>", unsafe_allow_html=True)
+                
                 backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
                 
                 ocupadas_backup = {}
@@ -1567,7 +1549,6 @@ def pagina_armazenamento():
                     except ValueError: pass
 
                 opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup]
-                
                 idx_backup = 0
                 if pos_salva_backup:
                     try:
@@ -1593,29 +1574,11 @@ def pagina_armazenamento():
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_backup:
                             cor = "#e74c3c"
-                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
-                for i in range(0, 81, 9):
-                    cols_b = st.columns(9)
-                    for j in range(9):
-                        pos = i + j + 1
-                        if posicao_escolhida_backup != "" and pos == int(posicao_escolhida_backup):
-                            cor = "#3498db"
-                            label_html = f"🔵 {pos:02d}"
-                        elif pos in ocupadas_backup:
-                            cor = "#e74c3c"
                             label_html = f"🔴 {pos:02d}"
                         else:
                             cor = "#2ecc71"
                             label_html = f"🟢 {pos:02d}"
                         cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander(f"🔍 Ver ocupação detalhada da Caixa de Backup {backup_box}"):
-                    if ocupadas_backup:
-                        for p_ocupada, c_ocupado in sorted(ocupadas_backup.items()):
-                            st.write(f"🔴 Posição {p_ocupada:02d}: Ocupada pela Cepa **{c_ocupado}**")
-                    else:
-                        st.write("🟢 Esta caixa de backup está completamente vazia.")
 
             st.markdown("---")
             salvar = st.form_submit_button("💾 Salvar Registro")
@@ -1626,30 +1589,25 @@ def pagina_armazenamento():
                 else:
                     dt_iso = storage_date.isoformat() if storage_date else ""
                     salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
-                    st.toast("Registro salvo com sucesso! ✅")
-                    st.rerun()
-
-    st.divider()
-    dados = obter_armazenamento()
-    if not dados.empty:
-        total_isolados = len(dados)
-        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-
-        colunas_existentes = dados.columns
-        mapeamento = {
-            "code": "CODE", "box": "BOX", "posicao": "POSITION",
-            "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-            "freezer": "FREEZER", "storage_date": "STORAGE DATE",
-            "analyst": "ANALYST", "backup_used": "BACKUP USED"
-        }
-        mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
-        dados_exibicao = dados.rename(columns=mapeamento_valido)
-        colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
-
-        if colunas_exibir:
-            st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
-
-
+st.toast("Registro salvo com sucesso! ✅")
+st.rerun()
+st.divider()
+dados = obter_armazenamento()
+if not dados.empty:
+total_isolados = len(dados)
+st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+colunas_existentes = dados.columns
+mapeamento = {
+"code": "CODE", "box": "BOX", "posicao": "POSITION",
+"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+"freezer": "FREEZER", "storage_date": "STORAGE DATE",
+"analyst": "ANALYST", "backup_used": "BACKUP USED"
+}
+mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
+dados_exibicao = dados.rename(columns=mapeamento_valido)
+colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
+if colunas_exibir:
+st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
 
 # ============================================================
 # IMPORTAÇÃO DE EXCEL
