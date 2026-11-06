@@ -1424,7 +1424,7 @@ def pagina_armazenamento():
     registro = {}
 
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
-        codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist())
+        codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
         registro = dados[dados["code"] == codigo_selecionado].iloc[0].to_dict()
 
     if modo == "Excluir Registro":
@@ -1441,129 +1441,147 @@ def pagina_armazenamento():
             st.rerun()
 
     else:
-        with st.form("form_armazenamento"):
-            if modo == "Novo Registro":
-                code = st.selectbox("Code", codigos)
-                valor_box = "C1"
-                valor_backup_box = "C1"
-                valor_freezer = ""
-                valor_analyst = ""
-                valor_backup_used = "No"
-                pos_salva_principal = None
-                pos_salva_backup = None
+        # Inicializa os estados de seleção caso não existam
+        if "sel_main" not in st.session_state: st.session_state.sel_main = None
+        if "sel_backup" not in st.session_state: st.session_state.sel_backup = None
+
+        if modo == "Novo Registro":
+            code = st.selectbox("Code", codigos, key="sb_code_novo")
+            valor_box = "C1"
+            valor_backup_box = "C1"
+            valor_freezer = ""
+            valor_analyst = ""
+            valor_backup_used = "No"
+        else:
+            code = st.text_input("Code", value=str(registro.get("code", "")), disabled=True)
+            valor_box = str(registro.get("box", "C1"))
+            valor_backup_box = str(registro.get("backup_box", "C1"))
+            valor_freezer = str(registro.get("freezer", ""))
+            valor_analyst = str(registro.get("analyst", ""))
+            valor_backup_used = str(registro.get("backup_used", "No"))
+            
+            # Se acabou de carregar para edição e não clicou em nada ainda, resgata do banco
+            if st.session_state.sel_main is None: st.session_state.sel_main = registro.get("posicao")
+            if st.session_state.sel_backup is None: st.session_state.sel_backup = registro.get("posicao_backup")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            freezer = st.text_input("Freezer", value=valor_freezer, key="input_freezer")
+            analyst = st.text_input("Analyst", value=valor_analyst, key="input_analyst")
+        with col2:
+            dt_at = pd.to_datetime(registro.get("storage_date", ""), errors="coerce")
+            storage_date = st.date_input("Storage Date", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY", key="input_date")
+            backup_used = st.selectbox("Backup Used", ["No", "Yes"], index=0 if valor_backup_used == "No" else 1, key="input_backup_used")
+
+        st.markdown("---")
+        
+        # Estilização CSS para criar botões redondos perfeitos e adicionar espaçamento lateral
+        st.markdown("""
+            <style>
+            div[data-testid="stHorizontalBlock"] {
+                gap: 40px !important; /* Cria um espaçamento confortável entre as duas caixas */
+            }
+            div[data-testid="stHorizontalBlock"] button[key^="btn_grid_"] {
+                color: white !important;
+                border: none !important;
+                border-radius: 50% !important;
+                width: 34px !important;
+                height: 34px !important;
+                padding: 0px !important;
+                font-size: 11px !important;
+                font-weight: bold !important;
+                display: inline-block !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        col_box_principal, col_box_backup = st.columns(2)
+        dados_persistidos = obter_armazenamento()
+
+        # --- 📦 CAIXA PRINCIPAL INTERATIVA ---
+        with col_box_principal:
+            st.subheader("📦 Caixa Principal")
+            box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
+            
+            ocupadas_main = {int(r["posicao"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("box") == box and r.get("posicao") and r["code"] != code}
+            
+            st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-bottom:10px;'>Selecione a posição clicando na grade:</p>", unsafe_allow_html=True)
+            for i in range(0, 81, 9):
+                cols_m = st.columns(9)
+                for j in range(9):
+                    pos = i + j + 1
+                    key_btn = f"btn_grid_main_{pos}"
+                    
+                    if pos == st.session_state.sel_main:
+                        cor = "#3498db"  # Azul: Sua seleção atual
+                    elif pos in ocupadas_main:
+                        cor = "#e74c3c"  # Vermelho: Ocupada por outra cepa
+                    else:
+                        cor = "#2ecc71"  # Verde: Livre
+                    
+                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; }}</style>", unsafe_allow_html=True)
+                    if cols_m[j].button(f"{pos:02d}", key=key_btn):
+                        if pos in ocupadas_main:
+                            st.error(f"Posição {pos:02d} ocupada por {ocupadas_main[pos]}!")
+                        else:
+                            st.session_state.sel_main = pos
+                            st.rerun()
+
+        # --- 🛡️ CAIXA DE BACKUP INTERATIVA ---
+        with col_box_backup:
+            st.subheader("🛡️ Caixa de Backup")
+            backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
+            
+            ocupadas_backup = {int(r["posicao_backup"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("backup_box") == backup_box and r.get("posicao_backup") and r["code"] != code}
+            
+            st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-bottom:10px;'>Selecione a posição clicando na grade:</p>", unsafe_allow_html=True)
+            for i in range(0, 81, 9):
+                cols_b = st.columns(9)
+                for j in range(9):
+                    pos = i + j + 1
+                    key_btn = f"btn_grid_backup_{pos}"
+                    
+                    if pos == st.session_state.sel_backup:
+                        cor = "#3498db"  # Azul: Sua seleção atual
+                    elif pos in ocupadas_backup:
+                        cor = "#e74c3c"  # Vermelho: Ocupada por outra cepa
+                    else:
+                        cor = "#2ecc71"  # Verde: Livre
+                    
+                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; }}</style>", unsafe_allow_html=True)
+                    if cols_b[j].button(f"{pos:02d}", key=key_btn):
+                        if pos in ocupadas_backup:
+                            st.error(f"Posição {pos:02d} ocupada por {ocupadas_backup[pos]}!")
+                        else:
+                            st.session_state.sel_backup = pos
+                            st.rerun()
+
+        st.markdown("---")
+        
+        # Mostra as posições selecionadas em tempo real
+        c_status1, c_status2 = st.columns(2)
+        with c_status1:
+            if st.session_state.sel_main: st.info(f"📍 Selecionado na Caixa Principal: Posição **{st.session_state.sel_main:02d}**")
+        with c_status2:
+            if st.session_state.sel_backup: st.info(f"📍 Selecionado no Backup: Posição **{st.session_state.sel_backup:02d}**")
+
+        if st.button("💾 Salvar Registro", type="primary", use_container_width=True):
+            if not st.session_state.sel_main or not st.session_state.sel_backup:
+                st.error("Por favor, clique sobre uma posição livre (verde) em cada mapa antes de salvar!")
             else:
-                code = st.text_input("Code", value=str(registro.get("code", "")), disabled=True)
-                valor_box = str(registro.get("box", "C1"))
-                valor_backup_box = str(registro.get("backup_box", "C1"))
-                valor_freezer = str(registro.get("freezer", ""))
-                valor_analyst = str(registro.get("analyst", ""))
-                valor_backup_used = str(registro.get("backup_used", "No"))
-                pos_salva_principal = registro.get("posicao")
-                pos_salva_backup = registro.get("posicao_backup")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                freezer = st.text_input("Freezer", value=valor_freezer)
-                analyst = st.text_input("Analyst", value=valor_analyst)
-            with col2:
-                dt_at = pd.to_datetime(registro.get("storage_date", ""), errors="coerce")
-                storage_date = st.date_input("Storage Date", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY")
-                backup_used = st.selectbox("Backup Used", ["No", "Yes"], index=0 if valor_backup_used == "No" else 1)
-
-            st.markdown("---")
-            col_box_principal, col_box_backup = st.columns(2)
-
-            with col_box_principal:
-                st.subheader("📦 Caixa Principal")
-                box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
-                
-                dados_persistidos = obter_armazenamento()
-                ocupadas_main = {}
-                for _, reg_db in dados_persistidos.iterrows():
-                    if reg_db.get("box") == box and reg_db.get("posicao"):
-                        ocupadas_main[int(reg_db["posicao"])] = reg_db["code"]
-                
-                opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main or (pos_salva_principal and p == int(pos_salva_principal))]
-                idx_main = opcoes_pos_main.index(int(pos_salva_principal)) if pos_salva_principal and int(pos_salva_principal) in opcoes_pos_main else 0
-                
-                posicao_escolhida_main = st.selectbox(
-                    f"Posição na Caixa {box} *",
-                    opcoes_pos_main,
-                    index=idx_main,
-                    format_func=lambda x: f"Posição {x:02d}" if x != "" else "Escolha uma posição...",
-                    key="pos_main_select"
+                salvar_armazenamento(
+                    code, box, backup_box, freezer, 
+                    storage_date.isoformat() if storage_date else "", 
+                    analyst, backup_used, 
+                    posicao=int(st.session_state.sel_main), 
+                    posicao_backup=int(st.session_state.sel_backup)
                 )
-
-                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
-                for i in range(0, 81, 9):
-                    cols_m = st.columns(9)
-                    for j in range(9):
-                        pos = i + j + 1
-                        if pos == posicao_escolhida_main:
-                            cor = "#3498db"
-                            label_html = f"🔵 {pos:02d}"
-                        elif pos in ocupadas_main:
-                            cor = "#e74c3c"
-                            label_html = f"🔴 {pos:02d}"
-                        else:
-                            cor = "#2ecc71"
-                            label_html = f"🟢 {pos:02d}"
-                        
-                        cols_m[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
-
-            with col_box_backup:
-                st.subheader("🛡️ Caixa de Backup")
-                backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
-                
-                ocupadas_backup = {}
-                for _, reg_db in dados_persistidos.iterrows():
-                    if reg_db.get("backup_box") == backup_box and reg_db.get("posicao_backup"):
-                        ocupadas_backup[int(reg_db["posicao_backup"])] = reg_db["code"]
-                
-                opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup or (pos_salva_backup and p == int(pos_salva_backup))]
-                idx_backup = opcoes_pos_backup.index(int(pos_salva_backup)) if pos_salva_backup and int(pos_salva_backup) in opcoes_pos_backup else 0
-                
-                posicao_escolhida_backup = st.selectbox(
-                    f"Posição na Caixa de Backup {backup_box} *",
-                    opcoes_pos_backup,
-                    index=idx_backup,
-                    format_func=lambda x: f"Posição {x:02d}" if x != "" else "Escolha uma posição...",
-                    key="pos_backup_select"
-                )
-
-                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
-                for i in range(0, 81, 9):
-                    cols_b = st.columns(9)
-                    for j in range(9):
-                        pos = i + j + 1
-                        if pos == posicao_escolhida_backup:
-                            cor = "#3498db"
-                            label_html = f"🔵 {pos:02d}"
-                        elif pos in ocupadas_backup:
-                            cor = "#e74c3c"
-                            label_html = f"🔴 {pos:02d}"
-                        else:
-                            cor = "#2ecc71"
-                            label_html = f"🟢 {pos:02d}"
-                        
-                        cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
-
-            st.markdown("---")
-            salvar = st.form_submit_button("💾 Salvar Registro")
-
-            if salvar:
-                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
-                    st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
-                else:
-                    salvar_armazenamento(
-                        code, box, backup_box, freezer, 
-                        storage_date.isoformat() if storage_date else "", 
-                        analyst, backup_used, 
-                        posicao=int(posicao_escolhida_main), 
-                        posicao_backup=int(posicao_escolhida_backup)
-                    )
-                    st.toast("Registro salvo com sucesso! ✅")
-                    st.rerun()
+                # Reseta as variáveis da sessão pós-salvamento
+                st.session_state.sel_main = None
+                st.session_state.sel_backup = None
+                st.toast("Registro salvo com sucesso! ✅")
+                st.rerun()
 
         st.divider()
 
@@ -1583,14 +1601,12 @@ def pagina_armazenamento():
 
         st.dataframe(
             dados_exibicao[[
-                "CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION", 
-                "FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-
+"CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
+"FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
+]],
+use_container_width=True,
+hide_index=True
+)
 
 
 # ============================================================
