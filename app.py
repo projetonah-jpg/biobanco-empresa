@@ -1362,12 +1362,6 @@ def mapa_caixa():
         for coluna in range(9):
 
             pos = linha * 9 + coluna + 1
-
-            texto += f"🟢{pos:02d} "
-
-        st.write(texto)
-
-
 def salvar_armazenamento(
     code,
     box,
@@ -1375,28 +1369,23 @@ def salvar_armazenamento(
     freezer,
     storage_date,
     analyst,
-    backup_used
+    backup_used,
+    posicao=None,
+    posicao_backup=None
 ):
     with conectar() as conexao:
+        try: conexao.execute("ALTER TABLE armazenamento_cepas ADD COLUMN posicao INTEGER"); conexao.commit()
+        except sqlite3.OperationalError: pass
+        try: conexao.execute("ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"); conexao.commit()
+        except sqlite3.OperationalError: pass
+
         conexao.execute("""
             INSERT OR REPLACE INTO armazenamento_cepas (
-                code,
-                box,
-                backup_box,
-                freezer,
-                storage_date,
-                analyst,
-                backup_used
+                code, box, backup_box, freezer, storage_date, analyst, backup_used, posicao, posicao_backup
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            code,
-            box,
-            backup_box,
-            freezer,
-            storage_date,
-            analyst,
-            backup_used
+            code, box, backup_box, freezer, storage_date, analyst, backup_used, posicao, posicao_backup
         ))
 
 def excluir_armazenamento(code):
@@ -1406,274 +1395,202 @@ def excluir_armazenamento(code):
             (code,)
         )
 
-def excluir_armazenamento(code):
-    with conectar() as conexao:
-        conexao.execute(
-            """
-            DELETE FROM armazenamento_cepas
-            WHERE code = ?
-            """,
-            (code,)
-        )
-
 def obter_armazenamento():
     with conectar() as conexao:
-        return pd.read_sql_query(
-            "SELECT * FROM armazenamento_cepas",
-            conexao
-        )
+        try: conexao.execute("ALTER TABLE armazenamento_cepas ADD COLUMN posicao INTEGER")
+        except sqlite3.OperationalError: pass
+        try: conexao.execute("ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER")
+        except sqlite3.OperationalError: pass
+        return pd.read_sql_query("SELECT * FROM armazenamento_cepas", conexao)
 
 def pagina_armazenamento():
-
     st.title("🧫 Armazenamento de Isolados Identificados")
-    st.caption(
-        "Gestão do banco de cepas e rastreabilidade dos isolados."
-    )
+    st.caption("Gestão do banco de cepas e rastreabilidade dos isolados.")
 
     df = obter_identificacoes()
-
     if df.empty:
-        st.info("Nenhuma identificação cadastrada.")
+        st.info("Cadastre uma amostra antes de preencher a identificação.")
         return
 
-    df_filtrado = df[
-        df["identification"].fillna("").str.strip() != ""
-    ].copy()
-
+    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
     if df_filtrado.empty:
-        st.info(
-            "Nenhum microrganismo identificado disponível."
-        )
+        st.info("Nenhum microrganismo identificado disponível.")
         return
 
     codigos = sorted(df_filtrado["code"].unique())
-
     dados = obter_armazenamento()
 
-    modo = st.radio(
-        "Ação",
-        [
-            "Novo Registro",
-            "Editar Registro",
-            "Excluir Registro"
-        ],
-        horizontal=True
-    )
-
+    modo = st.radio("Ação", ["Novo Registro", "Editar Registro", "Excluir Registro"], horizontal=True)
     registro = {}
 
-    if (
-        modo in ["Editar Registro", "Excluir Registro"]
-        and not dados.empty
-    ):
-
-        codigo_selecionado = st.selectbox(
-            "Selecione o CODE",
-            dados["code"].tolist()
-        )
-
-        registro = dados[
-            dados["code"] == codigo_selecionado
-        ].iloc[0]
-
-    # =====================================================
-    # EXCLUIR
-    # =====================================================
+    if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
+        codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist())
+        registro = dados[dados["code"] == codigo_selecionado].iloc[0].to_dict()
 
     if modo == "Excluir Registro":
-
         if dados.empty:
             st.info("Nenhum registro encontrado.")
             return
 
-        st.warning(
-            f"⚠️ O registro {registro.get('code','')} será removido permanentemente."
-        )
+        st.warning(f"⚠️ O registro {registro.get('code','')} será removido permanentemente.")
+        confirmar = st.checkbox("Confirmo a exclusão deste registro")
 
-        confirmar = st.checkbox(
-            "Confirmo a exclusão deste registro"
-        )
-
-        if st.button(
-            "🗑️ Excluir Registro",
-            disabled=not confirmar,
-            use_container_width=True
-        ):
-
-            excluir_armazenamento(
-                registro.get("code")
-            )
-
-            st.toast(
-                "Registro excluído com sucesso! ✅"
-            )
-
+        if st.button("🗑️ Excluir Registro", disabled=not confirmar, use_container_width=True):
+            excluir_armazenamento(registro.get("code"))
+            st.toast("Registro excluído com sucesso! ✅")
             st.rerun()
 
-    # =====================================================
-    # NOVO / EDITAR
-    # =====================================================
-
     else:
-
         with st.form("form_armazenamento"):
-
             if modo == "Novo Registro":
-
-                code = st.selectbox(
-                    "Code",
-                    codigos
-                )
-
-                valor_box = ""
-                valor_backup_box = ""
+                code = st.selectbox("Code", codigos)
+                valor_box = "C1"
+                valor_backup_box = "C1"
                 valor_freezer = ""
                 valor_analyst = ""
                 valor_backup_used = "No"
-
+                pos_salva_principal = None
+                pos_salva_backup = None
             else:
-
-                code = st.text_input(
-                    "Code",
-                    value=str(
-                        registro.get("code", "")
-                    ),
-                    disabled=True
-                )
-
-                valor_box = str(
-                    registro.get("box", "")
-                )
-
-                valor_backup_box = str(
-                    registro.get("backup_box", "")
-                )
-
-                valor_freezer = str(
-                    registro.get("freezer", "")
-                )
-
-                valor_analyst = str(
-                    registro.get("analyst", "")
-                )
-
-                valor_backup_used = str(
-                    registro.get(
-                        "backup_used",
-                        "No"
-                    )
-                )
+                code = st.text_input("Code", value=str(registro.get("code", "")), disabled=True)
+                valor_box = str(registro.get("box", "C1"))
+                valor_backup_box = str(registro.get("backup_box", "C1"))
+                valor_freezer = str(registro.get("freezer", ""))
+                valor_analyst = str(registro.get("analyst", ""))
+                valor_backup_used = str(registro.get("backup_used", "No"))
+                pos_salva_principal = registro.get("posicao")
+                pos_salva_backup = registro.get("posicao_backup")
 
             col1, col2 = st.columns(2)
-
             with col1:
-
-                freezer = st.text_input(
-                    "Freezer",
-                    value=valor_freezer
-                )
-
-                analyst = st.text_input(
-                    "Analyst",
-                    value=valor_analyst
-                )
-
+                freezer = st.text_input("Freezer", value=valor_freezer)
+                analyst = st.text_input("Analyst", value=valor_analyst)
             with col2:
+                dt_at = pd.to_datetime(registro.get("storage_date", ""), errors="coerce")
+                storage_date = st.date_input("Storage Date", value=None if pd.isna(dt_at) else dt_at.date(), format="DD/MM/YYYY")
+                backup_used = st.selectbox("Backup Used", ["No", "Yes"], index=0 if valor_backup_used == "No" else 1)
 
-                storage_date = st.date_input(
-                    "Storage Date"
+            st.markdown("---")
+            col_box_principal, col_box_backup = st.columns(2)
+
+            with col_box_principal:
+                st.subheader("📦 Caixa Principal")
+                box = st.selectbox("Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_box) if valor_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_main")
+                
+                dados_persistidos = obter_armazenamento()
+                ocupadas_main = {}
+                for _, reg_db in dados_persistidos.iterrows():
+                    if reg_db.get("box") == box and reg_db.get("posicao"):
+                        ocupadas_main[int(reg_db["posicao"])] = reg_db["code"]
+                
+                opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main or (pos_salva_principal and p == int(pos_salva_principal))]
+                idx_main = opcoes_pos_main.index(int(pos_salva_principal)) if pos_salva_principal and int(pos_salva_principal) in opcoes_pos_main else 0
+                
+                posicao_escolhida_main = st.selectbox(
+                    f"Posição na Caixa {box} *",
+                    opcoes_pos_main,
+                    index=idx_main,
+                    format_func=lambda x: f"Posição {x:02d}" if x != "" else "Escolha uma posição...",
+                    key="pos_main_select"
                 )
 
-                backup_used = st.selectbox(
-                    "Backup Used",
-                    ["No", "Yes"],
-                    index=0 if valor_backup_used == "No" else 1
-                )                       
-                       
+                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
+                for i in range(0, 81, 9):
+                    cols_m = st.columns(9)
+                    for j in range(9):
+                        pos = i + j + 1
+                        if pos == posicao_escolhida_main:
+                            cor = "#3498db"
+                            label_html = f"🔵 {pos:02d}"
+                        elif pos in ocupadas_main:
+                            cor = "#e74c3c"
+                            label_html = f"🔴 {pos:02d}"
+                        else:
+                            cor = "#2ecc71"
+                            label_html = f"🟢 {pos:02d}"
+                        
+                        cols_m[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
-            col_box, col_backup = st.columns(2)
-
-            with col_box:
-
-                box = st.selectbox(
-                    "Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
+            with col_box_backup:
+                st.subheader("🛡️ Caixa de Backup")
+                backup_box = st.selectbox("Backup Box", ["C1", "C2", "C3", "C4", "C5"], index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box) if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"] else 0, key="sb_box_backup")
+                
+                ocupadas_backup = {}
+                for _, reg_db in dados_persistidos.iterrows():
+                    if reg_db.get("backup_box") == backup_box and reg_db.get("posicao_backup"):
+                        ocupadas_backup[int(reg_db["posicao_backup"])] = reg_db["code"]
+                
+                opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup or (pos_salva_backup and p == int(pos_salva_backup))]
+                idx_backup = opcoes_pos_backup.index(int(pos_salva_backup)) if pos_salva_backup and int(pos_salva_backup) in opcoes_pos_backup else 0
+                
+                posicao_escolhida_backup = st.selectbox(
+                    f"Posição na Caixa de Backup {backup_box} *",
+                    opcoes_pos_backup,
+                    index=idx_backup,
+                    format_func=lambda x: f"Posição {x:02d}" if x != "" else "Escolha uma posição...",
+                    key="pos_backup_select"
                 )
 
-                mapa_caixa()
+                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
+                for i in range(0, 81, 9):
+                    cols_b = st.columns(9)
+                    for j in range(9):
+                        pos = i + j + 1
+                        if pos == posicao_escolhida_backup:
+                            cor = "#3498db"
+                            label_html = f"🔵 {pos:02d}"
+                        elif pos in ocupadas_backup:
+                            cor = "#e74c3c"
+                            label_html = f"🔴 {pos:02d}"
+                        else:
+                            cor = "#2ecc71"
+                            label_html = f"🟢 {pos:02d}"
+                        
+                        cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
-            with col_backup:
-
-                backup_box = st.selectbox(
-                    "Backup Box",
-                    ["C1", "C2", "C3", "C4", "C5"]
-                )
-
-                mapa_caixa()
-
-            
-            salvar = st.form_submit_button(
-                "💾 Salvar"
-            )
+            st.markdown("---")
+            salvar = st.form_submit_button("💾 Salvar Registro")
 
             if salvar:
+                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
+                    st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
+                else:
+                    salvar_armazenamento(
+                        code, box, backup_box, freezer, 
+                        storage_date.isoformat() if storage_date else "", 
+                        analyst, backup_used, 
+                        posicao=int(posicao_escolhida_main), 
+                        posicao_backup=int(posicao_escolhida_backup)
+                    )
 
-                salvar_armazenamento(
-                    code,
-                    box,
-                    backup_box,
-                    freezer,
-                    str(storage_date),
-                    analyst,
-                    backup_used
-                )
+            texto += f"🟢{pos:02d} "
 
-                st.toast(
-                    "Registro salvo com sucesso! ✅"
-                )
+        st.write(texto)
+st.toast("Registro salvo com sucesso! ✅")
+st.rerun()
+st.divider()
+dados = obter_armazenamento()
+if not dados.empty:
+total_isolados = len(dados)
+st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+dados_exibicao = dados.rename(
+columns={
+"code": "CODE", "box": "BOX", "posicao": "POSITION",
+"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+"freezer": "FREEZER", "storage_date": "STORAGE DATE",
+"analyst": "ANALYST", "backup_used": "BACKUP USED"
+}
+)
+st.dataframe(
+dados_exibicao[[
+"CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
+"FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
+]],
+use_container_width=True,
+hide_index=True
+)
 
-                st.rerun()
 
-        st.divider()
-
-    dados = obter_armazenamento()
-
-    if not dados.empty:
-
-        total_isolados = len(dados)
-
-        st.metric(
-            "🦠 Total de Isolados Preservados no Banco",
-            f"{total_isolados} un"
-        )
-
-        dados_exibicao = dados.rename(
-            columns={
-                "code": "CODE",
-                "box": "BOX",
-                "backup_box": "BACKUP BOX",
-                "freezer": "FREEZER",
-                "storage_date": "STORAGE DATE",
-                "analyst": "ANALYST",
-                "backup_used": "BACKUP USED"
-            }
-        )
-
-        st.dataframe(
-            dados_exibicao[
-                [
-                    "CODE",
-                    "BOX",
-                    "BACKUP BOX",
-                    "FREEZER",
-                    "STORAGE DATE",
-                    "ANALYST",
-                    "BACKUP USED"
-                ]
-            ],
-            use_container_width=True,
-            hide_index=True
-        )
 # ============================================================
 # EXPORTAÇÃO PARA EXCEL
 # ============================================================
