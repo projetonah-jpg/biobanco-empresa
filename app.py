@@ -1566,29 +1566,30 @@ def pagina_armazenamento():
             texto += f"🟢{pos:02d} "
 
         st.write(texto)
-st.toast("Registro salvo com sucesso! ✅")
-st.rerun()
-st.divider()
-dados = obter_armazenamento()
-if not dados.empty:
-total_isolados = len(dados)
-st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-dados_exibicao = dados.rename(
-columns={
-"code": "CODE", "box": "BOX", "posicao": "POSITION",
-"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-"freezer": "FREEZER", "storage_date": "STORAGE DATE",
-"analyst": "ANALYST", "backup_used": "BACKUP USED"
-}
-)
-st.dataframe(
-dados_exibicao[[
-"CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
-"FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
-]],
-use_container_width=True,
-hide_index=True
-)
+
+    dados = obter_armazenamento()
+    if not dados.empty:
+        total_isolados = len(dados)
+        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+
+        dados_exibicao = dados.rename(
+            columns={
+                "code": "CODE", "box": "BOX", "posicao": "POSITION",
+                "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+                "freezer": "FREEZER", "storage_date": "STORAGE DATE",
+                "analyst": "ANALYST", "backup_used": "BACKUP USED"
+            }
+        )
+
+        st.dataframe(
+            dados_exibicao[[
+                "CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION", 
+                "FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
+            ]],
+            use_container_width=True,
+            hide_index=True
+        )
+
 
 
 # ============================================================
