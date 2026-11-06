@@ -1597,27 +1597,17 @@ def pagina_armazenamento():
             if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
                 st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
             else:
-dt_iso = storage_date.isoformat() if storage_date else ""
-salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
-st.toast("Registro salvo com sucesso! ✅")
-st.rerun()
-st.divider()
-dados = obter_armazenamento()
-if not dados.empty:
-total_isolados = len(dados)
-st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-colunas_existentes = dados.columns
-mapeamento = {
-"code": "CODE", "box": "BOX", "posicao": "POSITION",
-"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-"freezer": "FREEZER", "storage_date": "STORAGE DATE",
-"analyst": "ANALYST", "backup_used": "BACKUP USED"
-}
-mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
-dados_exibicao = dados.rename(columns=mapeamento_valido)
-colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
-if colunas_exibir:
-st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
+        # 3. BOTÃO DE SALVAMENTO DEFINITIVO
+        salvar = st.button("💾 Salvar Registro", type="primary", use_container_width=True)
+
+        if salvar:
+            if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
+                st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
+            else:
+                dt_iso = storage_date.isoformat() if storage_date else ""
+                salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
+                st.toast("Registro salvo com sucesso! ✅")
+                st.rerun()
 
 
 # ============================================================
