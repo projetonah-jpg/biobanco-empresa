@@ -1593,111 +1593,62 @@ def pagina_armazenamento():
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_backup:
                             cor = "#e74c3c"
+                st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>", unsafe_allow_html=True)
+                for i in range(0, 81, 9):
+                    cols_b = st.columns(9)
+                    for j in range(9):
+                        pos = i + j + 1
+                        if posicao_escolhida_backup != "" and pos == int(posicao_escolhida_backup):
+                            cor = "#3498db"
+                            label_html = f"🔵 {pos:02d}"
+                        elif pos in ocupadas_backup:
+                            cor = "#e74c3c"
+                            label_html = f"🔴 {pos:02d}"
+                        else:
+                            cor = "#2ecc71"
+                            label_html = f"🟢 {pos:02d}"
+                        cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
-label_html = f"🔴 {pos:02d}"
-else:
-cor = "#2ecc71"
-label_html = f"🟢 {pos:02d}"
-cols_b[j].markdown(f"{label_html}", unsafe_allow_html=True)
-# 2. IMPLEMENTAÇÃO DO RESUMO DE OCUPAÇÃO DA CAIXA DE BACKUP
-st.markdown("
-", unsafe_allow_html=True)
-with st.expander(f"🔍 Ver ocupação detalhada da Caixa de Backup {backup_box}"):
-if ocupadas_backup:
-for p_ocupada, c_ocupado in sorted(ocupadas_backup.items()):
-st.write(f"🔴 Posição {p_ocupada:02d}: Ocupada pela Cepa {c_ocupado}")
-else:
-st.write("🟢 Esta caixa de backup está completamente vazia.")
-st.markdown("---")
-salvar = st.form_submit_button("💾 Salvar Registro")
-if salvar:
-if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
-st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
-else:
-dt_iso = storage_date.isoformat() if storage_date else ""
-salvar_armazenamento(
-code, box, backup_box, freezer, dt_iso, analyst, backup_used,
-int(posicao_escolhida_main), int(posicao_escolhida_backup)
-)
-st.toast("Registro salvo com sucesso! ✅")
-st.rerun()
-st.divider()
-dados = obter_armazenamento()
-if not dados.empty:
-total_isolados = len(dados)
-st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-colunas_existentes = dados.columns
-mapeamento = {
-"code": "CODE", "box": "BOX", "posicao": "POSITION",
-"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-"freezer": "FREEZER", "storage_date": "STORAGE DATE",
-"analyst": "ANALYST", "backup_used": "BACKUP USED"
-}
-mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
-dados_exibicao = dados.rename(columns=mapeamento_valido)
-colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
-if colunas_exibir:
-st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                with st.expander(f"🔍 Ver ocupação detalhada da Caixa de Backup {backup_box}"):
+                    if ocupadas_backup:
+                        for p_ocupada, c_ocupado in sorted(ocupadas_backup.items()):
+                            st.write(f"🔴 Posição {p_ocupada:02d}: Ocupada pela Cepa **{c_ocupado}**")
+                    else:
+                        st.write("🟢 Esta caixa de backup está completamente vazia.")
 
-                        
-# ============================================================
-# EXPORTAÇÃO PARA EXCEL
-# ============================================================
+            st.markdown("---")
+            salvar = st.form_submit_button("💾 Salvar Registro")
 
-def gerar_excel():
-    amostras = obter_amostras()
-    identificacoes = obter_identificacoes()
+            if salvar:
+                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
+                    st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
+                else:
+                    dt_iso = storage_date.isoformat() if storage_date else ""
+                    salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
+                    st.toast("Registro salvo com sucesso! ✅")
+                    st.rerun()
 
-    armazenamento = identificacoes[
-        [
-            "code",
-            "gram_stain",
-            "identification",
-        ]
-    ].copy()
+    st.divider()
+    dados = obter_armazenamento()
+    if not dados.empty:
+        total_isolados = len(dados)
+        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
 
-    arquivo = BytesIO()
+        colunas_existentes = dados.columns
+        mapeamento = {
+            "code": "CODE", "box": "BOX", "posicao": "POSITION",
+            "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+            "freezer": "FREEZER", "storage_date": "STORAGE DATE",
+            "analyst": "ANALYST", "backup_used": "BACKUP USED"
+        }
+        mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
+        dados_exibicao = dados.rename(columns=mapeamento_valido)
+        colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
 
-    with pd.ExcelWriter(
-        arquivo,
-        engine="openpyxl",
-    ) as writer:
-        amostras.to_excel(
-            writer,
-            sheet_name="Registro",
-            index=False,
-        )
+        if colunas_exibir:
+            st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
 
-        identificacoes.to_excel(
-            writer,
-            sheet_name="Identification",
-            index=False,
-        )
-
-        armazenamento.to_excel(
-            writer,
-            sheet_name="Storage",
-            index=False,
-        )
-
-        for planilha in writer.book.worksheets:
-            planilha.freeze_panes = "A2"
-            planilha.auto_filter.ref = planilha.dimensions
-
-            for coluna in planilha.columns:
-                maior_tamanho = max(
-                    len(str(celula.value or ""))
-                    for celula in coluna
-                )
-
-                planilha.column_dimensions[
-                    coluna[0].column_letter
-                ].width = min(
-                    maior_tamanho + 2,
-                    38,
-                )
-
-    return arquivo.getvalue()
 
 
 # ============================================================
