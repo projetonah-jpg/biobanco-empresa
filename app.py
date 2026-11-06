@@ -1425,7 +1425,7 @@ def pagina_armazenamento():
 
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
         codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
-        registro = dados[dados["code"] == codigo_selecionado].iloc[0].to_dict()
+        registro = dados[dados["code"] == codigo_selecionado].iloc.to_dict()
 
     if modo == "Excluir Registro":
         if dados.empty:
@@ -1441,7 +1441,7 @@ def pagina_armazenamento():
             st.rerun()
 
     else:
-        # Inicializa os estados de seleção caso não existam
+        # Inicializa os estados de seleção na sessão
         if "sel_main" not in st.session_state: st.session_state.sel_main = None
         if "sel_backup" not in st.session_state: st.session_state.sel_backup = None
 
@@ -1460,7 +1460,6 @@ def pagina_armazenamento():
             valor_analyst = str(registro.get("analyst", ""))
             valor_backup_used = str(registro.get("backup_used", "No"))
             
-            # Se acabou de carregar para edição e não clicou em nada ainda, resgata do banco
             if st.session_state.sel_main is None: st.session_state.sel_main = registro.get("posicao")
             if st.session_state.sel_backup is None: st.session_state.sel_backup = registro.get("posicao_backup")
 
@@ -1475,23 +1474,35 @@ def pagina_armazenamento():
 
         st.markdown("---")
         
-        # Estilização CSS para criar botões redondos perfeitos e adicionar espaçamento lateral
+        # Super CSS: Força tamanho fixo pequeno, remove as bordas roxas e impede que os botões se espalhem
         st.markdown("""
             <style>
             div[data-testid="stHorizontalBlock"] {
-                gap: 40px !important; /* Cria um espaçamento confortável entre as duas caixas */
+                gap: 50px !important;
             }
+            /* Alvos específicos para os botões das nossas grades */
             div[data-testid="stHorizontalBlock"] button[key^="btn_grid_"] {
                 color: white !important;
                 border: none !important;
                 border-radius: 50% !important;
-                width: 34px !important;
-                height: 34px !important;
+                width: 32px !important;
+                height: 32px !important;
+                min-width: 32px !important;
+                max-width: 32px !important;
+                min-height: 32px !important;
+                max-height: 32px !important;
                 padding: 0px !important;
                 font-size: 11px !important;
                 font-weight: bold !important;
-                display: inline-block !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 2px auto !important;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            }
+            div[data-testid="stHorizontalBlock"] button[key^="btn_grid_"]:hover {
+                color: white !important;
+                opacity: 0.85 !important;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -1506,7 +1517,7 @@ def pagina_armazenamento():
             
             ocupadas_main = {int(r["posicao"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("box") == box and r.get("posicao") and r["code"] != code}
             
-            st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-bottom:10px;'>Selecione a posição clicando na grade:</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:13px; font-weight:bold; color:#31333F; margin-bottom:10px;'>Selecione a posição clicando na bolinha:</p>", unsafe_allow_html=True)
             for i in range(0, 81, 9):
                 cols_m = st.columns(9)
                 for j in range(9):
@@ -1514,13 +1525,13 @@ def pagina_armazenamento():
                     key_btn = f"btn_grid_main_{pos}"
                     
                     if pos == st.session_state.sel_main:
-                        cor = "#3498db"  # Azul: Sua seleção atual
+                        cor = "#3498db"  # Azul (Selecionada)
                     elif pos in ocupadas_main:
-                        cor = "#e74c3c"  # Vermelho: Ocupada por outra cepa
+                        cor = "#e74c3c"  # Vermelho (Ocupada)
                     else:
-                        cor = "#2ecc71"  # Verde: Livre
+                        cor = "#2ecc71"  # Verde (Disponível)
                     
-                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; }}</style>", unsafe_allow_html=True)
+                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; background-image: none !important; }}</style>", unsafe_allow_html=True)
                     if cols_m[j].button(f"{pos:02d}", key=key_btn):
                         if pos in ocupadas_main:
                             st.error(f"Posição {pos:02d} ocupada por {ocupadas_main[pos]}!")
@@ -1535,7 +1546,7 @@ def pagina_armazenamento():
             
             ocupadas_backup = {int(r["posicao_backup"]): r["code"] for _, r in dados_persistidos.iterrows() if r.get("backup_box") == backup_box and r.get("posicao_backup") and r["code"] != code}
             
-            st.markdown("<p style='font-size:13px; font-weight:bold; color:#612147; margin-bottom:10px;'>Selecione a posição clicando na grade:</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:13px; font-weight:bold; color:#31333F; margin-bottom:10px;'>Selecione a posição clicando na bolinha:</p>", unsafe_allow_html=True)
             for i in range(0, 81, 9):
                 cols_b = st.columns(9)
                 for j in range(9):
@@ -1543,13 +1554,13 @@ def pagina_armazenamento():
                     key_btn = f"btn_grid_backup_{pos}"
                     
                     if pos == st.session_state.sel_backup:
-                        cor = "#3498db"  # Azul: Sua seleção atual
+                        cor = "#3498db"  # Azul (Selecionada)
                     elif pos in ocupadas_backup:
-                        cor = "#e74c3c"  # Vermelho: Ocupada por outra cepa
+                        cor = "#e74c3c"  # Vermelho (Ocupada)
                     else:
-                        cor = "#2ecc71"  # Verde: Livre
+                        cor = "#2ecc71"  # Verde (Disponível)
                     
-                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; }}</style>", unsafe_allow_html=True)
+                    st.markdown(f"<style>button[key='{key_btn}'] {{ background-color: {cor} !important; background-image: none !important; }}</style>", unsafe_allow_html=True)
                     if cols_b[j].button(f"{pos:02d}", key=key_btn):
                         if pos in ocupadas_backup:
                             st.error(f"Posição {pos:02d} ocupada por {ocupadas_backup[pos]}!")
@@ -1559,7 +1570,6 @@ def pagina_armazenamento():
 
         st.markdown("---")
         
-        # Mostra as posições selecionadas em tempo real
         c_status1, c_status2 = st.columns(2)
         with c_status1:
             if st.session_state.sel_main: st.info(f"📍 Selecionado na Caixa Principal: Posição **{st.session_state.sel_main:02d}**")
@@ -1577,7 +1587,6 @@ def pagina_armazenamento():
                     posicao=int(st.session_state.sel_main), 
                     posicao_backup=int(st.session_state.sel_backup)
                 )
-                # Reseta as variáveis da sessão pós-salvamento
                 st.session_state.sel_main = None
                 st.session_state.sel_backup = None
                 st.toast("Registro salvo com sucesso! ✅")
@@ -1592,15 +1601,14 @@ def pagina_armazenamento():
 
         dados_exibicao = dados.rename(
             columns={
-                "code": "CODE", "box": "BOX", "posicao": "POSITION",
-                "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-                "freezer": "FREEZER", "storage_date": "STORAGE DATE",
-                "analyst": "ANALYST", "backup_used": "BACKUP USED"
-            }
-        )
-
-        st.dataframe(
-            dados_exibicao[[
+"code": "CODE", "box": "BOX", "posicao": "POSITION",
+"backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
+"freezer": "FREEZER", "storage_date": "STORAGE DATE",
+"analyst": "ANALYST", "backup_used": "BACKUP USED"
+}
+)
+st.dataframe(
+dados_exibicao[[
 "CODE", "BOX", "POSITION", "BACKUP BOX", "BACKUP POSITION",
 "FREEZER", "STORAGE DATE", "ANALYST", "BACKUP USED"
 ]],
