@@ -1596,8 +1596,8 @@ def pagina_armazenamento():
         if salvar:
             if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
                 st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
-            else:
-        # 3. BOTÃO DE SALVAMENTO DEFINITIVO
+     else:
+        # 3. BOTÃO DE SALVAMENTO DEFINITIVO (Alinhado corretamente dentro do else)
         salvar = st.button("💾 Salvar Registro", type="primary", use_container_width=True)
 
         if salvar:
@@ -1608,6 +1608,7 @@ def pagina_armazenamento():
                 salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
                 st.toast("Registro salvo com sucesso! ✅")
                 st.rerun()
+
 
 
 # ============================================================
