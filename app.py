@@ -854,13 +854,14 @@ def pagina_dashboard():
             margin-bottom: 30px;
             font-size: 16px;
         }
-        /* Estilização para destacar os mini-cards informativos (KPIs) */
-        .kpi-container {
-            background-color: #f2f8f7;
-            border-left: 5px solid #16857a;
-            padding: 15px;
+        /* Estilização para os cards de Limite de Ação / Status */
+        .card-status {
+            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         </style>
         """,
@@ -870,7 +871,7 @@ def pagina_dashboard():
     st.markdown("<h1 class='titulo-relatorio'>SISTEMA DE MONITORAMENTO BIOLÓGICO</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo-relatorio'>ANÁLISE E CONTROLE DE CONTAMINANTES AMBIENTAIS</p>", unsafe_allow_html=True)
 
-    # 1. Busca abrangente de dados do banco (trazendo áreas, origens e conformidades)
+    # 1. Busca abrangente de dados do banco
     df_completo = consultar(
         """
         SELECT
@@ -896,20 +897,21 @@ def pagina_dashboard():
         return
 
     # --------------------------------------------------------
-    # CRIAÇÃO DAS ABAS - DEIXA O SISTEMA ROBUSTO E ORGANIZADO
+    # CRIAÇÃO DAS ABAS ENRIQUECIDAS
     # --------------------------------------------------------
-    aba_tendencia, aba_tanques = st.tabs(["📊 Relatório de Tendência", "🏭 Controle por Áreas e Tanques"])
+    aba_tendencia, aba_tanques, aba_auditoria = st.tabs([
+        "📊 Relatório de Tendência", 
+        "🏭 Controle por Áreas e Tanques",
+        "🛡️ Indicadores Avançados e Auditoria"
+    ])
 
     # ========================================================
-    # ABA 1: O RELATÓRIO QUE VOCÊ COPIOU DA IMAGEM ORIGINAL
+    # ABA 1: RELATÓRIO DE TENDÊNCIA PADRÃO
     # ========================================================
     with aba_tendencia:
         df_identificados = df[df["identification"].str.strip() != ""].copy()
-        
         if not df_identificados.empty:
             total_identificados = len(df_identificados)
-            
-            # Estruturação e cálculo automático da tabela de tendências
             resumo = df_identificados["identification"].value_counts().reset_index()
             resumo.columns = ["Microrganismo", "Contagem"]
             resumo["Frequência"] = (resumo["Contagem"] / total_identificados * 100).round(1).astype(str) + "%"
@@ -926,99 +928,87 @@ def pagina_dashboard():
                     grams.append("N/A"); esporulados.append("Não"); ecologias.append("Ambiente geral / Dispersão aérea"); patogenicidades.append("Variada")
             
             resumo["Gram"], resumo["Esporulado"], resumo["Ecologia"], resumo["Patogenicidade"] = grams, esporulados, ecologias, patogenicidades
-            df_tabela_visual = resumo[["Microrganismo", "Frequência", "Gram", "Esporulado", "Ecologia", "Patogenicidade"]]
-            
-            st.dataframe(df_tabela_visual, use_container_width=True, hide_index=True)
-        else:
-            st.warning("Preencha dados na aba 'Identificação' para construir a tabela de tendências.")
-
+            st.dataframe(resumo[["Microrganismo", "Frequência", "Gram", "Esporulado", "Ecologia", "Patogenicidade"]], use_container_width=True, hide_index=True)
+        
         st.markdown("<br>", unsafe_allow_html=True)
-
-        # Gráficos lado a lado originais
-        grafico1, grafico2 = st.columns(2)
-        with grafico1:
+        g1, g2 = st.columns(2)
+        with g1:
             if not df_identificados.empty:
-                contagem_micro = df_identificados["identification"].value_counts().reset_index()
-                contagem_micro.columns = ["identification", "Frequência"]
-                figura_pizza = px.pie(contagem_micro, names="identification", values="Frequência", hole=0.4, title="Distribuição dos micro-organismos", color_discrete_sequence=px.colors.qualitative.Safe)
-                figura_pizza.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"), showlegend=True, legend=dict(orientation="h", y=-0.1))
-                st.plotly_chart(figura_pizza, use_container_width=True)
-
-        with grafico2:
+                fig_p = px.pie(df_identificados["identification"].value_counts().reset_index(), names="identification", values="count", hole=0.4, title="Distribuição dos micro-organismos", color_discrete_sequence=px.colors.qualitative.Safe)
+                fig_p.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"))
+                st.plotly_chart(fig_p, use_container_width=True)
+        with g2:
             df_pontos = df[df["collection_point"].str.strip() != ""].copy()
             if not df_pontos.empty:
-                contagem_pontos = df_pontos["collection_point"].value_counts().reset_index()
-                contagem_pontos.columns = ["collection_point", "Quantidade"]
-                figura_barras = px.bar(contagem_pontos, x="collection_point", y="Quantidade", text_auto=True, title="Frequência dos locais isolados", color_discrete_sequence=["#16857a"])
-                figura_barras.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"), xaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)"), yaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)"))
-                st.plotly_chart(figura_barras, use_container_width=True)
+                fig_b = px.bar(df_pontos["collection_point"].value_counts().reset_index(), x="collection_point", y="count", text_auto=True, title="Frequência dos locais isolados", color_discrete_sequence=["#16857a"])
+                fig_b.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"))
+                st.plotly_chart(fig_b, use_container_width=True)
 
     # ========================================================
-    # ABA 2: NOVA VISÃO ROBUSTA (TANQUES, ORIGENS E CONFORMIDADE)
+    # ABA 2: CONTROLE POR ÁREAS E TANQUES
     # ========================================================
     with aba_tanques:
         st.subheader("🔍 Rastreabilidade e Auditoria por Setor")
-        
-        # Filtros rápidos para o usuário interagir na tela
         col_f1, col_f2 = st.columns(2)
         with col_f1:
             filtro_origem = st.selectbox("Filtrar por Origem do Monitoramento:", ["Todos"] + list(df["origin"].dropna().unique()))
         with col_f2:
             filtro_conformidade = st.selectbox("Filtrar por Status de Conformidade:", ["Todos", "Conforme", "Não Conforme"])
         
-        # Aplicando filtros no conjunto de dados
         df_filtrado = df.copy()
         if filtro_origem != "Todos":
             df_filtrado = df_filtrado[df_filtrado["origin"] == filtro_origem]
         if filtro_conformidade != "Todos":
             df_filtrado = df_filtrado[df_filtrado["resultado_final"] == filtro_conformidade]
             
-        # Métricas de Linha/Tanques
         c1, c2, c3 = st.columns(3)
         c1.metric("Amostras Avaliadas no Filtro", len(df_filtrado))
         c2.metric("Pontos Críticos Identificados", df_filtrado["collection_point"].nunique())
         c3.metric("Ocorrências Não Conformes", int((df_filtrado["resultado_final"] == "Não Conforme").sum()))
         
         st.write("---")
-        
-        # Gráficos Avançados de Cruzamento de Dados
         g_areas, g_conformidade = st.columns(2)
-        
         with g_areas:
-            # Gráfico de barras horizontais focado nas Linhas de Produção / Armazenamento (ex: Storage Tanks, Line 4)
-            df_areas = df_filtrado["area"].value_counts().reset_index()
-            df_areas.columns = ["Área/Setor", "Volume de Amostras"]
-            
-            fig_areas = px.bar(
-                df_areas,
-                y="Área/Setor",
-                x="Volume de Amostras",
-                orientation="h",
-                text_auto=True,
-                title="<b>Volume de Ocorrências por Área / Tanque</b>",
-                color_discrete_sequence=["#2a6f68"]
-            )
+            fig_areas = px.bar(df_filtrado["area"].value_counts().reset_index(), y="area", x="count", orientation="h", text_auto=True, title="<b>Volume de Ocorrências por Área / Tanque</b>", color_discrete_sequence=["#2a6f68"])
             fig_areas.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_areas, use_container_width=True)
-            
         with g_conformidade:
-            # Gráfico comparativo de conformidade por Ponto de Coleta
             df_status = df_filtrado.groupby(["collection_point", "resultado_final"]).size().reset_index(name="Quantidade")
-            
-            fig_status = px.bar(
-                df_status,
-                x="collection_point",
-                y="Quantidade",
-                color="resultado_final",
-                title="<b>Conformidade por Ponto de Coleta Crítico</b>",
-                barmode="stack",
-                color_discrete_map={"Conforme": "#6bb1a9", "Não Conforme": "#d9534f", "": "#999999"}
-            )
+            fig_status = px.bar(df_status, x="collection_point", y="Quantidade", color="resultado_final", title="<b>Conformidade por Ponto de Coleta Crítico</b>", barmode="stack", color_discrete_map={"Conforme": "#6bb1a9", "Não Conforme": "#d9534f", "": "#999999"})
             fig_status.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis_title="", yaxis_title="Amostras")
             st.plotly_chart(fig_status, use_container_width=True)
 
         st.subheader("Lista Filtrada de Isolados")
         st.dataframe(df_filtrado[["code", "origin", "area", "collection_point", "identification", "resultado_final", "data"]], use_container_width=True, hide_index=True)
+
+    # ========================================================
+    # ABA 3: NOVA ABA AVANÇADA (SISTEMA DE ALERTA, HEATMAP E PDF)
+    # ========================================================
+    with aba_auditoria:
+        st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
+        
+        # 1. SISTEMA DE ALERTA DINÂMICO (LIMITE DE AÇÃO)
+        nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
+        
+        card_1, card_2 = st.columns(2)
+        with card_1:
+            if nao_conformes_totais <= 2:
+                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
+            elif nao_conformes_totais <= 4:
+                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios. Revisar desinfecção.</span></div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
+        
+        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA
+        with card_2:
+            total_avaliadas = len(df)
+            conformes = (df["resultado_final"] == "Conforme").sum()
+            taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
+            
+            st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
+            
+        st.write("---")
+        
 
 
 # ============================================================
