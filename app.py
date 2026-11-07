@@ -1561,7 +1561,14 @@ def pagina_armazenamento():
 
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
         codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
-        registro = dados[dados["code"] == codigo_selecionado].iloc.to_dict()
+        
+        # --- CORREÇÃO DA BUSCA SEGURA COM .iloc[0] ---
+        busca_filtrada = dados[dados["code"] == codigo_selecionado]
+        if not busca_filtrada.empty:
+            registro = busca_filtrada.iloc[0].to_dict()
+        else:
+            st.error("Erro interno: Registro não encontrado.")
+            return
 
     if modo == "Excluir Registro":
         if dados.empty:
@@ -1608,7 +1615,6 @@ def pagina_armazenamento():
 
             st.markdown("---")
             
-            # Espaçamento lateral controlado entre as colunas
             col_box_principal, col_espaco, col_box_backup = st.columns([1, 0.1, 1])
 
             # --- 📦 CAIXA PRINCIPAL ---
@@ -1626,7 +1632,10 @@ def pagina_armazenamento():
                         p_banco = str(reg_db.get("posicao")).strip()
                         c_banco = str(reg_db.get("code")).strip()
                         if b_banco == str(box).strip() and p_banco != "" and p_banco != "None":
-                            ocupadas_main[int(float(p_banco))] = c_banco
+                            try:
+                                ocupadas_main[int(float(p_banco))] = c_banco
+                            except ValueError:
+                                pass
                 
                 if modo == "Editar Registro" and pos_salva_principal:
                     try: ocupadas_main.pop(int(float(pos_salva_principal)), None)
@@ -1678,7 +1687,10 @@ def pagina_armazenamento():
                         p_banco = str(reg_db.get("posicao_backup")).strip()
                         c_banco = str(reg_db.get("code")).strip()
                         if b_banco == str(backup_box).strip() and p_banco != "" and p_banco != "None":
-                            ocupadas_backup[int(float(p_banco))] = c_banco
+                            try:
+                                ocupadas_backup[int(float(p_banco))] = c_banco
+                            except ValueError:
+                                pass
 
                 if modo == "Editar Registro" and pos_salva_backup:
                     try: ocupadas_backup.pop(int(float(pos_salva_backup)), None)
@@ -1717,32 +1729,30 @@ def pagina_armazenamento():
                         cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
             st.markdown("---")
-            salvar = st.form_submit_button("💾 Salvar Registro")
-
-            if salvar:
-                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
-                    st.error("Por favor, selecione as posições obrigatórias nos campos de seleção antes de salvar!")
-                else:
-                    dt_iso = storage_date.isoformat() if storage_date else ""
-                    salvar_armazenamento(code, box, backup_box, freezer, dt_iso, analyst, backup_used, int(posicao_escolhida_main), int(posicao_escolhida_backup))
-    dados = obter_armazenamento()
-    if not dados.empty:
-        total_isolados = len(dados)
-        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
-
-        colunas_existentes = dados.columns
-        mapeamento = {
-            "code": "CODE", "box": "BOX", "posicao": "POSITION",
-            "backup_box": "BACKUP BOX", "posicao_backup": "BACKUP POSITION",
-            "freezer": "FREEZER", "storage_date": "STORAGE DATE",
-            "analyst": "ANALYST", "backup_used": "BACKUP USED"
-        }
-        mapeamento_valido = {k: v for k, v in mapeamento.items() if k in colunas_existentes}
-        dados_exibicao = dados.rename(columns=mapeamento_valido)
-        colunas_exibir = [v for k, v in mapeamento_valido.items() if v in dados_exibicao.columns]
-
-        if colunas_exibir:
-            st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
+            btn_texto = "Salvar Alterações 💾" if modo == "Editar Registro" else "Gravar Armazenamento 💾"
+btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
+if btn_enviar:
+if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
+st.error("Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar.")
+else:
+dados_formulario = {
+"code": code,
+"freezer": freezer,
+"analyst": analyst,
+"storage_date": str(storage_date) if storage_date else "",
+"backup_used": backup_used,
+"box": box,
+"posicao": int(posicao_escolhida_main),
+"backup_box": backup_box,
+"posicao_backup": int(posicao_escolhida_backup)
+}
+if modo == "Novo Registro":
+salvar_armazenamento(dados_formulario)
+st.toast("Novo armazenamento registrado com sucesso! 🟢")
+else:
+atualizar_armazenamento(dados_formulario)
+st.toast("Registro de armazenamento atualizado com sucesso! 🔵")
+st.rerun()
 
 
 # ============================================================
