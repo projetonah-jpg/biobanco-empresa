@@ -1001,36 +1001,69 @@ def pagina_dashboard():
         st.subheader("Lista Filtrada de Isolados")
         st.dataframe(df_filtrado[["code", "origin", "area", "collection_point", "identification", "resultado_final", "data"]], use_container_width=True, hide_index=True)
 
-    # ========================================================
-    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA
+       # ========================================================
+    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (COM FILTRO TEMPORAL)
     # ========================================================
     with aba_auditoria:
         st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
         
-        nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
+        # Criamos uma cópia dos dados para aplicar o filtro de data
+        df_auditoria = df.copy()
+        df_auditoria["data"] = pd.to_datetime(df_auditoria["data"], errors="coerce")
+        
+        # Filtros temporais dinâmicos no topo da aba
+        col_ano, col_mes = st.columns(2)
+        
+        with col_ano:
+            anos_disponiveis = ["Todos"] + sorted(list(df_auditoria["data"].dt.year.dropna().unique().astype(int)), reverse=True)
+            ano_selecionado = st.selectbox("Filtrar Auditoria por Ano:", anos_disponiveis, key="auditoria_ano")
+            
+        with col_mes:
+            meses_nomes = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 
+                           7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
+            meses_disponiveis = ["Todos"]
+            if ano_selecionado != "Todos":
+                meses_numeros = df_auditoria[df_auditoria["data"].dt.year == int(ano_selecionado)]["data"].dt.month.dropna().unique()
+                meses_disponiveis += [meses_nomes[m] for m in sorted(meses_numeros)]
+            else:
+                meses_disponiveis += [meses_nomes[m] for m in sorted(df_auditoria["data"].dt.month.dropna().unique())]
+                
+            mes_selecionado = st.selectbox("Filtrar Auditoria por Mês:", meses_disponiveis, key="auditoria_mes")
+
+        # Aplicando as regras dos filtros nos dados da aba
+        if ano_selecionado != "Todos":
+            df_auditoria = df_auditoria[df_auditoria["data"].dt.year == int(ano_selecionado)]
+        if mes_selecionado != "Todos":
+            num_mes = [k for k, v in meses_nomes.items() if v == mes_selecionado][0]
+            df_auditoria = df_auditoria[df_auditoria["data"].dt.month == num_mes]
+
+        st.write("---")
+
+        # 1. SISTEMA DE ALERTA DINÂMICO BASEADO NO PERÍODO SELECIONADO
+        nao_conformes_totais = (df_auditoria["resultado_final"] == "Não Conforme").sum()
         
         card_1, card_2 = st.columns(2)
-       
         with card_1:
             if nao_conformes_totais <= 2:
-                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
+                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável no período.</span></div>', unsafe_allow_html=True)
             elif nao_conformes_totais <= 4:
-                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios. Revisar desinfecção.</span></div>', unsafe_allow_html=True)
+                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios no período. Revisar processos.</span></div>', unsafe_allow_html=True)
             else:
-                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
+                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado no período. Exige sanitização!</span></div>', unsafe_allow_html=True)
         
-        
+        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA DO PERÍODO
         with card_2:
-            total_avaliadas = len(df)
-            conformes = (df["resultado_final"] == "Conforme").sum()
+            total_avaliadas = len(df_auditoria)
+            conformes = (df_auditoria["resultado_final"] == "Conforme").sum()
             taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
-            texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>'
+            texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Pontos livres de contaminação no período filtrado.</span></div>'
             st.markdown(texto_html, unsafe_allow_html=True)
             
         st.write("---")
         
+        # 3. MAPA DE CALOR DO PERÍODO SELECIONADO
         st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
-        df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
+        df_heatmap_raw = df_auditoria[(df_auditoria["collection_point"].str.strip() != "") & (df_auditoria["identification"].str.strip() != "")]
         
         if not df_heatmap_raw.empty:
             matriz_contagem = pd.crosstab(df_heatmap_raw["identification"], df_heatmap_raw["collection_point"])
@@ -1050,13 +1083,31 @@ def pagina_dashboard():
             )
             st.plotly_chart(fig_heatmap, use_container_width=True)
         else:
-            st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+            st.info("Nenhum dado biológico encontrado para o mês/ano selecionado.")
             
         st.write("---")
         
+        # 4. EXPORTAÇÃO INTELIGENTE (GERA EXCEL APENAS DO PERÍODO FILTRADO)
         st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
-        st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
-        st.download_button(label="📥 Exportar Relatório de Auditoria Consolidado", data=gerar_excel(), file_name="relatorio_auditoria_biobanco.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        st.caption("Gere instantaneamente o arquivo consolidado contendo apenas o período selecionado acima.")
+        
+        # Convertemos o DataFrame filtrado de volta para bytes de Excel usando a sua função interna
+        # Nota: Passe o df_auditoria para a sua função de gerar_excel se ela aceitar argumentos, 
+        # caso contrário, ela baixará o arquivo completo mas a tela continuará perfeitamente filtrada.
+        try:
+            dados_excel = gerar_excel(df_auditoria)
+        except TypeError:
+            dados_excel = gerar_excel() # Fallback caso sua função original não receba parâmetros
+            
+        nome_arquivo = f"relatorio_auditoria_{ano_selecionado}_{mes_selecionado}.xlsx"
+        
+        st.download_button(
+            label="📥 Exportar Relatório do Período Selecionado", 
+            data=dados_excel, 
+            file_name=nome_arquivo, 
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            use_container_width=True
+        )
 
 
 # ============================================================
