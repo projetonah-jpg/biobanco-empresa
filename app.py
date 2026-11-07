@@ -1004,7 +1004,7 @@ def pagina_dashboard():
             texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>'
             st.markdown(texto_html, unsafe_allow_html=True)
             
-              st.write("---")
+        st.write("---")
         
         # 3. MAPA DE CALOR (HEATMAP CROSS-TABLE)
         st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
