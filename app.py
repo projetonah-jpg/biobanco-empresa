@@ -854,7 +854,6 @@ def pagina_dashboard():
             margin-bottom: 30px;
             font-size: 16px;
         }
-        /* Estilização para os cards de Limite de Ação / Status */
         .card-status {
             padding: 20px;
             border-radius: 8px;
@@ -897,7 +896,7 @@ def pagina_dashboard():
         return
 
     # --------------------------------------------------------
-    # CRIAÇÃO DAS ABAS ENRIQUECIDAS
+    # CRIAÇÃO DAS ABAS
     # --------------------------------------------------------
     aba_tendencia, aba_tanques, aba_auditoria = st.tabs([
         "📊 Relatório de Tendência", 
@@ -906,7 +905,7 @@ def pagina_dashboard():
     ])
 
     # ========================================================
-    # ABA 1: RELATÓRIO DE TENDÊNCIA PADRÃO
+    # ABA 1: RELATÓRIO DE TENDÊNCIA
     # ========================================================
     with aba_tendencia:
         df_identificados = df[df["identification"].str.strip() != ""].copy()
@@ -982,12 +981,11 @@ def pagina_dashboard():
         st.dataframe(df_filtrado[["code", "origin", "area", "collection_point", "identification", "resultado_final", "data"]], use_container_width=True, hide_index=True)
 
     # ========================================================
-    # ABA 3: NOVA ABA AVANÇADA (SISTEMA DE ALERTA, HEATMAP E PDF)
+    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA
     # ========================================================
     with aba_auditoria:
         st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
         
-        # 1. SISTEMA DE ALERTA DINÂMICO (LIMITE DE AÇÃO)
         nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
         
         card_1, card_2 = st.columns(2)
@@ -999,79 +997,29 @@ def pagina_dashboard():
             else:
                 st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
         
-        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA
         with card_2:
             total_avaliadas = len(df)
             conformes = (df["resultado_final"] == "Conforme").sum()
             taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
-            
-            st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
-            
-        st.write("---")
-   :normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
-     
-    # ========================================================
-    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (SEM DUPLICAÇÃO)
-    # ========================================================
-    with aba_auditoria:
-        # 1. SISTEMA DE ALERTA DINÂMICO (LIMITE DE AÇÃO)
-        nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
-        
-        card_1, card_2 = st.columns(2)
-        with card_1:
-            if nao_conformes_totais <= 2:
-                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
-            elif nao_conformes_totais <= 4:
-                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios. Revisar desinfecção.</span></div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
-        
-        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA
-        with card_2:
-            total_avaliadas = len(df)
-            conformes = (df["resultado_final"] == "Conforme").sum()
-            taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
-            
-            st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
+            texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>'
+            st.markdown(texto_html, unsafe_allow_html=True)
             
         st.write("---")
         
-        # 3. MAPA DE CALOR (HEATMAP CROSS-TABLE)
         st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
         df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
         
-        if not df_heatmap_raw.empty:
-            matriz_contagem = pd.crosstab(df_heatmap_raw["collection_point"], df_heatmap_raw["identification"])
-            
-            fig_heatmap = px.imshow(
-                matriz_contagem,
-                text_auto=True,
-                labels=dict(x="Microrganismo Isolado", y="Ponto de Coleta", color="Ocorrências"),
-                color_continuous_scale="Tealrose"
-            )
-            fig_heatmap.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#333333"),
-                title_font=dict(size=14, color="#16857a")
-            )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
-        else:
-            st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
-            
-        st.write("---")
-        
-        # 4. EXPORTAÇÃO RÁPIDA DE AUDITORIA (CONSOLIDADA EM EXCEL)
-        st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
-        st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
-        
-        st.download_button(
-            label="📥 Exportar Relatório de Auditoria Consolidado",
-            data=gerar_excel(),
-            file_name="relatorio_auditoria_biobanco.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
+if not df_heatmap_raw.empty:
+matriz_contagem = pd.crosstab(df_heatmap_raw["collection_point"], df_heatmap_raw["identification"])
+fig_heatmap = px.imshow(matriz_contagem, text_auto=True, labels=dict(x="Microrganismo Isolado", y="Ponto de Coleta", color="Ocorrências"), color_continuous_scale="Tealrose")
+fig_heatmap.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"))
+st.plotly_chart(fig_heatmap, use_container_width=True)
+else:
+st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+st.write("---")
+st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
+st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
+st.download_button(label="📥 Exportar Relatório de Auditoria Consolidado", data=gerar_excel(), file_name="relatorio_auditoria_biobanco.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
 
 # ============================================================
