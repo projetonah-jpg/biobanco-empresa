@@ -833,9 +833,53 @@ def campo_selecao(
 # ============================================================
 
 def pagina_dashboard():
-    st.title("🧫 Dashboard de Monitoramento Microbiológico")
+    # --------------------------------------------------------
+    # ESTILIZAÇÃO CUSTOMIZADA MÁXIMA (FUNDO E TEXTOS IDÊNTICOS)
+    # --------------------------------------------------------
+    st.markdown(
+        """
+        <style>
+        /* Fundo principal da página e cabeçalhos */
+        .stApp, [data-testid="stHeader"], .main {
+            background-color: #8C5B5E !important;
+        }
+        /* Cor de texto creme/ouro velho para simular a foto */
+        h1, h2, h3, p, label, span, th, td, .stMarkdown {
+            color: #E2C9B6 !important;
+            font-family: 'sans-serif', Arial;
+        }
+        /* Linhas divisórias discretas */
+        hr {
+            border-color: rgba(226, 201, 182, 0.2) !important;
+        }
+        /* Customização da Tabela Superior estilo Relatório Clássico */
+        .tabela-relatorio {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .tabela-relatorio th {
+            border-bottom: 2px solid #E2C9B6;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .tabela-relatorio td {
+            border-bottom: 1px solid rgba(226, 201, 182, 0.3);
+            padding: 12px 10px;
+            text-align: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # 1. Unificamos os dados para cruzar os locais de coleta com as identificações reais
+    # Cabeçalho Principal idêntico ao topo da imagem
+    st.markdown("<h1 style='text-align: center; letter-spacing: 2px; margin-bottom: 0px;'>RELATÓRIO DE TENDÊNCIA</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #C5A38F !important; letter-spacing: 1px; margin-top: 0px; margin-bottom: 40px;'>IDENTIFICAÇÃO DOS MICRO-ORGANISMOS</h4>", unsafe_allow_html=True)
+
+    # 1. Busca e Unificação dos Dados
     df_completo = consultar(
         """
         SELECT
@@ -844,7 +888,8 @@ def pagina_dashboard():
             a.frequencia,
             a.resultado_final,
             a.data,
-            i.identification
+            i.identification,
+            i.gram_stain
         FROM amostras a
         LEFT JOIN identificacoes i ON i.code = a.code
         """
@@ -853,101 +898,153 @@ def pagina_dashboard():
     df = pd.DataFrame(df_completo)
 
     if df.empty:
-        st.info("Nenhuma amostra cadastrada.")
+        st.info("Nenhuma amostra cadastrada no banco de dados.")
         return
 
-    # Mapeamento dos KPIs principais
-    total_amostras = len(df)
-    coletas_pendentes = df["resultado_final"].fillna("").str.strip().eq("").sum()
-    frequencias_mensais = (df["frequencia"] == "Mensal").sum()
-    nao_conformes = (df["resultado_final"] == "Não Conforme").sum()
-
-    coluna1, coluna2, coluna3, coluna4 = st.columns(4)
-    coluna1.metric("Total de amostras", total_amostras)
-    coluna2.metric("Coletas pendentes", int(coletas_pendentes))
-    coluna3.metric("Frequências mensais", int(frequencias_mensais))
-    coluna4.metric("Não conformes", int(nao_conformes))
-
-    st.divider()
+    # --------------------------------------------------------
+    # PARTE SUPERIOR: TABELA DE METADADOS DOS MICRORGANISMOS
+    # --------------------------------------------------------
+    df_identificados = df[df["identification"].str.strip() != ""].copy()
     
-    # NOVOS GRÁFICOS INSPIRADOS NO SEU RELATÓRIO DE TENDÊNCIA
+    if not df_identificados.empty:
+        total_identificados = len(df_identificados)
+        
+        # Agrupamos e calculamos as frequências percentuais
+        resumo_tabela = df_identificados["identification"].value_counts().reset_index()
+        resumo_tabela.columns = ["Microrganismo", "Contagem"]
+        resumo_tabela["Frequência"] = (resumo_tabela["Contagem"] / total_identificados * 100).round(1).astype(str) + "%"
+        
+        # Mapeamento dinâmico de Ecologia e Patogenicidade com base na imagem do relatório
+        linhas_html = ""
+        for _, linha in resumo_tabela.iterrows():
+            micro = linha["Microrganismo"]
+            freq = linha["Frequência"]
+            
+            # Condicionais para puxar metadados automáticos iguais aos da imagem padrão
+            if "Staphylococcus" in micro or "epidermidis" in micro.lower() or "hominis" in micro.lower():
+                gram = "C+"
+                esporulado = "Não"
+                ecologia = "Microbiota normal da pele e mucosas"
+                patogenicidade = "Não-patogênico"
+            elif "Bacillus" in micro:
+                gram = "B+"
+                esporulado = "Sim"
+                ecologia = "Comumente encontrado em solo"
+                patogenicidade = "Patogenicidade variada"
+            elif "Micrococcus" in micro or "luteus" in micro.lower():
+                gram = "C+"
+                esporulado = "Não"
+                ecologia = "Comumente encontrada em ar, solo e pele humana"
+                patogenicidade = "Não-patogênico"
+            else:
+                # Fallback genérico caso seja outro nome (como o padrão "Fungo")
+                gram = "N/A"
+                esporulado = "Não"
+                ecologia = "Ambiente geral / Dispersão aérea"
+                patogenicidade = "Variada"
+
+            linhas_html += f"""
+            <tr>
+                <td><i>{micro}</i></td>
+                <td>{freq}</td>
+                <td>{gram}</td>
+                <td>{esporulado}</td>
+                <td>{ecologia}</td>
+                <td>{patogenicidade}</td>
+            </tr>
+            """
+
+        # Renderização da tabela idêntica à da foto
+        tabela_completa_html = f"""
+        <table class="tabela-relatorio">
+            <thead>
+                <tr>
+                    <th>Microrganismo</th>
+                    <th>Frequência</th>
+                    <th>Gram</th>
+                    <th>Esporulado</th>
+                    <th>Ecologia</th>
+                    <th>Patogenicidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {linhas_html}
+            </tbody>
+        </table>
+        """
+        st.markdown(tabela_completa_html, unsafe_allow_html=True)
+    else:
+        st.warning("Preencha dados na aba 'Identificação' para construir a tabela de tendências.")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --------------------------------------------------------
+    # PARTE INFERIOR: GRÁFICOS LADO A LADO
+    # --------------------------------------------------------
     grafico1, grafico2 = st.columns(2)
 
     with grafico1:
-        # Gráfico 1: Pizza/Rosca - Distribuição dos Micro-organismos Isolados
-        # Filtramos apenas as amostras que possuem uma identificação preenchida
-        df_identificados = df[df["identification"].str.strip() != ""].copy()
-        
+        # Gráfico Esquerdo: Distribuição dos micro-organismos (Gráfico Circular)
         if not df_identificados.empty:
-            contagem_micro = (
-                df_identificados["identification"]
-                .value_counts()
-                .reset_index(name="Frequência")
-            )
+            contagem_micro = df_identificados["identification"].value_counts().reset_index()
+            contagem_micro.columns = ["identification", "Frequência"]
             
             figura_pizza = px.pie(
                 contagem_micro,
                 names="identification",
                 values="Frequência",
                 hole=0.4,
-                title="<b>Distribuição dos Micro-organismos Isolados</b>",
-                color_discrete_sequence=px.colors.qualitative.Pastel
+                title="Distribuição dos micro-organismos",
+                color_discrete_sequence=["#D7E5D8", "#E6DBCF", "#C9D6CE", "#E5CDBC"]
             )
-            figura_pizza.update_layout(legend_title_text="Microrganismo")
+            
+            figura_pizza.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#E2C9B6"),
+                title_font=dict(size=15, color="#E2C9B6"),
+                showlegend=True,
+                legend=dict(font=dict(color="#E2C9B6"), orientation="h", y=-0.1)
+            )
             st.plotly_chart(figura_pizza, use_container_width=True)
-        else:
-            st.info("Ainda não há microrganismos identificados para exibir no gráfico de distribuição.")
 
     with grafico2:
-        # Gráfico 2: Barras Verticais - Frequência por Local Isolado (Pontos de Coleta)
-        # Filtramos locais preenchidos para manter o gráfico limpo
+        # Gráfico Direito: Frequência dos locais isolados (Colunas Verticais)
         df_pontos = df[df["collection_point"].str.strip() != ""].copy()
         
         if not df_pontos.empty:
-            contagem_pontos = (
-                df_pontos["collection_point"]
-                .value_counts()
-                .reset_index(name="Quantidade")
-            )
+            contagem_pontos = df_pontos["collection_point"].value_counts().reset_index()
+            contagem_pontos.columns = ["collection_point", "Quantidade"]
             
             figura_barras = px.bar(
                 contagem_pontos,
                 x="collection_point",
                 y="Quantidade",
                 text_auto=True,
-                title="<b>Frequência dos Locais Isolados</b>",
-                color_discrete_sequence=["#16857a"] # Cor verde correspondente à identidade visual do seu app
+                title="Frequência dos locais isolados",
+                color_discrete_sequence=["#C3DBC5"] # Verde-oliva pastel opaco da imagem original
             )
+            
             figura_barras.update_layout(
-                xaxis_title="Ponto de Coleta / Local",
-                yaxis_title="Ocorrências"
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#E2C9B6"),
+                title_font=dict(size=15, color="#E2C9B6"),
+                xaxis=dict(
+                    title="", 
+                    gridcolor="rgba(226,201,182,0.1)",
+                    color="#E2C9B6"
+                ),
+                yaxis=dict(
+                    title="", 
+                    gridcolor="rgba(226,201,182,0.1)",
+                    color="#E2C9B6"
+                )
             )
             st.plotly_chart(figura_barras, use_container_width=True)
-        else:
-            st.info("Ainda não há pontos de coleta registrados para exibir o gráfico de frequência ambiental.")
 
-    # Linha de tendência temporal histórica
-    tendencia = df.copy()
-    tendencia["data"] = pd.to_datetime(tendencia["data"], errors="coerce")
-    tendencia = tendencia.dropna(subset=["data"])
-
-    if not tendencia.empty:
-        tendencia["Mês"] = tendencia["data"].dt.to_period("M").astype(str)
-        resumo_mensal = tendencia.groupby("Mês").size().reset_index(name="Amostras")
-
-        figura_tendencia = px.line(
-            resumo_mensal,
-            x="Mês",
-            y="Amostras",
-            markers=True,
-            title="Amostras Monitoradas por Mês",
-        )
-        st.plotly_chart(figura_tendencia, use_container_width=True)
-
-    st.subheader("Registros")
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-
+    # Rodapé simples ocultando a tabela crua padrão para manter o design focado apenas no relatório
+    st.markdown("<br><hr style='opacity:0.1;'>", unsafe_allow_html=True)
 
 
 # ============================================================
