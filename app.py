@@ -833,144 +833,120 @@ def campo_selecao(
 # ============================================================
 
 def pagina_dashboard():
-    st.title("Dashboard")
-    df_amostras = obter_amostras()
-    df_identificacoes = obter_identificacoes()
+    st.title("🧫 Dashboard de Monitoramento Microbiológico")
 
-    if df_amostras.empty:
-        st.info("Sem dados cadastrados.")
+    # 1. Unificamos os dados para cruzar os locais de coleta com as identificações reais
+    df_completo = consultar(
+        """
+        SELECT
+            a.code,
+            a.collection_point,
+            a.frequencia,
+            a.resultado_final,
+            a.data,
+            i.identification
+        FROM amostras a
+        LEFT JOIN identificacoes i ON i.code = a.code
+        """
+    )
+    
+    df = pd.DataFrame(df_completo)
+
+    if df.empty:
+        st.info("Nenhuma amostra cadastrada.")
         return
 
-    # Cálculos Matemáticos baseados no Banco de Dados
-    total_amostras = len(df_amostras)
+    # Mapeamento dos KPIs principais
+    total_amostras = len(df)
+    coletas_pendentes = df["resultado_final"].fillna("").str.strip().eq("").sum()
+    frequencias_mensais = (df["frequencia"] == "Mensal").sum()
+    nao_conformes = (df["resultado_final"] == "Não Conforme").sum()
+
+    coluna1, coluna2, coluna3, coluna4 = st.columns(4)
+    coluna1.metric("Total de amostras", total_amostras)
+    coluna2.metric("Coletas pendentes", int(coletas_pendentes))
+    coluna3.metric("Frequências mensais", int(frequencias_mensais))
+    coluna4.metric("Não conformes", int(nao_conformes))
+
+    st.divider()
     
-    codigos_identificados = []
-    if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-        df_validas = df_identificacoes[df_identificacoes["identification"].fillna("").str.strip().ne("")]
-        codigos_identificados = df_validas["code"].tolist()
+    # NOVOS GRÁFICOS INSPIRADOS NO SEU RELATÓRIO DE TENDÊNCIA
+    grafico1, grafico2 = st.columns(2)
+
+    with grafico1:
+        # Gráfico 1: Pizza/Rosca - Distribuição dos Micro-organismos Isolados
+        # Filtramos apenas as amostras que possuem uma identificação preenchida
+        df_identificados = df[df["identification"].str.strip() != ""].copy()
         
-    total_identificadas = len(codigos_identificados)
-    total_nao_identificadas = max(0, total_amostras - total_identificadas)
-
-    pct_identificadas = (total_identificadas / total_amostras * 100) if total_amostras > 0 else 0
-    pct_nao_identificadas = (total_nao_identificadas / total_amostras * 100) if total_amostras > 0 else 0
-
-    if "filtro_clique" not in st.session_state:
-        st.session_state.filtro_clique = "Todos"
-
-    if st.session_state.filtro_clique != "Todos":
-        if st.button("🔄 Mostrar Todos os Gráficos / Resetar Filtro"):
-            st.session_state.filtro_clique = "Todos"
-            st.rerun()
-
-    # Módulos superiores de métricas (Cards com bordas roxas)
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric(label="Total de amostras", value=f"{total_amostras} un")
-        if st.button("👁️ Ver todas", key="btn_todas", use_container_width=True):
-            st.session_state.filtro_clique = "Todos"
-            st.rerun()
+        if not df_identificados.empty:
+            contagem_micro = (
+                df_identificados["identification"]
+                .value_counts()
+                .reset_index(name="Frequência")
+            )
             
-    with col2:
-        st.metric(label="Amostras Identificadas", value=f"{total_identificadas} un", delta=f"{pct_identificadas:.1f}% do total", delta_color="off")
-        if st.button("🔍 Ver identificadas", key="btn_iden", use_container_width=True):
-            st.session_state.filtro_clique = "Identificadas"
-            st.rerun()
-            
-    with col3:
-        st.metric(label="Aguardando Identificação", value=f"{total_nao_identificadas} un", delta=f"{pct_nao_identificadas:.1f}% do total", delta_color="off")
-        if st.button("🔎 Ver não identificadas", key="btn_nao_iden", use_container_width=True):
-            st.session_state.filtro_clique = "Nao_Identificadas"
-            st.rerun()
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    config_colunas = {"code": "CODE", "ponto": "OBSERVATION", "origin": "ORIGIN", "area": "AREA", "sample": "SAMPLE", "collection_point": "COLLECTION POINT", "sampling": "SAMPLING", "method": "METHOD", "frequencia": "FREQUENCY", "analista": "ANALYST", "data": "DATA", "resultado_final": "RESULT"}
-
-    if st.session_state.filtro_clique == "Identificadas":
-        st.subheader("📋 Amostras Identificadas")
-        st.dataframe(df_amostras[df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
-        
-    elif st.session_state.filtro_clique == "Nao_Identificadas":
-        st.subheader("📋 Amostras Aguardando Identificação")
-        st.dataframe(df_amostras[~df_amostras["code"].isin(codigos_identificados)], use_container_width=True, hide_index=True, column_config=config_colunas)
-        
-    else:
-        # 💜 Gráfico de barras horizontal ocupando a largura total na cor roxa corporativa
-        if not df_identificacoes.empty and "identification" in df_identificacoes.columns:
-            resumo_micro = df_identificacoes["identification"].replace("", pd.NA).dropna().value_counts().rename_axis("IDENTIFICAÇÃO").reset_index(name="OCORRÊNCIAS")
-            if not resumo_micro.empty:
-                grafico_barras = px.bar(resumo_micro, x="OCORRÊNCIAS", y="IDENTIFICAÇÃO", orientation="h", text_auto=True, title="Ocorrências por identificação", color_discrete_sequence=["#6c5b9b"])
-                st.plotly_chart(grafico_barras, use_container_width=True)
-            else:
-                st.info("Nenhum microrganismo identificado ainda.")
+            figura_pizza = px.pie(
+                contagem_micro,
+                names="identification",
+                values="Frequência",
+                hole=0.4,
+                title="<b>Distribuição dos Micro-organismos Isolados</b>",
+                color_discrete_sequence=px.colors.qualitative.Pastel
+            )
+            figura_pizza.update_layout(legend_title_text="Microrganismo")
+            st.plotly_chart(figura_pizza, use_container_width=True)
         else:
-            st.info("Aguardando registros de identificação.")
+            st.info("Ainda não há microrganismos identificados para exibir no gráfico de distribuição.")
 
-        # 📈 SEÇÃO DO GRÁFICO DE LINHAS INTERATIVO POR LISTAS SUSPENSAS
-        st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.subheader("📈 Análise de Tendência de Contaminação por Período")
+    with grafico2:
+        # Gráfico 2: Barras Verticais - Frequência por Local Isolado (Pontos de Coleta)
+        # Filtramos locais preenchidos para manter o gráfico limpo
+        df_pontos = df[df["collection_point"].str.strip() != ""].copy()
         
-        df_linha_dados = df_amostras.merge(df_identificacoes[["code", "identification"]], on="code", how="inner")
-        df_linha_dados = df_linha_dados[df_linha_dados["identification"].fillna("").str.strip() != ""]
-        
-        if df_linha_dados.empty:
-            st.info("Aguardando dados com identificações completas para renderizar o gráfico de linhas.")
+        if not df_pontos.empty:
+            contagem_pontos = (
+                df_pontos["collection_point"]
+                .value_counts()
+                .reset_index(name="Quantidade")
+            )
+            
+            figura_barras = px.bar(
+                contagem_pontos,
+                x="collection_point",
+                y="Quantidade",
+                text_auto=True,
+                title="<b>Frequência dos Locais Isolados</b>",
+                color_discrete_sequence=["#16857a"] # Cor verde correspondente à identidade visual do seu app
+            )
+            figura_barras.update_layout(
+                xaxis_title="Ponto de Coleta / Local",
+                yaxis_title="Ocorrências"
+            )
+            st.plotly_chart(figura_barras, use_container_width=True)
         else:
-            df_linha_dados["datetime"] = pd.to_datetime(df_linha_dados["data"], errors="coerce")
-            df_linha_dados = df_linha_dados.dropna(subset=["datetime"]).sort_values(by="datetime")
-            
-            nomes_meses = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
-            df_linha_dados["Mês_Num"] = df_linha_dados["datetime"].dt.month
-            df_linha_dados["Mês"] = df_linha_dados["Mês_Num"].map(nomes_meses)
-            
-            # Filtros dinâmicos compactados em listas suspensas (Selectbox)
-            filt1, filt2 = st.columns(2)
-            
-            with filt1:
-                opcoes_area = ["Todas as Áreas"] + sorted(df_linha_dados["area"].unique().tolist())
-                area_sel = st.selectbox("🏢 Filtrar por Área:", opcoes_area)
-                
-            with filt2:
-                opcoes_ponto = ["Todos os Pontos"] + sorted(df_linha_dados["collection_point"].unique().tolist())
-                ponto_sel = st.selectbox("📍 Filtrar por Ponto de Coleta:", opcoes_ponto)
-            
-            if area_sel != "Todas as Áreas":
-                df_linha_dados = df_linha_dados[df_linha_dados["area"] == area_sel]
-            if ponto_sel != "Todos os Pontos":
-                df_linha_dados = df_linha_dados[df_linha_dados["collection_point"] == ponto_sel]
-                
-            df_agrupado_linha = df_linha_dados.groupby(["Mês_Num", "Mês", "identification"]).size().reset_index(name="Quantidade").sort_values(by="Mês_Num")
-            
-            if df_agrupado_linha.empty:
-                st.warning("Nenhum registro encontrado para essa combinação de filtros.")
-            else:
-                fig_linha_dinamica = px.line(
-                    df_agrupado_linha,
-                    x="Mês",
-                    y="Quantidade",
-                    color="identification",
-                    markers=True,
-                    title=f"Evolução Microbiológica — {area_sel} | {ponto_sel}",
-                    labels={"identification": "Gênero Isolado", "Quantidade": "Contagem de Colônias"},
-                    color_discrete_sequence=px.colors.qualitative.Safe
-                )
-                
-                # Calibração dos eixos para travar em números inteiros (1, 2, 3...)
-                fig_linha_dinamica.update_layout(
-                    plot_bgcolor="#f8fafc",
-                    paper_bgcolor="white",
-                    yaxis=dict(
-                        tickformat="d",
-                        dtick=1,
-                        autorange=True
-                    ),
-                    xaxis=dict(
-                        categoryorder='array', 
-                        categoryarray=list(nomes_meses.values())
-                    )
-                )
-                st.plotly_chart(fig_linha_dinamica, use_container_width=True)
+            st.info("Ainda não há pontos de coleta registrados para exibir o gráfico de frequência ambiental.")
+
+    # Linha de tendência temporal histórica
+    tendencia = df.copy()
+    tendencia["data"] = pd.to_datetime(tendencia["data"], errors="coerce")
+    tendencia = tendencia.dropna(subset=["data"])
+
+    if not tendencia.empty:
+        tendencia["Mês"] = tendencia["data"].dt.to_period("M").astype(str)
+        resumo_mensal = tendencia.groupby("Mês").size().reset_index(name="Amostras")
+
+        figura_tendencia = px.line(
+            resumo_mensal,
+            x="Mês",
+            y="Amostras",
+            markers=True,
+            title="Amostras Monitoradas por Mês",
+        )
+        st.plotly_chart(figura_tendencia, use_container_width=True)
+
+    st.subheader("Registros")
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
 
 
 
