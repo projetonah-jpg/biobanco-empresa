@@ -834,52 +834,63 @@ def campo_selecao(
 
 def pagina_dashboard():
     # --------------------------------------------------------
-    # ESTILIZAÇÃO CUSTOMIZADA MÁXIMA (FUNDO E TEXTOS IDÊNTICOS)
+    # ESTILIZAÇÃO COMPATÍVEL COM O PADRÃO DO SEU APLICATIVO
     # --------------------------------------------------------
     st.markdown(
         """
         <style>
-        /* Fundo principal da página e cabeçalhos */
-        .stApp, [data-testid="stHeader"], .main {
-            background-color: #8C5B5E !important;
+        /* Títulos principais combinando com o tema do Biobank */
+        .titulo-relatorio {
+            text-align: center; 
+            letter-spacing: 2px; 
+            margin-bottom: 5px;
+            color: #16857a;
+            font-weight: bold;
         }
-        /* Cor de texto creme/ouro velho para simular a foto */
-        h1, h2, h3, p, label, span, th, td, .stMarkdown {
-            color: #E2C9B6 !important;
-            font-family: 'sans-serif', Arial;
+        .subtitulo-relatorio {
+            text-align: center; 
+            color: #666666; 
+            letter-spacing: 1px; 
+            margin-top: 0px; 
+            margin-bottom: 40px;
+            font-size: 16px;
         }
-        /* Linhas divisórias discretas */
-        hr {
-            border-color: rgba(226, 201, 182, 0.2) !important;
-        }
-        /* Customização da Tabela Superior estilo Relatório Clássico */
+        /* Customização da Tabela Superior integrada ao layout limpo */
         .tabela-relatorio {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
             font-size: 14px;
+            background-color: #ffffff;
         }
         .tabela-relatorio th {
-            border-bottom: 2px solid #E2C9B6;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .tabela-relatorio td {
-            border-bottom: 1px solid rgba(226, 201, 182, 0.3);
+            border-bottom: 2px solid #16857a;
+            border-top: 1px solid #e0e0e0;
             padding: 12px 10px;
             text-align: center;
+            font-weight: bold;
+            color: #16857a;
+            background-color: #f2f8f7;
+        }
+        .tabela-relatorio td {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 10px;
+            text-align: center;
+            color: #333333;
+        }
+        .tabela-relatorio tr:hover {
+            background-color: #f9f9f9;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # Cabeçalho Principal idêntico ao topo da imagem
-    st.markdown("<h1 style='text-align: center; letter-spacing: 2px; margin-bottom: 0px;'>RELATÓRIO DE TENDÊNCIA</h1>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center; color: #C5A38F !important; letter-spacing: 1px; margin-top: 0px; margin-bottom: 40px;'>IDENTIFICAÇÃO DOS MICRO-ORGANISMOS</h4>", unsafe_allow_html=True)
+    # Títulos integrados ao padrão visual do app
+    st.markdown("<h1 class='titulo-relatorio'>RELATÓRIO DE TENDÊNCIA</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo-relatorio'>IDENTIFICAÇÃO DOS MICRO-ORGANISMOS</p>", unsafe_allow_html=True)
 
-    # 1. Busca e Unificação dos Dados
+    # 1. Busca e Unificação dos Dados no Banco de Dados
     df_completo = consultar(
         """
         SELECT
@@ -902,7 +913,7 @@ def pagina_dashboard():
         return
 
     # --------------------------------------------------------
-    # PARTE SUPERIOR: TABELA DE METADADOS DOS MICRORGANISMOS
+    # PARTE SUPERIOR: TABELA DE TENDÊNCIA CORRIGIDA
     # --------------------------------------------------------
     df_identificados = df[df["identification"].str.strip() != ""].copy()
     
@@ -914,13 +925,12 @@ def pagina_dashboard():
         resumo_tabela.columns = ["Microrganismo", "Contagem"]
         resumo_tabela["Frequência"] = (resumo_tabela["Contagem"] / total_identificados * 100).round(1).astype(str) + "%"
         
-        # Mapeamento dinâmico de Ecologia e Patogenicidade com base na imagem do relatório
         linhas_html = ""
         for _, linha in resumo_tabela.iterrows():
             micro = linha["Microrganismo"]
             freq = linha["Frequência"]
             
-            # Condicionais para puxar metadados automáticos iguais aos da imagem padrão
+            # Mapeamento automático inteligente baseado no nome preenchido
             if "Staphylococcus" in micro or "epidermidis" in micro.lower() or "hominis" in micro.lower():
                 gram = "C+"
                 esporulado = "Não"
@@ -934,10 +944,10 @@ def pagina_dashboard():
             elif "Micrococcus" in micro or "luteus" in micro.lower():
                 gram = "C+"
                 esporulado = "Não"
-                ecologia = "Comumente encontrada em ar, solo e pele humana"
+                ecologia = "Comumente encontrada em ar, solo e pele"
                 patogenicidade = "Não-patogênico"
             else:
-                # Fallback genérico caso seja outro nome (como o padrão "Fungo")
+                # Valores padrão temporários para quando estiver como "Fungo"
                 gram = "N/A"
                 esporulado = "Não"
                 ecologia = "Ambiente geral / Dispersão aérea"
@@ -945,7 +955,7 @@ def pagina_dashboard():
 
             linhas_html += f"""
             <tr>
-                <td><i>{micro}</i></td>
+                <td><b>{micro}</b></td>
                 <td>{freq}</td>
                 <td>{gram}</td>
                 <td>{esporulado}</td>
@@ -954,7 +964,7 @@ def pagina_dashboard():
             </tr>
             """
 
-        # Renderização da tabela idêntica à da foto
+        # Montagem da tabela com as tags HTML perfeitamente fechadas (corrige o erro visual)
         tabela_completa_html = f"""
         <table class="tabela-relatorio">
             <thead>
@@ -979,12 +989,11 @@ def pagina_dashboard():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --------------------------------------------------------
-    # PARTE INFERIOR: GRÁFICOS LADO A LADO
+    # PARTE INFERIOR: GRÁFICOS INTEGRADOS AO TEMA DO APP
     # --------------------------------------------------------
     grafico1, grafico2 = st.columns(2)
 
     with grafico1:
-        # Gráfico Esquerdo: Distribuição dos micro-organismos (Gráfico Circular)
         if not df_identificados.empty:
             contagem_micro = df_identificados["identification"].value_counts().reset_index()
             contagem_micro.columns = ["identification", "Frequência"]
@@ -995,21 +1004,21 @@ def pagina_dashboard():
                 values="Frequência",
                 hole=0.4,
                 title="Distribuição dos micro-organismos",
-                color_discrete_sequence=["#D7E5D8", "#E6DBCF", "#C9D6CE", "#E5CDBC"]
+                # Cores limpas e modernas para o tema claro
+                color_discrete_sequence=px.colors.qualitative.Safe
             )
             
             figura_pizza.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#E2C9B6"),
-                title_font=dict(size=15, color="#E2C9B6"),
+                font=dict(color="#333333"),
+                title_font=dict(size=14, color="#16857a", family="sans-serif"),
                 showlegend=True,
-                legend=dict(font=dict(color="#E2C9B6"), orientation="h", y=-0.1)
+                legend=dict(orientation="h", y=-0.1)
             )
             st.plotly_chart(figura_pizza, use_container_width=True)
 
     with grafico2:
-        # Gráfico Direito: Frequência dos locais isolados (Colunas Verticais)
         df_pontos = df[df["collection_point"].str.strip() != ""].copy()
         
         if not df_pontos.empty:
@@ -1022,30 +1031,20 @@ def pagina_dashboard():
                 y="Quantidade",
                 text_auto=True,
                 title="Frequência dos locais isolados",
-                color_discrete_sequence=["#C3DBC5"] # Verde-oliva pastel opaco da imagem original
+                color_discrete_sequence=["#16857a"] # Verde oficial da identidade do seu app
             )
             
             figura_barras.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#E2C9B6"),
-                title_font=dict(size=15, color="#E2C9B6"),
-                xaxis=dict(
-                    title="", 
-                    gridcolor="rgba(226,201,182,0.1)",
-                    color="#E2C9B6"
-                ),
-                yaxis=dict(
-                    title="", 
-                    gridcolor="rgba(226,201,182,0.1)",
-                    color="#E2C9B6"
-                )
+                font=dict(color="#333333"),
+                title_font=dict(size=14, color="#16857a", family="sans-serif"),
+                xaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)"),
+                yaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)")
             )
             st.plotly_chart(figura_barras, use_container_width=True)
 
-    # Rodapé simples ocultando a tabela crua padrão para manter o design focado apenas no relatório
-    st.markdown("<br><hr style='opacity:0.1;'>", unsafe_allow_html=True)
-
+    st.markdown("<br><hr style='opacity:0.2;'>", unsafe_allow_html=True)
 
 # ============================================================
 # REGISTRO DE AMOSTRAS
