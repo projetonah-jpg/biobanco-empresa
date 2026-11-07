@@ -1008,31 +1008,7 @@ def pagina_dashboard():
             st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
             
         st.write("---")
-         # ========================================================
-    # ABA 3: NOVA ABA AVANÇADA (SISTEMA DE ALERTA, HEATMAP E PDF)
-    # ========================================================
-    with aba_auditoria:
-        st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
-        
-        # 1. SISTEMA DE ALERTA DINÂMICO (LIMITE DE AÇÃO)
-        nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
-        
-        card_1, card_2 = st.columns(2)
-        with card_1:
-            if nao_conformes_totais <= 2:
-                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
-            elif nao_conformes_totais <= 4:
-                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios. Revisar desinfecção.</span></div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
-        
-        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA
-        with card_2:
-            total_avaliadas = len(df)
-            conformes = (df["resultado_final"] == "Conforme").sum()
-            taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
-            
-            st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
+   :normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
      
     # ========================================================
     # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (SEM DUPLICAÇÃO)
