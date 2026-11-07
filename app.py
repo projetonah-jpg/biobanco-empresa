@@ -939,8 +939,29 @@ def pagina_dashboard():
         with g2:
             df_pontos = df[df["collection_point"].str.strip() != ""].copy()
             if not df_pontos.empty:
-                fig_b = px.bar(df_pontos["collection_point"].value_counts().reset_index(), x="collection_point", y="count", text_auto=True, title="Frequência dos locais isolados", color_discrete_sequence=["#16857a"])
-                fig_b.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"))
+                # Contamos as ocorrências e ordenamos do maior para o menor
+                contagem_pontos = df_pontos["collection_point"].value_counts().reset_index()
+                contagem_pontos.columns = ["collection_point", "Quantidade"]
+                contagem_pontos = contagem_pontos.sort_values(by="Quantidade", ascending=True)
+                
+                # Mudamos para orientação="h" (horizontal) para os nomes dos fluxos não ficarem cortados
+                fig_b = px.bar(
+                    contagem_pontos, 
+                    y="collection_point", 
+                    x="Quantidade", 
+                    orientation="h",
+                    text_auto=True, 
+                    title="Frequência dos locais isolados", 
+                    color_discrete_sequence=["#16857a"]
+                )
+                fig_b.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)", 
+                    font=dict(color="#333333"), 
+                    title_font=dict(size=14, color="#16857a"),
+                    xaxis=dict(title="Ocorrências", gridcolor="rgba(0,0,0,0.05)"),
+                    yaxis=dict(title="")
+                )
                 st.plotly_chart(fig_b, use_container_width=True)
 
     # ========================================================
@@ -961,7 +982,7 @@ def pagina_dashboard():
             df_filtrado = df_filtrado[df_filtrado["resultado_final"] == filtro_conformidade]
             
         c1, c2, c3 = st.columns(3)
-        c1.metric("Amostras Avaliadas no Filtro", len(df_filtrado))
+        c1.metric("Amostras Evaluadas no Filtro", len(df_filtrado))
         c2.metric("Pontos Críticos Identificados", df_filtrado["collection_point"].nunique())
         c3.metric("Ocorrências Não Conformes", int((df_filtrado["resultado_final"] == "Não Conforme").sum()))
         
@@ -997,51 +1018,40 @@ def pagina_dashboard():
             else:
                 st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
         
-        with card_2:
-            total_avaliadas = len(df)
-            conformes = (df["resultado_final"] == "Conforme").sum()
-            taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
-            texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>'
-            st.markdown(texto_html, unsafe_allow_html=True)
-            
-        st.write("---")
-        
-                # 3. MAPA DE CALOR INTERATIVO REESTRUTURADO
-        st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
-        df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
-        
-        if not df_heatmap_raw.empty:
-            # Invertemos a tabela cruzada (Microrganismo no Y, Ponto de Coleta no X) para melhor aproveitamento horizontal
-            matriz_contagem = pd.crosstab(df_heatmap_raw["identification"], df_heatmap_raw["collection_point"])
-            
-            fig_heatmap = px.imshow(
-                matriz_contagem,
-                text_auto=True,
-                labels=dict(x="Ponto de Coleta / Local Isolado", y="Microrganismo Identificado", color="Ocorrências"),
-                # Paleta de degradê vermelho/rosa altamente intuitiva para biobancos e laboratórios (YlOrRd ou Reds)
-                color_continuous_scale="Reds"
-            )
-            
-            fig_heatmap.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#333333"),
-                title_font=dict(size=14, color="#16857a"),
-                # Força os blocos a manterem uma proporção quadrada agradável ao olhar
-                yaxis=dict(autorange="reversed"),
-                margin=dict(l=20, r=20, t=30, b=30)
-            )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
-        else:
-            st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+with card_2:
+total_avaliadas = len(df)
+conformes = (df["resultado_final"] == "Conforme").sum()
+taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
+texto_html = f'🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%
+Proporção de pontos validados como livres de contaminação.'
+st.markdown(texto_html, unsafe_allow_html=True)
+st.write("---")
+st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
+df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
+if not df_heatmap_raw.empty:
+matriz_contagem = pd.crosstab(df_heatmap_raw["identification"], df_heatmap_raw["collection_point"])
+fig_heatmap = px.imshow(
+matriz_contagem,
+text_auto=True,
+labels=dict(x="Ponto de Coleta / Local Isolado", y="Microrganismo Identificado", color="Ocorrências"),
+color_continuous_scale="Reds"
+)
+fig_heatmap.update_layout(
+paper_bgcolor="rgba(0,0,0,0)",
+plot_bgcolor="rgba(0,0,0,0)",
+font=dict(color="#333333"),
+title_font=dict(size=14, color="#16857a"),
+yaxis=dict(autorange="reversed"),
+margin=dict(l=20, r=20, t=30, b=30)
+)
+st.plotly_chart(fig_heatmap, use_container_width=True)
+else:
+st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+st.write("---")
+st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
+st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
+st.download_button(label="📥 Exportar Relatório de Auditoria Consolidado", data=gerar_excel(), file_name="relatorio_auditoria_biobanco.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
-            
-        st.write("---")
-        
-        # 4. EXPORTAÇÃO RÁPIDA DE AUDITORIA (CONSOLIDADA EM EXCEL)
-        st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
-        st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
-        st.download_button(label="📥 Exportar Relatório de Auditoria Consolidado", data=gerar_excel(), file_name="relatorio_auditoria_biobanco.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
 # ============================================================
 # REGISTRO DE AMOSTRAS
