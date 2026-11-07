@@ -1006,17 +1006,35 @@ def pagina_dashboard():
             
         st.write("---")
         
-        # 3. MAPA DE CALOR (HEATMAP CROSS-TABLE)
+                # 3. MAPA DE CALOR INTERATIVO REESTRUTURADO
         st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
         df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
         
         if not df_heatmap_raw.empty:
-            matriz_contagem = pd.crosstab(df_heatmap_raw["collection_point"], df_heatmap_raw["identification"])
-            fig_heatmap = px.imshow(matriz_contagem, text_auto=True, labels=dict(x="Microrganismo Isolado", y="Ponto de Coleta", color="Ocorrências"), color_continuous_scale="Tealrose")
-            fig_heatmap.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"), title_font=dict(size=14, color="#16857a"))
+            # Invertemos a tabela cruzada (Microrganismo no Y, Ponto de Coleta no X) para melhor aproveitamento horizontal
+            matriz_contagem = pd.crosstab(df_heatmap_raw["identification"], df_heatmap_raw["collection_point"])
+            
+            fig_heatmap = px.imshow(
+                matriz_contagem,
+                text_auto=True,
+                labels=dict(x="Ponto de Coleta / Local Isolado", y="Microrganismo Identificado", color="Ocorrências"),
+                # Paleta de degradê vermelho/rosa altamente intuitiva para biobancos e laboratórios (YlOrRd ou Reds)
+                color_continuous_scale="Reds"
+            )
+            
+            fig_heatmap.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#333333"),
+                title_font=dict(size=14, color="#16857a"),
+                # Força os blocos a manterem uma proporção quadrada agradável ao olhar
+                yaxis=dict(autorange="reversed"),
+                margin=dict(l=20, r=20, t=30, b=30)
+            )
             st.plotly_chart(fig_heatmap, use_container_width=True)
         else:
             st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+
             
         st.write("---")
         
