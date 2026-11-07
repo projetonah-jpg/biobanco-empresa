@@ -1033,13 +1033,11 @@ def pagina_dashboard():
             taxa_eficiencia = round((conformes / total_avaliadas) * 100, 1) if total_avaliadas > 0 else 100.0
             
             st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
-            
-           # ========================================================
-    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (CORRIGIDA)
+     
+    # ========================================================
+    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (SEM DUPLICAÇÃO)
     # ========================================================
     with aba_auditoria:
-        st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
-        
         # 1. SISTEMA DE ALERTA DINÂMICO (LIMITE DE AÇÃO)
         nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
         
@@ -1098,7 +1096,6 @@ def pagina_dashboard():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
-
 
 
 # ============================================================
