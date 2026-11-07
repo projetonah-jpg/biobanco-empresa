@@ -1562,7 +1562,6 @@ def pagina_armazenamento():
     if modo in ["Editar Registro", "Excluir Registro"] and not dados.empty:
         codigo_selecionado = st.selectbox("Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao")
         
-        # --- CORREÇÃO DA BUSCA SEGURA COM .iloc[0] ---
         busca_filtrada = dados[dados["code"] == codigo_selecionado]
         if not busca_filtrada.empty:
             registro = busca_filtrada.iloc[0].to_dict()
@@ -1633,21 +1632,26 @@ def pagina_armazenamento():
                         c_banco = str(reg_db.get("code")).strip()
                         if b_banco == str(box).strip() and p_banco != "" and p_banco != "None":
                             try:
-                                ocupadas_main[int(float(p_banco))] = c_banco
+                                p_limpo = int(float(p_banco))
+                                ocupadas_main[p_limpo] = c_banco
                             except ValueError:
                                 pass
                 
                 if modo == "Editar Registro" and pos_salva_principal:
-                    try: ocupadas_main.pop(int(float(pos_salva_principal)), None)
-                    except ValueError: pass
+                    try: 
+                        ocupadas_main.pop(int(float(pos_salva_principal)), None)
+                    except (ValueError, TypeError): 
+                        pass
 
                 opcoes_pos_main = [""] + [p for p in range(1, 82) if p not in ocupadas_main]
                 idx_main = 0
                 if pos_salva_principal:
                     try:
                         p_int = int(float(pos_salva_principal))
-                        if p_int in opcoes_pos_main: idx_main = opcoes_pos_main.index(p_int)
-                    except ValueError: pass
+                        if p_int in opcoes_pos_main: 
+                            idx_main = opcoes_pos_main.index(p_int)
+                    except (ValueError, TypeError): 
+                        pass
                 
                 posicao_escolhida_main = st.selectbox(
                     f"Posição na Caixa {box} *",
@@ -1662,7 +1666,12 @@ def pagina_armazenamento():
                     cols_m = st.columns(9)
                     for j in range(9):
                         pos = i + j + 1
-                        if posicao_escolhida_main != "" and pos == int(posicao_escolhida_main):
+                        try:
+                            check_main = posicao_escolhida_main != "" and pos == int(posicao_escolhida_main)
+                        except (ValueError, TypeError):
+                            check_main = False
+
+                        if check_main:
                             cor = "#3498db"
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_main:
@@ -1688,21 +1697,26 @@ def pagina_armazenamento():
                         c_banco = str(reg_db.get("code")).strip()
                         if b_banco == str(backup_box).strip() and p_banco != "" and p_banco != "None":
                             try:
-                                ocupadas_backup[int(float(p_banco))] = c_banco
+                                p_limpo = int(float(p_banco))
+                                ocupadas_backup[p_limpo] = c_banco
                             except ValueError:
                                 pass
 
                 if modo == "Editar Registro" and pos_salva_backup:
-                    try: ocupadas_backup.pop(int(float(pos_salva_backup)), None)
-                    except ValueError: pass
+                    try: 
+                        ocupadas_backup.pop(int(float(pos_salva_backup)), None)
+                    except (ValueError, TypeError): 
+                        pass
 
                 opcoes_pos_backup = [""] + [p for p in range(1, 82) if p not in ocupadas_backup]
                 idx_backup = 0
                 if pos_salva_backup:
                     try:
                         p_int = int(float(pos_salva_backup))
-                        if p_int in opcoes_pos_backup: idx_backup = opcoes_pos_backup.index(p_int)
-                    except ValueError: pass
+                        if p_int in opcoes_pos_backup: 
+                            idx_backup = opcoes_pos_backup.index(p_int)
+                    except (ValueError, TypeError): 
+                        pass
 
                 posicao_escolhida_backup = st.selectbox(
                     f"Posição na Caixa de Backup {backup_box} *",
@@ -1717,47 +1731,46 @@ def pagina_armazenamento():
                     cols_b = st.columns(9)
                     for j in range(9):
                         pos = i + j + 1
-                        if posicao_escolhida_backup != "" and pos == int(posicao_escolhida_backup):
+                        try:
+                            check_backup = posicao_escolhida_backup != "" and pos == int(posicao_escolhida_backup)
+                        except (ValueError, TypeError):
+                            check_backup = False
+
+                        if check_backup:
                             cor = "#3498db"
-                            label_html = f"🔵 {pos:02d}"
-                        elif pos in ocupadas_backup:
-                            cor = "#e74c3c"
-                            label_html = f"🔴 {pos:02d}"
-                        else:
-                            cor = "#2ecc71"
-                            label_html = f"🟢 {pos:02d}"
-                        cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
-
-                st.markdown("---")
-            btn_texto = "Salvar Alterações 💾" if modo == "Editar Registro" else "Gravar Armazenamento 💾"
-            btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
-
-            if btn_enviar:
-                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
-                    st.error("Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar.")
-                else:
-                    dados_formulario = {
-                        "code": code,
-                        "freezer": freezer,
-                        "analyst": analyst,
-                        "storage_date": str(storage_date) if storage_date else "",
-                        "backup_used": backup_used,
-                        "box": box,
-                        "posicao": int(posicao_escolhida_main),
-                        "backup_box": backup_box,
-                        "posicao_backup": int(posicao_escolhida_backup)
-                    }
-                    
-                    if modo == "Novo Registro":
-                        salvar_armazenamento(dados_formulario)
-                        st.toast("Novo armazenamento registrado com sucesso! 🟢")
-                    else:
-                        atualizar_armazenamento(dados_formulario)
-                        st.toast("Registro de armazenamento updated com sucesso! 🔵")
-                    
-                    st.rerun()
-
-
+label_html = f"🔵 {pos:02d}"
+elif pos in ocupadas_backup:
+cor = "#e74c3c"
+label_html = f"🔴 {pos:02d}"
+else:
+cor = "#2ecc71"
+label_html = f"🟢 {pos:02d}"
+cols_b[j].markdown(f"{label_html}", unsafe_allow_html=True)
+st.markdown("---")
+btn_texto = "Salvar Alterações 💾" if modo == "Editar Registro" else "Gravar Armazenamento 💾"
+btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
+if btn_enviar:
+if str(posicao_escolhida_main) == "" or str(posicao_escolhida_backup) == "":
+st.error("❌ Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar.")
+else:
+dados_formulario = {
+"code": code,
+"freezer": freezer,
+"analyst": analyst,
+"storage_date": str(storage_date) if storage_date else "",
+"backup_used": backup_used,
+"box": box,
+"posicao": int(posicao_escolhida_main),
+"backup_box": backup_box,
+"posicao_backup": int(posicao_escolhida_backup)
+}
+if modo == "Novo Registro":
+salvar_armazenamento(dados_formulario)
+st.toast("Novo armazenamento registrado com sucesso! 🟢")
+else:
+atualizar_armazenamento(dados_formulario)
+st.toast("Registro de armazenamento atualizado com sucesso! 🔵")
+st.rerun()
 
 # ============================================================
 # IMPORTAÇÃO DE EXCEL
