@@ -1728,31 +1728,35 @@ def pagina_armazenamento():
                             label_html = f"🟢 {pos:02d}"
                         cols_b[j].markdown(f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>", unsafe_allow_html=True)
 
-            st.markdown("---")
+                st.markdown("---")
             btn_texto = "Salvar Alterações 💾" if modo == "Editar Registro" else "Gravar Armazenamento 💾"
-btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
-if btn_enviar:
-if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
-st.error("Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar.")
-else:
-dados_formulario = {
-"code": code,
-"freezer": freezer,
-"analyst": analyst,
-"storage_date": str(storage_date) if storage_date else "",
-"backup_used": backup_used,
-"box": box,
-"posicao": int(posicao_escolhida_main),
-"backup_box": backup_box,
-"posicao_backup": int(posicao_escolhida_backup)
-}
-if modo == "Novo Registro":
-salvar_armazenamento(dados_formulario)
-st.toast("Novo armazenamento registrado com sucesso! 🟢")
-else:
-atualizar_armazenamento(dados_formulario)
-st.toast("Registro de armazenamento atualizado com sucesso! 🔵")
-st.rerun()
+            btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
+
+            if btn_enviar:
+                if posicao_escolhida_main == "" or posicao_escolhida_backup == "":
+                    st.error("Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar.")
+                else:
+                    dados_formulario = {
+                        "code": code,
+                        "freezer": freezer,
+                        "analyst": analyst,
+                        "storage_date": str(storage_date) if storage_date else "",
+                        "backup_used": backup_used,
+                        "box": box,
+                        "posicao": int(posicao_escolhida_main),
+                        "backup_box": backup_box,
+                        "posicao_backup": int(posicao_escolhida_backup)
+                    }
+                    
+                    if modo == "Novo Registro":
+                        salvar_armazenamento(dados_formulario)
+                        st.toast("Novo armazenamento registrado com sucesso! 🟢")
+                    else:
+                        atualizar_armazenamento(dados_formulario)
+                        st.toast("Registro de armazenamento updated com sucesso! 🔵")
+                    
+                    st.rerun()
+
 
 
 # ============================================================
