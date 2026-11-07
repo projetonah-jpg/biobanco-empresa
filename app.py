@@ -1010,6 +1010,7 @@ def pagina_dashboard():
         nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
         
         card_1, card_2 = st.columns(2)
+       
         with card_1:
             if nao_conformes_totais <= 2:
                 st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
@@ -1018,19 +1019,6 @@ def pagina_dashboard():
             else:
                 st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
         
-    with aba_auditoria:
-        st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
-        
-        nao_conformes_totais = (df["resultado_final"] == "Não Conforme").sum()
-        
-        card_1, card_2 = st.columns(2)
-        with card_1:
-            if nao_conformes_totais <= 2:
-                st.markdown('<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável.</span></div>', unsafe_allow_html=True)
-            elif nao_conformes_totais <= 4:
-                st.markdown('<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios. Revisar desinfecção.</span></div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado. Exige sanitização emergencial!</span></div>', unsafe_allow_html=True)
         
         with card_2:
             total_avaliadas = len(df)
