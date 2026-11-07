@@ -834,12 +834,11 @@ def campo_selecao(
 
 def pagina_dashboard():
     # --------------------------------------------------------
-    # ESTILIZAÇÃO COMPATÍVEL COM O PADRÃO DO SEU APLICATIVO
+    # ESTILIZAÇÃO E TÍTULOS
     # --------------------------------------------------------
     st.markdown(
         """
         <style>
-        /* Títulos principais combinando com o tema do Biobank */
         .titulo-relatorio {
             text-align: center; 
             letter-spacing: 2px; 
@@ -852,45 +851,18 @@ def pagina_dashboard():
             color: #666666; 
             letter-spacing: 1px; 
             margin-top: 0px; 
-            margin-bottom: 40px;
-            font-size: 16px;
-        }
-        /* Customização da Tabela Superior integrada ao layout limpo */
-        .tabela-relatorio {
-            width: 100%;
-            border-collapse: collapse;
             margin-bottom: 30px;
-            font-size: 14px;
-            background-color: #ffffff;
-        }
-        .tabela-relatorio th {
-            border-bottom: 2px solid #16857a;
-            border-top: 1px solid #e0e0e0;
-            padding: 12px 10px;
-            text-align: center;
-            font-weight: bold;
-            color: #16857a;
-            background-color: #f2f8f7;
-        }
-        .tabela-relatorio td {
-            border-bottom: 1px solid #e0e0e0;
-            padding: 12px 10px;
-            text-align: center;
-            color: #333333;
-        }
-        .tabela-relatorio tr:hover {
-            background-color: #f9f9f9;
+            font-size: 16px;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # Títulos integrados ao padrão visual do app
     st.markdown("<h1 class='titulo-relatorio'>RELATÓRIO DE TENDÊNCIA</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitulo-relatorio'>IDENTIFICAÇÃO DOS MICRO-ORGANISMOS</p>", unsafe_allow_html=True)
 
-    # 1. Busca e Unificação dos Dados no Banco de Dados
+    # 1. Busca e Unificação dos Dados
     df_completo = consultar(
         """
         SELECT
@@ -913,83 +885,68 @@ def pagina_dashboard():
         return
 
     # --------------------------------------------------------
-    # PARTE SUPERIOR: TABELA DE TENDÊNCIA CORRIGIDA
+    # PARTE SUPERIOR: TABELA DE TENDÊNCIA (NATIVA E LIMPA)
     # --------------------------------------------------------
     df_identificados = df[df["identification"].str.strip() != ""].copy()
     
     if not df_identificados.empty:
         total_identificados = len(df_identificados)
         
-        # Agrupamos e calculamos as frequências percentuais
-        resumo_tabela = df_identificados["identification"].value_counts().reset_index()
-        resumo_tabela.columns = ["Microrganismo", "Contagem"]
-        resumo_tabela["Frequência"] = (resumo_tabela["Contagem"] / total_identificados * 100).round(1).astype(str) + "%"
+        # Agrupa e calcula frequências
+        resumo = df_identificados["identification"].value_counts().reset_index()
+        resumo.columns = ["Microrganismo", "Contagem"]
+        resumo["Frequência"] = (resumo["Contagem"] / total_identificados * 100).round(1).astype(str) + "%"
         
-        linhas_html = ""
-        for _, linha in resumo_tabela.iterrows():
-            micro = linha["Microrganismo"]
-            freq = linha["Frequência"]
-            
-            # Mapeamento automático inteligente baseado no nome preenchido
+        # Listas para estruturar as novas colunas
+        grams = []
+        esporulados = []
+        ecologias = []
+        patogenicidades = []
+        
+        for micro in resumo["Microrganismo"]:
             if "Staphylococcus" in micro or "epidermidis" in micro.lower() or "hominis" in micro.lower():
-                gram = "C+"
-                esporulado = "Não"
-                ecologia = "Microbiota normal da pele e mucosas"
-                patogenicidade = "Não-patogênico"
+                grams.append("C+")
+                esporulados.append("Não")
+                ecologias.append("Microbiota normal da pele e mucosas")
+                patogenicidades.append("Não-patogênico")
             elif "Bacillus" in micro:
-                gram = "B+"
-                esporulado = "Sim"
-                ecologia = "Comumente encontrado em solo"
-                patogenicidade = "Patogenicidade variada"
+                grams.append("B+")
+                esporulados.append("Sim")
+                ecologias.append("Comumente encontrado em solo")
+                patogenicidades.append("Patogenicidade variada")
             elif "Micrococcus" in micro or "luteus" in micro.lower():
-                gram = "C+"
-                esporulado = "Não"
-                ecologia = "Comumente encontrada em ar, solo e pele"
-                patogenicidade = "Não-patogênico"
+                grams.append("C+")
+                esporulados.append("Não")
+                ecologias.append("Comumente encontrada em ar, solo e pele")
+                patogenicidades.append("Não-patogênico")
             else:
-                # Valores padrão temporários para quando estiver como "Fungo"
-                gram = "N/A"
-                esporulado = "Não"
-                ecologia = "Ambiente geral / Dispersão aérea"
-                patogenicidade = "Variada"
-
-            linhas_html += f"""
-            <tr>
-                <td><b>{micro}</b></td>
-                <td>{freq}</td>
-                <td>{gram}</td>
-                <td>{esporulado}</td>
-                <td>{ecologia}</td>
-                <td>{patogenicidade}</td>
-            </tr>
-            """
-
-        # Montagem da tabela com as tags HTML perfeitamente fechadas (corrige o erro visual)
-        tabela_completa_html = f"""
-        <table class="tabela-relatorio">
-            <thead>
-                <tr>
-                    <th>Microrganismo</th>
-                    <th>Frequência</th>
-                    <th>Gram</th>
-                    <th>Esporulado</th>
-                    <th>Ecologia</th>
-                    <th>Patogenicidade</th>
-                </tr>
-            </thead>
-            <tbody>
-                {linhas_html}
-            </tbody>
-        </table>
-        """
-        st.markdown(tabela_completa_html, unsafe_allow_html=True)
+                grams.append("N/A")
+                esporulados.append("Não")
+                ecologias.append("Ambiente geral / Dispersão aérea")
+                patogenicidades.append("Variada")
+        
+        # Adiciona as colunas calculadas ao DataFrame final de exibição
+        resumo["Gram"] = grams
+        resumo["Esporulado"] = esporulados
+        resumo["Ecologia"] = ecologias
+        resumo["Patogenicidade"] = patogenicidades
+        
+        # Remove a coluna auxiliar de contagem para ficar igual ao relatório original
+        df_tabela_visual = resumo[["Microrganismo", "Frequência", "Gram", "Esporulado", "Ecologia", "Patogenicidade"]]
+        
+        # Renderização bonita e limpa usando o componente oficial do Streamlit
+        st.dataframe(
+            df_tabela_visual,
+            use_container_width=True,
+            hide_index=True
+        )
     else:
         st.warning("Preencha dados na aba 'Identificação' para construir a tabela de tendências.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --------------------------------------------------------
-    # PARTE INFERIOR: GRÁFICOS INTEGRADOS AO TEMA DO APP
+    # PARTE INFERIOR: GRÁFICOS
     # --------------------------------------------------------
     grafico1, grafico2 = st.columns(2)
 
@@ -1004,7 +961,6 @@ def pagina_dashboard():
                 values="Frequência",
                 hole=0.4,
                 title="Distribuição dos micro-organismos",
-                # Cores limpas e modernas para o tema claro
                 color_discrete_sequence=px.colors.qualitative.Safe
             )
             
@@ -1012,7 +968,7 @@ def pagina_dashboard():
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#333333"),
-                title_font=dict(size=14, color="#16857a", family="sans-serif"),
+                title_font=dict(size=14, color="#16857a"),
                 showlegend=True,
                 legend=dict(orientation="h", y=-0.1)
             )
@@ -1031,20 +987,19 @@ def pagina_dashboard():
                 y="Quantidade",
                 text_auto=True,
                 title="Frequência dos locais isolados",
-                color_discrete_sequence=["#16857a"] # Verde oficial da identidade do seu app
+                color_discrete_sequence=["#16857a"]
             )
             
             figura_barras.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#333333"),
-                title_font=dict(size=14, color="#16857a", family="sans-serif"),
+                title_font=dict(size=14, color="#16857a"),
                 xaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)"),
                 yaxis=dict(title="", gridcolor="rgba(0,0,0,0.05)")
             )
             st.plotly_chart(figura_barras, use_container_width=True)
 
-    st.markdown("<br><hr style='opacity:0.2;'>", unsafe_allow_html=True)
 
 # ============================================================
 # REGISTRO DE AMOSTRAS
