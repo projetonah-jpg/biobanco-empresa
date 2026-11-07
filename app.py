@@ -1008,7 +1008,32 @@ def pagina_dashboard():
             st.markdown(f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Proporção de pontos validados como livres de contaminação.</span></div>', unsafe_allow_html=True)
             
         st.write("---")
-        
+        # 3. MAPA DE CALOR (HEATMAP CROSS-TABLE)
+st.markdown("##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico")
+df_heatmap_raw = df[(df["collection_point"].str.strip() != "") & (df["identification"].str.strip() != "")]
+if not df_heatmap_raw.empty:
+matriz_contagem = pd.crosstab(df_heatmap_raw["collection_point"], df_heatmap_raw["identification"])
+fig_heatmap = px.imshow(
+matriz_contagem,
+text_auto=True,
+labels=dict(x="Microrganismo Isolado", y="Ponto de Coleta", color="Ocorrências"),
+color_continuous_scale="Tealrose"
+)
+fig_heatmap.update_layout(title_font=dict(size=14, color="#16857a"))
+st.plotly_chart(fig_heatmap, use_container_width=True)
+else:
+st.info("Dados insuficientes para gerar a matriz de correlação cruzada.")
+st.write("---")
+# 4. EXPORTAÇÃO RÁPIDA DE AUDITORIA (CONSOLIDADA EM EXCEL)
+st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
+st.caption("Gere instantaneamente o arquivo consolidado de dados biológicos para apresentação em inspeções da Vigilância Sanitária.")
+st.download_button(
+label="📥 Exportar Relatório de Auditoria Consolidado",
+data=gerar_excel(),
+file_name="relatorio_auditoria_biobanco.xlsx",
+mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+use_container_width=True,
+)
 
 
 # ============================================================
