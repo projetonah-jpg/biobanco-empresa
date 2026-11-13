@@ -234,9 +234,7 @@ LISTAS = {
         "Autoclave 4710 - Fermentation",
         "Autoclave 4720 - Fermentation",
     ],
-
-    ],
-     "SAMPLE": [
+    "SAMPLE": [
         "Inoculation Room Anteroom",
         "Inoculation Room",
         "Flow Room",
@@ -247,7 +245,6 @@ LISTAS = {
         "Non sterile",
         "Sample",
     ],
-
     "COLLECTION POINT": [
         "Laminar Flow FLA001",
         "Laminar Flow FLA002",
