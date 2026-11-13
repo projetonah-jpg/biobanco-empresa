@@ -1825,6 +1825,108 @@ def pagina_armazenamento():
         if colunas_exibir:
             st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
 
+    
+        # ============================================================
+        # 🏷️ GERADOR DE ETIQUETAS (IMPRESSORA ZEBRA / TÉRMICA)
+        # ============================================================
+        st.divider()
+        st.subheader("🏷️ Impressão de Etiquetas para Criotubos (Zebra)")
+        st.caption("Selecione uma cepa salva para gerar o código ZPL ou imprimir a etiqueta.")
+
+        col_etq1, col_etq2, col_etq3 = st.columns([1.5, 1.5, 1])
+
+        with col_etq1:
+            code_etiqueta = st.selectbox(
+                "Selecione o CODE para etiqueta",
+                dados["code"].tolist(),
+                key="sb_code_etiqueta"
+            )
+
+        with col_etq2:
+            impressora_selecionada = st.selectbox(
+                "Impressora de Destino",
+                [
+                    "Zebra ZD220 (Laboratório Micro)",
+                    "Zebra GK420t (Sala de Preparo)",
+                    "Zebra ZT230 (Biobanco)",
+                    "Impressora Padrão (PDF / Navegador)"
+                ],
+                key="sb_impressora"
+            )
+
+        with col_etq3:
+            tipo_etiqueta = st.selectbox(
+                "Tipo de Tubo",
+                ["Caixa Principal", "Caixa de Backup", "Ambas (2 etiquetas)"],
+                key="sb_tipo_etiqueta"
+            )
+
+        # Busca os dados completos do registro escolhido
+        reg_etq = dados[dados["code"] == code_etiqueta].iloc[0]
+        
+        # Busca o nome do microrganismo identificado na tabela de identificações
+        df_id_etq = obter_identificacoes()
+        nome_microrganismo = "Não identificado"
+        if not df_id_etq.empty and code_etiqueta in df_id_etq["code"].values:
+            ident_val = df_id_etq[df_id_etq["code"] == code_etiqueta]["identification"].iloc[0]
+            if pd.notna(ident_val) and str(ident_val).strip() != "":
+                nome_microrganismo = str(ident_val).strip()
+
+        box_etq = reg_etq.get("box", "-")
+        pos_etq = f"{int(float(reg_etq['posicao'])):02d}" if pd.notna(reg_etq.get("posicao")) and str(reg_etq.get("posicao")).strip() != "" else "-"
+        b_box_etq = reg_etq.get("backup_box", "-")
+        b_pos_etq = f"{int(float(reg_etq['posicao_backup'])):02d}" if pd.notna(reg_etq.get("posicao_backup")) and str(reg_etq.get("posicao_backup")).strip() != "" else "-"
+        data_etq = reg_etq.get("storage_date", "-")
+
+        # Pré-visualização visual da etiqueta na tela
+        st.markdown("##### 👁️ Pré-visualização da Etiqueta")
+        c_prev1, c_prev2 = st.columns(2)
+
+        if tipo_etiqueta in ["Caixa Principal", "Ambas (2 etiquetas)"]:
+            with c_prev1:
+                st.markdown(
+                    f"""
+                    <div style="border: 2px dashed #612147; border-radius: 8px; padding: 12px; background-color: #ffffff; color: #000000; font-family: monospace; max-width: 320px;">
+                        <div style="font-size: 16px; font-weight: bold;">🧬 {code_etiqueta} | PRINCIPAL</div>
+                        <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">{nome_microrganismo[:28]}</div>
+                        <div style="font-size: 12px; margin-top: 4px;">Caixa: <b>{box_etq}</b> | Pos: <b>{pos_etq}</b></div>
+                        <div style="font-size: 11px; color: #444;">Data: {data_etq} | {impressora_selecionada.split(' ')[0]}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+        if tipo_etiqueta in ["Caixa de Backup", "Ambas (2 etiquetas)"]:
+            with c_prev2:
+                st.markdown(
+                    f"""
+                    <div style="border: 2px dashed #1f618d; border-radius: 8px; padding: 12px; background-color: #ffffff; color: #000000; font-family: monospace; max-width: 320px;">
+                        <div style="font-size: 16px; font-weight: bold;">🛡️ {code_etiqueta} | BACKUP</div>
+                        <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">{nome_microrganismo[:28]}</div>
+                        <div style="font-size: 12px; margin-top: 4px;">Caixa: <b>{b_box_etq}</b> | Pos: <b>{b_pos_etq}</b></div>
+                        <div style="font-size: 11px; color: #444;">Data: {data_etq} | {impressora_selecionada.split(' ')[0]}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+        # Geração do código ZPL nativo para impressoras Zebra (etiqueta padrão 30x15mm)
+        zpl_code = f"""^XA
+^FO20,15^A0N,28,28^FD{code_etiqueta} - {box_etq}:{pos_etq}^FS
+^FO20,50^A0N,20,20^FD{nome_microrganismo[:25]}^FS
+^FO20,80^A0N,18,18^FDData: {data_etq}^FS
+^XZ"""
+
+        with st.expander("🖨️ Ver Código ZPL / Enviar para Zebra"):
+            st.info(f"Pronto para enviar para: **{impressora_selecionada}**")
+            st.code(zpl_code, language="text")
+            st.download_button(
+                label="📥 Baixar Arquivo .ZPL para Impressora Zebra",
+                data=zpl_code,
+                file_name=f"etiqueta_{code_etiqueta}.zpl",
+                mime="text/plain"
+            )
+
 
 # ============================================================
 # IMPORTAÇÃO DE EXCEL
