@@ -1827,11 +1827,11 @@ def pagina_armazenamento():
 
     
         # ============================================================
-        # 🏷️ GERADOR DE ETIQUETAS (IMPRESSORA ZEBRA / TÉRMICA)
+        # 🏷️ GERADOR DE ETIQUETAS EM PDF (IMPRESSORA ZEBRA / TÉRMICA)
         # ============================================================
         st.divider()
         st.subheader("🏷️ Impressão de Etiquetas para Criotubos (Zebra)")
-        st.caption("Selecione uma cepa salva para gerar o código ZPL ou imprimir a etiqueta.")
+        st.caption("Selecione uma cepa salva para gerar o PDF pronto para impressão.")
 
         col_etq1, col_etq2, col_etq3 = st.columns([1.5, 1.5, 1])
 
@@ -1861,10 +1861,8 @@ def pagina_armazenamento():
                 key="sb_tipo_etiqueta"
             )
 
-        # Busca os dados completos do registro escolhido
         reg_etq = dados[dados["code"] == code_etiqueta].iloc[0]
         
-        # Busca o nome do microrganismo identificado na tabela de identificações
         df_id_etq = obter_identificacoes()
         nome_microrganismo = "Não identificado"
         if not df_id_etq.empty and code_etiqueta in df_id_etq["code"].values:
@@ -1878,7 +1876,6 @@ def pagina_armazenamento():
         b_pos_etq = f"{int(float(reg_etq['posicao_backup'])):02d}" if pd.notna(reg_etq.get("posicao_backup")) and str(reg_etq.get("posicao_backup")).strip() != "" else "-"
         data_etq = reg_etq.get("storage_date", "-")
 
-        # Pré-visualização visual da etiqueta na tela
         st.markdown("##### 👁️ Pré-visualização da Etiqueta")
         c_prev1, c_prev2 = st.columns(2)
 
@@ -1910,22 +1907,43 @@ def pagina_armazenamento():
                     unsafe_allow_html=True
                 )
 
-        # Geração do código ZPL nativo para impressoras Zebra (etiqueta padrão 30x15mm)
-        zpl_code = f"""^XA
-^FO20,15^A0N,28,28^FD{code_etiqueta} - {box_etq}:{pos_etq}^FS
-^FO20,50^A0N,20,20^FD{nome_microrganismo[:25]}^FS
-^FO20,80^A0N,18,18^FDData: {data_etq}^FS
-^XZ"""
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import mm
+        import io
 
-        with st.expander("🖨️ Ver Código ZPL / Enviar para Zebra"):
-            st.info(f"Pronto para enviar para: **{impressora_selecionada}**")
-            st.code(zpl_code, language="text")
-            st.download_button(
-                label="📥 Baixar Arquivo .ZPL para Impressora Zebra",
-                data=zpl_code,
-                file_name=f"etiqueta_{code_etiqueta}.zpl",
-                mime="text/plain"
-            )
+        buffer_pdf = io.BytesIO()
+        c = canvas.Canvas(buffer_pdf, pagesize=(35*mm, 18*mm))
+
+        if tipo_etiqueta in ["Caixa Principal", "Ambas (2 etiquetas)"]:
+            c.setFont("Helvetica-Bold", 8.5)
+            c.drawString(2*mm, 13*mm, f"{code_etiqueta} | PRIN {box_etq}:{pos_etq}")
+            c.setFont("Helvetica", 6.5)
+            c.drawString(2*mm, 8.5*mm, f"{nome_microrganismo[:24]}")
+            c.setFont("Helvetica", 5.5)
+            c.drawString(2*mm, 4*mm, f"Data: {data_etq}")
+            c.showPage()
+
+        if tipo_etiqueta in ["Caixa de Backup", "Ambas (2 etiquetas)"]:
+            c.setFont("Helvetica-Bold", 8.5)
+            c.drawString(2*mm, 13*mm, f"{code_etiqueta} | BACK {b_box_etq}:{b_pos_etq}")
+            c.setFont("Helvetica", 6.5)
+            c.drawString(2*mm, 8.5*mm, f"{nome_microrganismo[:24]}")
+            c.setFont("Helvetica", 5.5)
+            c.drawString(2*mm, 4*mm, f"Data: {data_etq}")
+            c.showPage()
+
+        c.save()
+        pdf_bytes = buffer_pdf.getvalue()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button(
+            label="🖨️ Baixar Etiqueta em PDF (Pronta para Imprimir)",
+            data=pdf_bytes,
+            file_name=f"etiqueta_{code_etiqueta}.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
 
 
 # ============================================================
