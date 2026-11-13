@@ -677,10 +677,11 @@ def salvar_identificacao(registro):
 
 def excluir_amostra(code):
     with conectar() as conexao:
-        conexao.execute(
-            "DELETE FROM amostras WHERE code = ?",
-            (code,),
-        )
+        conexao.execute("DELETE FROM armazenamento_cepas WHERE code = ?", (code,))
+        conexao.execute("DELETE FROM identificacoes WHERE code = ?", (code,))
+        conexao.execute("DELETE FROM amostras WHERE code = ?", (code,))
+        conexao.commit()
+
 
 
 def substituir_dados(amostras, identificacoes):
@@ -1382,10 +1383,13 @@ def pagina_registro():
     # 🩹 Carrega as informações se for editar ou excluir
     reg = df[df["code"] == st.selectbox("Selecione o CODE", codigos)].iloc[0].fillna("").to_dict() if modo in ["Editar registro", "Excluir registro"] and codigos else {}
     
-    # ============================================================
+      # ============================================================
     # MODO EXCLUIR REGISTRO (TELA EXCLUSIVA)
     # ============================================================
     if modo == "Excluir registro":
+        if "msg_exclusao_ok" in st.session_state:
+            st.success(st.session_state.pop("msg_exclusao_ok"))
+
         if not codigos:
             st.info("Nenhum registro encontrado para excluir.")
             return
@@ -1400,15 +1404,16 @@ def pagina_registro():
             """
         )
         
-        # Botão com confirmação para evitar cliques acidentais
         confirmar_exclusao = st.checkbox(f"Confirmo que quero deletar permanentemente a amostra {reg.get('code')}")
         
         if st.button("❌ Deletar Registro Permanentemente", type="primary", disabled=not confirmar_exclusao, use_container_width=True):
-            excluir_amostra(reg.get("code"))
-            st.success(f"Amostra {reg.get('code')} deletada com sucesso!")
+            code_deletado = reg.get("code")
+            excluir_amostra(code_deletado)
+            st.session_state["msg_exclusao_ok"] = f"Amostra {code_deletado} deletada com sucesso! ✅"
             st.rerun()
             
         st.divider()
+
 
     # ============================================================
     # MODO NOVO / EDITAR REGISTRO
