@@ -278,7 +278,7 @@ LISTAS = {
         "Swab",
         "Passive",
         "MAS-100",
-        "Palating",
+        "Plating",
     ],
     "METHOD": [
         "Petrifilm AC",
@@ -548,7 +548,6 @@ def criar_banco():
         conexao.execute(q3)
         conexao.execute(q4)
 
-        
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
             "ponto": "TEXT", "origin": "TEXT", "area": "TEXT", "sample": "TEXT", 
@@ -582,123 +581,9 @@ def criar_banco():
                 
         inserir_dados_iniciais(conexao)
 
-
-def inserir_dados_iniciais(conexao):
-    for amostra in AMOSTRAS_INICIAIS:
-        valores = [amostra.get(coluna, "") for coluna in COLUNAS_AMOSTRA]
-        conexao.execute(f"INSERT OR IGNORE INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})", valores)
-
-    for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [identificacao.get(coluna, "") for coluna in COLUNAS_IDENTIFICACAO]
-        conexao.execute(f"INSERT OR IGNORE INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})", valores)
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO identificacoes
-            ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES (
-                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
-            )
-            """,
-            valores,
-        )
-
-
-def consultar(sql, parametros=()):
-    with conectar() as conexao:
-        linhas = conexao.execute(
-            sql,
-            parametros,
-        ).fetchall()
-
-        return [dict(linha) for linha in linhas]
-
-
-def salvar_amostra(registro):
-    # Correção: Ajustado para usar exatamente a lista correta mapeada com 'resultado_final'
-    marcadores = ",".join(
-        "?" for _ in COLUNAS_AMOSTRA
-    )
-
-    atualizacoes = ",".join(
-        f"{coluna}=excluded.{coluna}"
-        for coluna in COLUNAS_AMOSTRA
-        if coluna != "code"
-    )
-
-    sql = f"""
-        INSERT INTO amostras
-        ({",".join(COLUNAS_AMOSTRA)})
-        VALUES ({marcadores})
-
-        ON CONFLICT(code) DO UPDATE SET
-            {atualizacoes},
-            atualizado_em=CURRENT_TIMESTAMP
-    """
-
-    valores = [
-        registro.get(coluna, "")
-        for coluna in COLUNAS_AMOSTRA
-    ]
-
-    with conectar() as conexao:
-        conexao.execute(sql, valores)
-
-
-def salvar_identificacao(registro):
-    marcadores = ",".join(
-        "?" for _ in COLUNAS_IDENTIFICACAO
-    )
-
-    atualizacoes = ",".join(
-        f"{coluna}=excluded.{coluna}"
-        for coluna in COLUNAS_IDENTIFICACAO
-        if coluna != "code"
-    )
-
-    sql = f"""
-        INSERT INTO identificacoes
-        ({",".join(COLUNAS_IDENTIFICACAO)})
-        VALUES ({marcadores})
-
-        ON CONFLICT(code) DO UPDATE SET
-            {atualizacoes},
-            atualizado_em=CURRENT_TIMESTAMP
-    """
-
-    valores = [
-        registro.get(coluna, "")
-        for coluna in COLUNAS_IDENTIFICACAO
-    ]
-
-    with conectar() as conexao:
-        conexao.execute(sql, valores)
-
-
-def excluir_amostra(code):
-    with conectar() as conexao:
-        conexao.execute("DELETE FROM armazenamento_cepas WHERE code = ?", (code,))
-        conexao.execute("DELETE FROM identificacoes WHERE code = ?", (code,))
-        conexao.execute("DELETE FROM amostras WHERE code = ?", (code,))
+        # 5. Atualiza automaticamente registros antigos de 'Palating' para 'Plating'
+        conexao.execute("UPDATE amostras SET sampling = 'Plating' WHERE sampling = 'Palating'")
         conexao.commit()
-
-
-
-def substituir_dados(amostras, identificacoes):
-    with conectar() as conexao:
-        conexao.execute(
-            "DELETE FROM identificacoes"
-        )
-
-        conexao.execute(
-            "DELETE FROM amostras"
-        )
-
-    for amostra in amostras:
-        salvar_amostra(amostra)
-
-    for identificacao in identificacoes:
-        salvar_identificacao(identificacao)
 
 
 # ============================================================
