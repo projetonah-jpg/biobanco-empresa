@@ -1876,6 +1876,9 @@ def pagina_armazenamento():
         b_pos_etq = f"{int(float(reg_etq['posicao_backup'])):02d}" if pd.notna(reg_etq.get("posicao_backup")) and str(reg_etq.get("posicao_backup")).strip() != "" else "-"
         data_etq = reg_etq.get("storage_date", "-")
 
+        nome_imp_curto = impressora_selecionada.split(' ')[0] if impressora_selecionada else ""
+        data_formatada = str(data_etq).strip() if pd.notna(data_etq) and str(data_etq).strip() not in ["", "None", "-"] else "—"
+
         st.markdown("##### 👁️ Pré-visualização da Etiqueta")
         c_prev1, c_prev2 = st.columns(2)
 
@@ -1887,7 +1890,7 @@ def pagina_armazenamento():
                         <div style="font-size: 16px; font-weight: bold;">🧬 {code_etiqueta} | PRINCIPAL</div>
                         <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">{nome_microrganismo[:28]}</div>
                         <div style="font-size: 12px; margin-top: 4px;">Caixa: <b>{box_etq}</b> | Pos: <b>{pos_etq}</b></div>
-                        <div style="font-size: 11px; color: #444;">Data: {data_etq} | {impressora_selecionada.split(' ')[0]}</div>
+                        <div style="font-size: 11px; color: #444;">Data: {data_formatada} | {nome_imp_curto}</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -1901,7 +1904,7 @@ def pagina_armazenamento():
                         <div style="font-size: 16px; font-weight: bold;">🛡️ {code_etiqueta} | BACKUP</div>
                         <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">{nome_microrganismo[:28]}</div>
                         <div style="font-size: 12px; margin-top: 4px;">Caixa: <b>{b_box_etq}</b> | Pos: <b>{b_pos_etq}</b></div>
-                        <div style="font-size: 11px; color: #444;">Data: {data_etq} | {impressora_selecionada.split(' ')[0]}</div>
+                        <div style="font-size: 11px; color: #444;">Data: {data_formatada} | {nome_imp_curto}</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -1912,24 +1915,34 @@ def pagina_armazenamento():
         import io
 
         buffer_pdf = io.BytesIO()
-        c = canvas.Canvas(buffer_pdf, pagesize=(35*mm, 18*mm))
+        c = canvas.Canvas(buffer_pdf, pagesize=(35*mm, 20*mm))
 
         if tipo_etiqueta in ["Caixa Principal", "Ambas (2 etiquetas)"]:
-            c.setFont("Helvetica-Bold", 8.5)
-            c.drawString(2*mm, 13*mm, f"{code_etiqueta} | PRIN {box_etq}:{pos_etq}")
-            c.setFont("Helvetica", 6.5)
-            c.drawString(2*mm, 8.5*mm, f"{nome_microrganismo[:24]}")
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(2*mm, 14.5*mm, f"{code_etiqueta} | PRINCIPAL")
+            
+            c.setFont("Helvetica-Bold", 6.5)
+            c.drawString(2*mm, 10.5*mm, f"{nome_microrganismo[:24]}")
+            
+            c.setFont("Helvetica", 6)
+            c.drawString(2*mm, 6.5*mm, f"Caixa: {box_etq} | Pos: {pos_etq}")
+            
             c.setFont("Helvetica", 5.5)
-            c.drawString(2*mm, 4*mm, f"Data: {data_etq}")
+            c.drawString(2*mm, 2.5*mm, f"Data: {data_formatada} | {nome_imp_curto}")
             c.showPage()
 
         if tipo_etiqueta in ["Caixa de Backup", "Ambas (2 etiquetas)"]:
-            c.setFont("Helvetica-Bold", 8.5)
-            c.drawString(2*mm, 13*mm, f"{code_etiqueta} | BACK {b_box_etq}:{b_pos_etq}")
-            c.setFont("Helvetica", 6.5)
-            c.drawString(2*mm, 8.5*mm, f"{nome_microrganismo[:24]}")
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(2*mm, 14.5*mm, f"{code_etiqueta} | BACKUP")
+            
+            c.setFont("Helvetica-Bold", 6.5)
+            c.drawString(2*mm, 10.5*mm, f"{nome_microrganismo[:24]}")
+            
+            c.setFont("Helvetica", 6)
+            c.drawString(2*mm, 6.5*mm, f"Caixa: {b_box_etq} | Pos: {b_pos_etq}")
+            
             c.setFont("Helvetica", 5.5)
-            c.drawString(2*mm, 4*mm, f"Data: {data_etq}")
+            c.drawString(2*mm, 2.5*mm, f"Data: {data_formatada} | {nome_imp_curto}")
             c.showPage()
 
         c.save()
@@ -1944,6 +1957,7 @@ def pagina_armazenamento():
             type="primary",
             use_container_width=True
         )
+
 
 
 # ============================================================
