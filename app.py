@@ -555,13 +555,14 @@ def criar_banco():
         
         # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
-            "ponto": "TEXT", "origin": "TEXT", "area": "TEXT", "sample": "TEXT", 
+            "sample_id": "TEXT", "ponto": "TEXT", "origin": "TEXT", "area": "TEXT", "sample": "TEXT", 
             "collection_point": "TEXT", "sampling": "TEXT", "method": "TEXT", 
             "frequencia": "TEXT", "analista": "TEXT", "data": "TEXT", "resultado_final": "TEXT"
         }
         for col, tipo in colunas_amostras.items():
             try: conexao.execute(f"ALTER TABLE amostras ADD COLUMN {col} {tipo}")
             except sqlite3.OperationalError: pass
+
                 
         # 3. MIGRATION: Garante as colunas na tabela 'identificacoes'
         colunas_identificacoes = {
