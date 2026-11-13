@@ -278,7 +278,7 @@ LISTAS = {
         "Swab",
         "Passive",
         "MAS-100",
-        "Palating",
+        "Plating",
     ],
     "METHOD": [
         "Petrifilm AC",
