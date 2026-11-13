@@ -214,6 +214,7 @@ LISTAS = {
         "Environmental Monitoring",
         "Storage Tanks",
         "Processes",
+        "Others",
     ],
     "AREA": [
         "Laboratory",
