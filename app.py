@@ -276,7 +276,10 @@ LISTAS = {
         "Feedstock",
         "Aseptic Salts",
         "Collection Point",
+        "Antifoam L81 (TERGITOL L-81 BR surfactant)",
+        "Maltose",
     ],
+    
     "SAMPLING": [
         "Swab",
         "Passive",
