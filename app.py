@@ -232,16 +232,18 @@ LISTAS = {
         "SBTA 2",
         "Autoclave",
     ],
-    "SAMPLE": [
+     "SAMPLE": [
         "Inoculation Room Anteroom",
         "Inoculation Room",
         "Flow Room",
-        "Dissolution",
-        "Preparation",
-        "Weighing",
+        "Dissolution of Salts - Tank Area",
+        "Dissolution of Salts - Weighing Area",
         "Team Member",
         "Sterile",
+        "Non sterile",
+        "Sample",
     ],
+
     "COLLECTION POINT": [
         "Laminar Flow FLA001",
         "Laminar Flow FLA002",
@@ -481,6 +483,7 @@ IDENTIFICACOES_INICIAIS = [
 
 COLUNAS_AMOSTRA = [
     "code",
+    "sample_id",
     "ponto",
     "origin",
     "area",
@@ -493,6 +496,7 @@ COLUNAS_AMOSTRA = [
     "data",
     "resultado_final",
 ]
+
 
 
 COLUNAS_IDENTIFICACAO = [
