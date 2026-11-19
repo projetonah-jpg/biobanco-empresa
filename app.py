@@ -1825,7 +1825,6 @@ def pagina_armazenamento():
         if colunas_exibir:
             st.dataframe(dados_exibicao[colunas_exibir], use_container_width=True, hide_index=True)
 
-    
         # ============================================================
         # 🏷️ GERADOR DE ETIQUETAS EM PDF (IMPRESSORA ZEBRA / TÉRMICA)
         # ============================================================
@@ -1917,32 +1916,34 @@ def pagina_armazenamento():
         buffer_pdf = io.BytesIO()
         c = canvas.Canvas(buffer_pdf, pagesize=(35*mm, 20*mm))
 
+        margem_esq = 4 * mm
+
         if tipo_etiqueta in ["Caixa Principal", "Ambas (2 etiquetas)"]:
-            c.setFont("Helvetica-Bold", 8)
-            c.drawString(2*mm, 14.5*mm, f"{code_etiqueta} | PRINCIPAL")
-            
             c.setFont("Helvetica-Bold", 6.5)
-            c.drawString(2*mm, 10.5*mm, f"{nome_microrganismo[:24]}")
+            c.drawString(margem_esq, 14.5*mm, f"{code_etiqueta} | PRINCIPAL")
             
-            c.setFont("Helvetica", 6)
-            c.drawString(2*mm, 6.5*mm, f"Caixa: {box_etq} | Pos: {pos_etq}")
+            c.setFont("Helvetica-Bold", 5.5)
+            c.drawString(margem_esq, 11*mm, f"{nome_microrganismo[:26]}")
             
-            c.setFont("Helvetica", 5.5)
-            c.drawString(2*mm, 2.5*mm, f"Data: {data_formatada} | {nome_imp_curto}")
+            c.setFont("Helvetica", 5)
+            c.drawString(margem_esq, 7.5*mm, f"Caixa: {box_etq} | Pos: {pos_etq}")
+            
+            c.setFont("Helvetica", 4.5)
+            c.drawString(margem_esq, 4*mm, f"Data: {data_formatada} | {nome_imp_curto}")
             c.showPage()
 
         if tipo_etiqueta in ["Caixa de Backup", "Ambas (2 etiquetas)"]:
-            c.setFont("Helvetica-Bold", 8)
-            c.drawString(2*mm, 14.5*mm, f"{code_etiqueta} | BACKUP")
-            
             c.setFont("Helvetica-Bold", 6.5)
-            c.drawString(2*mm, 10.5*mm, f"{nome_microrganismo[:24]}")
+            c.drawString(margem_esq, 14.5*mm, f"{code_etiqueta} | BACKUP")
             
-            c.setFont("Helvetica", 6)
-            c.drawString(2*mm, 6.5*mm, f"Caixa: {b_box_etq} | Pos: {b_pos_etq}")
+            c.setFont("Helvetica-Bold", 5.5)
+            c.drawString(margem_esq, 11*mm, f"{nome_microrganismo[:26]}")
             
-            c.setFont("Helvetica", 5.5)
-            c.drawString(2*mm, 2.5*mm, f"Data: {data_formatada} | {nome_imp_curto}")
+            c.setFont("Helvetica", 5)
+            c.drawString(margem_esq, 7.5*mm, f"Caixa: {b_box_etq} | Pos: {b_pos_etq}")
+            
+            c.setFont("Helvetica", 4.5)
+            c.drawString(margem_esq, 4*mm, f"Data: {data_formatada} | {nome_imp_curto}")
             c.showPage()
 
         c.save()
