@@ -590,7 +590,7 @@ def criar_banco():
             try: conexao.execute(f"ALTER TABLE dados_brutos ADD COLUMN {col} {tipo}")
             except sqlite3.OperationalError: pass
                 
-        inserir_dados_iniciais(conexao)
+        # inserir_dados_iniciais(conexao)
 
 
 def inserir_dados_iniciais(conexao):
