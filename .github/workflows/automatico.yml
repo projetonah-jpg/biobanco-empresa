@@ -1,0 +1,17 @@
+name: Arrurar Espaços
+on: [push]
+permissions:
+  contents: write
+
+jobs:
+  limpar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python corrigir.py
+      - run: |
+          git config user.name "Robô"
+          git config user.email "robo@github.com"
+          git add .
+          git commit -m "Espaços corrigidos" || exit 0
+          git push
