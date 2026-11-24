@@ -23,128 +23,100 @@ st.set_page_config(
 PASTA_APP = Path(__file__).resolve().parent
 CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 
-
-# ============================================================ #
-# ESTILO E IDENTIDADE VISUAL                                   #
-# ============================================================ #
+# ============================================================
+# CABEÇALHO DO BIOBANK
+# ============================================================
 
 st.markdown(
     """
     <style>
-    :root {
-        --purple-dark: #612147;
-        --purple-light: #833161;
-        --purple-bg: #fdfafc;
-        --white: #ffffff;
-    }
-
-    /* Oculta barra superior padrão */
-    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0px !important;
-    }
-
-    /* Fundo roxo externo */
-    .stApp {
-        background-color: #612147 !important;
-    }
-
-    /* Folha interna branca */
-    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {
-        background-color: #ffffff !important;
-    }
-
     .block-container {
-        background-color: #ffffff !important;
-        padding: 0px 45px 35px 45px !important;
-        margin-top: 0rem !important;
-        border-radius: 0px 0px 18px 18px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
-        max-width: 96% !important;
+        max-width: 100% !important;
+        padding-top: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 1rem !important;
     }
 
-    [data-testid="stMain"] {
-        padding-top: 0rem !important;
-        background-color: #612147 !important;
+    [data-testid="stMainBlockContainer"] {
+        max-width: 100% !important;
     }
 
-    /* Textos escuros dentro da área branca */
-    [data-testid="stMainView"] [data-testid="stWidgetLabel"] p, 
-    [data-testid="stMainView"] label p, 
-    [data-testid="stMainView"] .stMarkdown p, 
-    [data-testid="stMainView"] h1, 
-    [data-testid="stMainView"] h2, 
-    [data-testid="stMainView"] h3, 
-    [data-testid="stMainView"] .stSubheader {
-        color: #31333F !important;
-    }
-    
-    /* Texto branco na barra lateral */
-    [data-testid="stSidebar"], 
-    [data-testid="stSidebar"] *, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label {
-        color: #ffffff !important;
-    }
-
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
-        background-color: #612147 !important;
-        background-image: none !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    /* Cards de Indicadores */
-    [data-testid="stMetric"] {
-        background-color: white !important;
-        border: 1px solid #f5edf2 !important;
-        border-left: 5px solid #833161 !important;
-        padding: 16px !important;
-        border-radius: 14px !important;
-        box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
+    .biobank-banner {
+        width: 100%;
+        min-height: 150px;
+        box-sizing: border-box;
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(75, 20, 60, 0.12),
+                rgba(100, 20, 85, 0.18)
+            ),
+            url("https://githubusercontent.com");
+        background-size: cover;
+        background-position: center;
+        border-radius: 0 0 18px 18px;
+        margin: 0 0 24px 0;
+        padding: 28px 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        text-align: right;
+        color: white;
+        box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
     }
 
-    /* Botões roxos com letra branca */
-    .stButton > button, .stFormSubmitButton > button, 
-    .stButton > button *, .stFormSubmitButton > button * {
-        border-radius: 10px !important;
-        border: 0 !important;
-        background-color: #833161 !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        transition: all 0.3s ease !important;
+    .biobank-banner h1 {
+        margin: 0;
+        font-size: clamp(24px, 2.5vw, 36px);
+        font-weight: 750;
+        color: white;
+        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
     }
 
-    .stButton > button:hover, .stFormSubmitButton > button:hover {
-        background-color: #612147 !important;
-        color: #ffffff !important;
-        box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
+    .biobank-banner p {
+        margin: 8px 0 0 0;
+        font-size: 15px;
+        color: white;
     }
 
-    [data-testid="stForm"] {
-        background-color: white !important;
-        padding: 28px 34px 20px 34px !important;
-        border-radius: 22px !important;
-        border: 1px solid #f5edf2 !important;
+    [data-testid="stMetric"],
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        width: 100%;
     }
 
-    /* Corrige campos de entrada no modo escuro */
-    [data-testid="stTextInput"] input, 
-    [data-testid="stSelectbox"] div, 
-    [data-testid="stNumberInput"] input,
-    .stSelectbox div,
-    .stDateInput button,
-    input {
-        background-color: #ffffff !important;
-        color: #31333F !important;
-        -webkit-text-fill-color: #31333F !important;
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+
+        .biobank-banner {
+            min-height: 125px;
+            padding: 22px 18px;
+            background-position: center;
+        }
+
+        .biobank-banner h1 {
+            font-size: 24px;
+        }
+
+        .biobank-banner p {
+            font-size: 13px;
+        }
     }
     </style>
+
+    <div class="biobank-banner">
+        <h1>BIOBANK - NATALIA</h1>
+        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
+    </div>
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================ #
 # LISTAS DE VALIDAÇÃO                                          #
