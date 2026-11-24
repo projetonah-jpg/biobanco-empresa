@@ -1,12 +1,14 @@
-import hmac
-import os
-import sqlite3
+import io
 from io import BytesIO
 from pathlib import Path
+import sqlite3
 
 import pandas as pd
 import plotly.express as px
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
 import streamlit as st
+
 
 # ============================================================
 # CONFIGURAÇÃO GERAL
@@ -21,190 +23,129 @@ st.set_page_config(
 PASTA_APP = Path(__file__).resolve().parent
 CAMINHO_BANCO = PASTA_APP / "monitoramento.db"
 
-USUARIO_PADRAO = os.getenv("APP_USERNAME", "Natalia")
-SENHA_PADRAO = os.getenv("APP_PASSWORD", "Natalia@2026")
 
 # ============================================================
-# ESTILO E IDENTIDADE VISUAL DINÂMICA (CORREÇÃO TOTAL DE LEITURA)
+# ESTILO E IDENTIDADE VISUAL
 # ============================================================
-
-if not st.session_state.get("autenticado"):
-    cor_fundo_interna = "#612147"
-    cor_texto_login_h1 = "#ffffff"
-    cor_texto_login_p = "#f5edf2"
-    sombra_container = "none"
-    padding_container = "2rem"
-else:
-    cor_fundo_interna = "#ffffff"
-    cor_texto_login_h1 = "#31333F"
-    cor_texto_login_p = "#31333F"
-    sombra_container = "0 12px 36px rgba(0, 0, 0, 0.25)"
-    padding_container = "0px 45px 35px 45px"
 
 st.markdown(
-    f"""
+    """
     <style>
-    :root {{
+    :root {
         --purple-dark: #612147;
         --purple-light: #833161;
         --purple-bg: #fdfafc;
         --white: #ffffff;
-    }}
+    }
 
-    /* 🚫 Oculta completamente a barra branca superior e seus botões (Share, Gato) */
-    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {{
+    /* Oculta barra superior padrão */
+    .stAppHeader, [data-testid="stHeader"], header, [data-testid="stHeaderActionElements"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
-    }}
+    }
 
-    /* 💜 Pinta as laterais externas e o fundo geral com o roxo escuro oficial */
-    .stApp {{
+    /* Fundo roxo externo */
+    .stApp {
         background-color: #612147 !important;
-    }}
+    }
 
-    /* 🛡️ Força a folha interna a seguir a decisão do Python */
-    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {{
-        background-color: {cor_fundo_interna} !important;
-    }}
+    /* Folha interna branca */
+    [data-testid="stMainView"], [data-testid="stCanvas"], .main, .stVerticalBlockRoot {
+        background-color: #ffffff !important;
+    }
 
-    /* 📏 Ajusta a folha central de trabalho de forma dinâmica */
-    .block-container {{
-        background-color: {cor_fundo_interna} !important;
-        padding: {padding_container} !important;
+    .block-container {
+        background-color: #ffffff !important;
+        padding: 0px 45px 35px 45px !important;
         margin-top: 0rem !important;
         border-radius: 0px 0px 18px 18px !important;
-        box-shadow: {sombra_container} !important;
-        max-width: 94% !important;
-    }}
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25) !important;
+        max-width: 96% !important;
+    }
 
-    [data-testid="stMain"] {{
+    [data-testid="stMain"] {
         padding-top: 0rem !important;
         background-color: #612147 !important;
-    }}
+    }
 
-    /* 🎯 CORREÇÃO: Garante que APENAS os textos de dentro do formulário branco fiquem pretos */
+    /* Textos escuros dentro da área branca */
     [data-testid="stMainView"] [data-testid="stWidgetLabel"] p, 
     [data-testid="stMainView"] label p, 
     [data-testid="stMainView"] .stMarkdown p, 
     [data-testid="stMainView"] h1, 
     [data-testid="stMainView"] h2, 
     [data-testid="stMainView"] h3, 
-    [data-testid="stMainView"] .stSubheader {{
+    [data-testid="stMainView"] .stSubheader {
         color: #31333F !important;
-    }}
+    }
     
-    /* ⚪ FORÇA TEXTO BRANCO ABSOLUTO NO BANNER DO TOPO (Garante Biobank - Natalia e Gestão de Cepas legíveis) */
-    .banner-topo, .banner-topo h1, .banner-topo p, .banner-topo div {{
-        color: #ffffff !important;
-    }}
-    
-    /* ⚪ FORÇA TEXTO BRANCO ABSOLUTO NA BARRA LATERAL (Garante Natalia, Navegação, Conectado em branco) */
+    /* Texto branco na barra lateral */
     [data-testid="stSidebar"], 
     [data-testid="stSidebar"] *, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label {{
+    [data-testid="stSidebar"] label {
         color: #ffffff !important;
-    }}
+    }
 
-    /* 💜 Menu Lateral Customizado com a cor sólida idêntica ao seu banner oficial */
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
         background-color: #612147 !important;
         background-image: none !important;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
-    }}
+    }
 
-    /* 💜 Cards de Indicadores (Métricas) com Borda Combinando */
-    [data-testid="stMetric"] {{
+    /* Cards de Indicadores */
+    [data-testid="stMetric"] {
         background-color: white !important;
         border: 1px solid #f5edf2 !important;
         border-left: 5px solid #833161 !important;
         padding: 16px !important;
         border-radius: 14px !important;
         box-shadow: 0 6px 18px rgba(97, 33, 71, 0.06) !important;
-    }}
+    }
 
-    /* 💜 Botões de ação com letras brancas forçadas sempre */
+    /* Botões roxos com letra branca */
     .stButton > button, .stFormSubmitButton > button, 
-    .stButton > button *, .stFormSubmitButton > button * {{
+    .stButton > button *, .stFormSubmitButton > button * {
         border-radius: 10px !important;
         border: 0 !important;
         background-color: #833161 !important;
         color: #ffffff !important;
         font-weight: 700 !important;
         transition: all 0.3s ease !important;
-    }}
+    }
 
-    .stButton > button:hover, .stFormSubmitButton > button:hover {{
+    .stButton > button:hover, .stFormSubmitButton > button:hover {
         background-color: #612147 !important;
         color: #ffffff !important;
         box-shadow: 0 4px 12px rgba(131, 49, 97, 0.25) !important;
-    }}
+    }
 
-    /* 💜 Estilos da Tela de Login */
-          /* 💜 Estilos da Tela de Login */
-    .logo-login {{
-        text-align: center;
-        margin: 3vh auto 18px auto;
-    }}
-
-    .logo-login h1 {{
-        font-size: 38px !important;
-        margin: 10px 0 0 0 !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }}
-
-    .logo-login p {{
-        color: #f5edf2 !important;
-        margin-top: 4px !important;
-    }}
-
-    /* 🔬 CONFIGURAÇÃO DO ÍCONE GRANDE E EM 3D COM CHAVES DUPLAS */
-    .logo-icone {{
-        width: 140px !important;    /* Aumenta o tamanho do círculo */
-        height: 140px !important;   /* Aumenta o tamanho do círculo */
-        margin: auto !important;
-        border-radius: 50% !important;
-        display: grid !important;
-        place-items: center !important;
-        background: linear-gradient(145deg, #833161, #612147) !important;
-        color: white !important;
-        font-size: 72px !important; /* Deixa o microscópio bem grande dentro do círculo */
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important; /* Efeito de sombra marcante */
-        border: 3px solid rgba(255, 255, 255, 0.1) !important;
-    }}
-
-    [data-testid="stForm"] {{
+    [data-testid="stForm"] {
         background-color: white !important;
         padding: 28px 34px 20px 34px !important;
         border-radius: 22px !important;
         border: 1px solid #f5edf2 !important;
-    }}
+    }
 
-    .texto-rodape {{
-        text-align: center;
-        color: #f5edf2 !important;
-        font-size: 13px;
-        margin-top: 15px;
-    }}
-     /* 🎯 Limpa os bugs do Modo Escuro: força fundo branco e letra escura em tudo, incluindo a DATA */
+    /* Corrige campos de entrada no modo escuro */
     [data-testid="stTextInput"] input, 
     [data-testid="stSelectbox"] div, 
     [data-testid="stNumberInput"] input,
     .stSelectbox div,
     .stDateInput button,
-    input {{
+    input {
         background-color: #ffffff !important;
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
-    }}
+    }
     </style>
-    
     """,
     unsafe_allow_html=True,
 )
+
+
 # ============================================================
 # LISTAS DE VALIDAÇÃO
 # ============================================================
@@ -325,163 +266,6 @@ LISTAS = {
 
 
 # ============================================================
-# DADOS ATUAIS DA PLANILHA
-# ============================================================
-
-AMOSTRAS_INICIAIS = [
-    {
-        "code": "B4-001",
-        "ponto": "",
-        "origin": "Storage Tanks",
-        "area": "Laboratory",
-        "sample": "",
-        "collection_point": "",
-        "sampling": "",
-        "method": "",
-        "frequencia": "Mensal",
-        "analista": "Natalia",
-        "data": "2026-09-23",
-        "resultado_final": "Conforme",
-    },
-    {
-        "code": "B4-002",
-        "ponto": "",
-        "origin": "Storage Tanks",
-        "area": "Line 4",
-        "sample": "Preparation",
-        "collection_point": "Laminar Flow FLA006",
-        "sampling": "Passive",
-        "method": "TSAC",
-        "frequencia": "Mensal",
-        "analyst": "Natalia",
-        "data": "2026-09-23",
-        "resultado_final": "Não Conforme",
-    },
-    {
-        "code": "B4-003",
-        "ponto": "",
-        "origin": "Amostra",
-        "area": "Line 3",
-        "sample": "Dissolution",
-        "collection_point": "Laminar Flow FLA002",
-        "sampling": "MAS-100",
-        "method": "YPD",
-        "frequencia": "Mensal",
-        "analista": "Natalia",
-        "data": "2026-09-23",
-        "resultado_final": "Conforme",
-    },
-    {
-        "code": "B4-004",
-        "ponto": "",
-        "origin": "Storage Tanks",
-        "area": "Line 3",
-        "sample": "Flow Room",
-        "collection_point": "Flow Room",
-        "sampling": "Palating",
-        "method": "TSAC",
-        "frequencia": "Mensal",
-        "analista": "Natalia",
-        "data": "2026-09-23",
-        "resultado_final": "Conforme",
-    },
-    {
-        "code": "B4-005",
-        "ponto": "",
-        "origin": "Environmental Monitoring",
-        "area": "Dissolution",
-        "sample": "Flow Room",
-        "collection_point": "Laminar Flow FLA001",
-        "sampling": "Swab",
-        "method": "Petrifilm EB",
-        "frequencia": "Mensal",
-        "analista": "Natalia",
-        "data": "2026-09-23",
-        "resultado_final": "Não Conforme",
-    },
-]
-
-
-IDENTIFICACOES_INICIAIS = [
-    {
-        "code": "B4-001",
-        "form": "",
-        "margin": "Round",
-        "pigment": "",
-        "gram_stain": "Positive",
-        "catalase": "Negative",
-        "koh": "Negative",
-        "oxidase": "Negative",
-        "outsourced_method": "",
-        "identification": "Fungo",
-        "report": "",
-        "company": "",
-        "end_date": "",
-    },
-    {
-        "code": "B4-002",
-        "form": "",
-        "margin": "",
-        "pigment": "",
-        "gram_stain": "Negative",
-        "catalase": "Negative",
-        "koh": "Negative",
-        "oxidase": "Negative",
-        "outsourced_method": "",
-        "identification": "Fungo",
-        "report": "",
-        "company": "",
-        "end_date": "",
-    },
-    {
-        "code": "B4-003",
-        "form": "",
-        "margin": "",
-        "pigment": "",
-        "gram_stain": "Negative",
-        "catalase": "Positive",
-        "koh": "Positive",
-        "oxidase": "Positive",
-        "outsourced_method": "",
-        "identification": "Fungo",
-        "report": "",
-        "company": "",
-        "end_date": "",
-    },
-    {
-        "code": "B4-004",
-        "form": "",
-        "margin": "",
-        "pigment": "",
-        "gram_stain": "Negative",
-        "catalase": "Negative",
-        "koh": "Negative",
-        "oxidase": "Negative",
-        "outsourced_method": "",
-        "identification": "Fungo",
-        "report": "",
-        "company": "",
-        "end_date": "",
-    },
-    {
-        "code": "B4-005",
-        "form": "",
-        "margin": "",
-        "pigment": "",
-        "gram_stain": "Positive",
-        "catalase": "Negative",
-        "koh": "Positive",
-        "oxidase": "Positive",
-        "outsourced_method": "",
-        "identification": "Fungo",
-        "report": "",
-        "company": "",
-        "end_date": "",
-    },
-]
-
-
-# ============================================================
 # BANCO DE DADOS
 # ============================================================
 
@@ -500,7 +284,6 @@ COLUNAS_AMOSTRA = [
     "data",
     "resultado_final",
 ]
-
 
 COLUNAS_IDENTIFICACAO = [
     "code",
@@ -523,20 +306,14 @@ def conectar():
     conexao = sqlite3.connect(CAMINHO_BANCO)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
-
     return conexao
 
 
 def criar_banco():
     with conectar() as conexao:
-
-        # 1. Criação direta das tabelas
         q1 = "CREATE TABLE IF NOT EXISTS amostras (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
-
         q2 = "CREATE TABLE IF NOT EXISTS identificacoes (code TEXT PRIMARY KEY, criado_em TEXT DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(code) REFERENCES amostras(code) ON DELETE CASCADE);"
-
         q3 = "CREATE TABLE IF NOT EXISTS dados_brutos (id INTEGER PRIMARY KEY AUTOINCREMENT, criado_em TEXT DEFAULT CURRENT_TIMESTAMP);"
-
         q4 = """
         CREATE TABLE IF NOT EXISTS armazenamento_cepas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -546,16 +323,16 @@ def criar_banco():
             freezer TEXT,
             storage_date TEXT,
             analyst TEXT,
-            backup_used TEXT
+            backup_used TEXT,
+            posicao INTEGER,
+            posicao_backup INTEGER
         );
         """
-
         conexao.execute(q1)
         conexao.execute(q2)
         conexao.execute(q3)
         conexao.execute(q4)
 
-        # 2. MIGRATION: Garante as colunas na tabela 'amostras'
         colunas_amostras = {
             "sample_id": "TEXT",
             "ponto": "TEXT",
@@ -576,7 +353,6 @@ def criar_banco():
             except sqlite3.OperationalError:
                 pass
 
-        # 3. MIGRATION: Garante as colunas na tabela 'identificacoes'
         colunas_identificacoes = {
             "form": "TEXT",
             "margin": "TEXT",
@@ -595,11 +371,12 @@ def criar_banco():
         }
         for col, tipo in colunas_identificacoes.items():
             try:
-                conexao.execute(f"ALTER TABLE identificacoes ADD COLUMN {col} {tipo}")
+                conexao.execute(
+                    f"ALTER TABLE identificacoes ADD COLUMN {col} {tipo}"
+                )
             except sqlite3.OperationalError:
                 pass
 
-        # 4. MIGRATION: Garante as colunas na tabela 'dados_brutos'
         colunas_brutos = {
             "tsb": "TEXT",
             "tsb_val": "TEXT",
@@ -614,95 +391,53 @@ def criar_banco():
         }
         for col, tipo in colunas_brutos.items():
             try:
-                conexao.execute(f"ALTER TABLE dados_brutos ADD COLUMN {col} {tipo}")
+                conexao.execute(
+                    f"ALTER TABLE dados_brutos ADD COLUMN {col} {tipo}"
+                )
             except sqlite3.OperationalError:
                 pass
-
-        # inserir_dados_iniciais(conexao)
-
-
-def inserir_dados_iniciais(conexao):
-    for amostra in AMOSTRAS_INICIAIS:
-        valores = [amostra.get(coluna, "") for coluna in COLUNAS_AMOSTRA]
-        conexao.execute(
-            f"INSERT OR IGNORE INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})",
-            valores,
-        )
-
-    for identificacao in IDENTIFICACOES_INICIAIS:
-        valores = [identificacao.get(coluna, "") for coluna in COLUNAS_IDENTIFICACAO]
-        conexao.execute(
-            f"INSERT OR IGNORE INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})",
-            valores,
-        )
-
-        conexao.execute(
-            f"""
-            INSERT OR IGNORE INTO identificacoes
-            ({",".join(COLUNAS_IDENTIFICACAO)})
-            VALUES (
-                {",".join("?" for _ in COLUNAS_IDENTIFICACAO)}
-            )
-            """,
-            valores,
-        )
 
 
 def consultar(sql, parametros=()):
     with conectar() as conexao:
-        linhas = conexao.execute(
-            sql,
-            parametros,
-        ).fetchall()
-
+        linhas = conexao.execute(sql, parametros).fetchall()
         return [dict(linha) for linha in linhas]
 
 
 def salvar_amostra(registro):
-    # Correção: Ajustado para usar exatamente a lista correta mapeada com 'resultado_final'
     marcadores = ",".join("?" for _ in COLUNAS_AMOSTRA)
-
     atualizacoes = ",".join(
-        f"{coluna}=excluded.{coluna}" for coluna in COLUNAS_AMOSTRA if coluna != "code"
+        f"{coluna}=excluded.{coluna}"
+        for coluna in COLUNAS_AMOSTRA
+        if coluna != "code"
     )
-
     sql = f"""
-        INSERT INTO amostras
-        ({",".join(COLUNAS_AMOSTRA)})
+        INSERT INTO amostras ({",".join(COLUNAS_AMOSTRA)})
         VALUES ({marcadores})
-
         ON CONFLICT(code) DO UPDATE SET
             {atualizacoes},
             atualizado_em=CURRENT_TIMESTAMP
     """
-
     valores = [registro.get(coluna, "") for coluna in COLUNAS_AMOSTRA]
-
     with conectar() as conexao:
         conexao.execute(sql, valores)
 
 
 def salvar_identificacao(registro):
     marcadores = ",".join("?" for _ in COLUNAS_IDENTIFICACAO)
-
     atualizacoes = ",".join(
         f"{coluna}=excluded.{coluna}"
         for coluna in COLUNAS_IDENTIFICACAO
         if coluna != "code"
     )
-
     sql = f"""
-        INSERT INTO identificacoes
-        ({",".join(COLUNAS_IDENTIFICACAO)})
+        INSERT INTO identificacoes ({",".join(COLUNAS_IDENTIFICACAO)})
         VALUES ({marcadores})
-
         ON CONFLICT(code) DO UPDATE SET
             {atualizacoes},
             atualizado_em=CURRENT_TIMESTAMP
     """
-
     valores = [registro.get(coluna, "") for coluna in COLUNAS_IDENTIFICACAO]
-
     with conectar() as conexao:
         conexao.execute(sql, valores)
 
@@ -714,177 +449,81 @@ def excluir_amostra(code):
         conexao.execute("DELETE FROM amostras WHERE code = ?", (code,))
         conexao.commit()
 
-
-def substituir_dados(amostras, identificacoes):
-    with conectar() as conexao:
-        conexao.execute("DELETE FROM identificacoes")
-
-        conexao.execute("DELETE FROM amostras")
-
-    for amostra in amostras:
-        salvar_amostra(amostra)
-
-    for identificacao in identificacoes:
-        salvar_identificacao(identificacao)
-
-
 # ============================================================
-# LOGIN
-# ============================================================
-
-
-def mostrar_login():
-    if st.session_state.get("autenticado"):
-        return True
-
-    # GARANTA QUE ESSA LINHA ABAIXO ESTEJA EXATAMENTE ASSIM COM O ÍCONE 🔬
-    st.markdown(
-        '<div class="logo-login"><div class="logo-icone">🔬</div><h1>BioBank</h1><p>Monitoramento Microbiológico</p></div>',
-        unsafe_allow_html=True,
-    )
-
-    _, centro, _ = st.columns([1.15, 1, 1.15])
-    with centro:
-        with st.form("formulario_login"):
-            usuario = st.text_input("Usuário", placeholder="Digite seu usuário")
-            senha = st.text_input(
-                "Senha", type="password", placeholder="Digite sua senha"
-            )
-            entrar = st.form_submit_button(
-                "Entrar", type="primary", use_container_width=True
-            )
-
-        st.markdown(
-            '<div class="texto-rodape">Acesso restrito ao laboratório de microbiologia.</div>',
-            unsafe_allow_html=True,
-        )
-
-        if entrar:
-            if hmac.compare_digest(
-                usuario.strip(), USUARIO_PADRAO
-            ) and hmac.compare_digest(senha, SENHA_PADRAO):
-                st.session_state.autenticado = True
-                st.session_state.usuario = USUARIO_PADRAO
-                st.rerun()
-            else:
-                st.error("Usuário ou senha inválidos.")
-    return False
-
-
-# ============================================================
-# FUNÇÕES DOS DADOS
+# FUNÇÕES AUXILIARES DOS DADOS
 # ============================================================
 
 
 def obter_amostras():
-    dados = consultar("""
+    dados = consultar(
+        """
         SELECT
-            code,
-            sample_id,
-            ponto,
-            origin,
-            area,
-            sample,
-            collection_point,
-            sampling,
-            method,
-            frequencia,
-            analista,
-            data,
-            resultado_final
+            code, sample_id, ponto, origin, area, sample,
+            collection_point, sampling, method, frequencia,
+            analista, data, resultado_final
         FROM amostras
         ORDER BY data DESC, code
-        """)
-
+        """
+    )
     return pd.DataFrame(dados)
 
 
 def obter_identificacoes():
     sql_consulta = """
         SELECT
-            a.code,
-            a.area,
-            a.collection_point,
-            a.data,
-            i.form,
-            i.margin,
-            i.pigment,
-            i.gram_stain,
-            i.catalase,
-            i.koh,
-            i.oxidase,
-            i.outsourced_method,
-            i.identification,
-            i.report,
-            i.company,
-            i.start_date,
-            i.end_date
+            a.code, a.area, a.collection_point, a.data,
+            i.form, i.margin, i.pigment, i.gram_stain,
+            i.catalase, i.koh, i.oxidase, i.outsourced_method,
+            i.identification, i.report, i.company, i.start_date, i.end_date
         FROM amostras a
-
-        LEFT JOIN identificacoes i
-            ON i.code = a.code
-
+        LEFT JOIN identificacoes i ON i.code = a.code
         ORDER BY a.code
     """
     try:
         dados = consultar(sql_consulta)
     except sqlite3.OperationalError:
-        # Se a coluna start_date não existir ainda, cria ela agora automaticamente
         with conectar() as conexao:
             try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
+                conexao.execute(
+                    "ALTER TABLE identificacoes ADD COLUMN start_date TEXT"
+                )
                 conexao.commit()
             except sqlite3.OperationalError:
                 pass
-        # Tenta consultar novamente após criar a coluna
         dados = consultar(sql_consulta)
 
     return pd.DataFrame(dados)
 
 
-def campo_selecao(
-    titulo,
-    nome_lista,
-    valor_atual="",
-):
+def campo_selecao(titulo, nome_lista, valor_atual=""):
     opcoes = [""] + LISTAS.get(nome_lista, [])
-
     if valor_atual and valor_atual not in opcoes:
         opcoes.append(valor_atual)
-
     indice = opcoes.index(valor_atual) if valor_atual in opcoes else 0
-
-    return st.selectbox(
-        titulo,
-        opcoes,
-        index=indice,
-    )
+    return st.selectbox(titulo, opcoes, index=indice)
 
 
 # ============================================================
-# DASHBOARD
+# PÁGINA 1: DASHBOARD
 # ============================================================
 
 
 def pagina_dashboard():
-    # --------------------------------------------------------
-    # ESTILIZAÇÃO E TÍTULOS
-    # --------------------------------------------------------
     st.markdown(
         """
         <style>
         .titulo-relatorio {
-            text-align: center; 
-            letter-spacing: 2px; 
+            text-align: center;
+            letter-spacing: 2px;
             margin-bottom: 5px;
             color: #16857a;
             font-weight: bold;
         }
         .subtitulo-relatorio {
-            text-align: center; 
-            color: #666666; 
-            letter-spacing: 1px; 
-            margin-top: 0px; 
+            text-align: center;
+            color: #666666;
+            letter-spacing: 1px;
+            margin-top: 0px;
             margin-bottom: 30px;
             font-size: 16px;
         }
@@ -906,26 +545,21 @@ def pagina_dashboard():
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<p class='subtitulo-relatorio'>ANÁLISE E CONTROLE DE CONTAMINANTES AMBIENTAIS</p>",
+        "<p class='subtitulo-relatorio'>ANÁLISE E CONTROLE DE CONTAMINANTES"
+        " AMBIENTAIS</p>",
         unsafe_allow_html=True,
     )
 
-    # 1. Busca abrangente de dados do banco
-    df_completo = consultar("""
+    df_completo = consultar(
+        """
         SELECT
-            a.code,
-            a.origin,
-            a.area,
-            a.sample,
-            a.collection_point,
-            a.frequencia,
-            a.resultado_final,
-            a.data,
-            i.identification,
-            i.gram_stain
+            a.code, a.origin, a.area, a.sample, a.collection_point,
+            a.frequencia, a.resultado_final, a.data,
+            i.identification, i.gram_stain
         FROM amostras a
         LEFT JOIN identificacoes i ON i.code = a.code
-        """)
+        """
+    )
 
     df = pd.DataFrame(df_completo)
 
@@ -933,25 +567,22 @@ def pagina_dashboard():
         st.info("Nenhuma amostra cadastrada no banco de dados.")
         return
 
-    # --------------------------------------------------------
-    # CRIAÇÃO DAS ABAS
-    # --------------------------------------------------------
-    aba_tendencia, aba_tanques, aba_auditoria = st.tabs(
-        [
-            "📊 Relatório de Tendência",
-            "🏭 Controle por Áreas e Tanques",
-            "🛡️ Indicadores Avançados e Auditoria",
-        ]
-    )
+    aba_tendencia, aba_tanques, aba_auditoria = st.tabs([
+        "📊 Relatório de Tendência",
+        "🏭 Controle por Áreas e Tanques",
+        "🛡️ Indicadores Avançados e Auditoria",
+    ])
 
-    # ========================================================
     # ABA 1: RELATÓRIO DE TENDÊNCIA
-    # ========================================================
     with aba_tendencia:
-        df_identificados = df[df["identification"].str.strip() != ""].copy()
+        df_identificados = df[
+            df["identification"].fillna("").str.strip() != ""
+        ].copy()
         if not df_identificados.empty:
             total_identificados = len(df_identificados)
-            resumo = df_identificados["identification"].value_counts().reset_index()
+            resumo = (
+                df_identificados["identification"].value_counts().reset_index()
+            )
             resumo.columns = ["Microrganismo", "Contagem"]
             resumo["Frequência"] = (
                 resumo["Contagem"] / total_identificados * 100
@@ -984,23 +615,20 @@ def pagina_dashboard():
                     ecologias.append("Ambiente geral / Dispersão aérea")
                     patogenicidades.append("Variada")
 
-            (
-                resumo["Gram"],
-                resumo["Esporulado"],
-                resumo["Ecologia"],
-                resumo["Patogenicidade"],
-            ) = (grams, esporulados, ecologias, patogenicidades)
+            resumo["Gram"] = grams
+            resumo["Esporulado"] = esporulados
+            resumo["Ecologia"] = ecologias
+            resumo["Patogenicidade"] = patogenicidades
+
             st.dataframe(
-                resumo[
-                    [
-                        "Microrganismo",
-                        "Frequência",
-                        "Gram",
-                        "Esporulado",
-                        "Ecologia",
-                        "Patogenicidade",
-                    ]
-                ],
+                resumo[[
+                    "Microrganismo",
+                    "Frequência",
+                    "Gram",
+                    "Esporulado",
+                    "Ecologia",
+                    "Patogenicidade",
+                ]],
                 use_container_width=True,
                 hide_index=True,
             )
@@ -1010,7 +638,9 @@ def pagina_dashboard():
         with g1:
             if not df_identificados.empty:
                 fig_p = px.pie(
-                    df_identificados["identification"].value_counts().reset_index(),
+                    df_identificados["identification"]
+                    .value_counts()
+                    .reset_index(),
                     names="identification",
                     values="count",
                     hole=0.4,
@@ -1025,9 +655,10 @@ def pagina_dashboard():
                 )
                 st.plotly_chart(fig_p, use_container_width=True)
         with g2:
-            df_pontos = df[df["collection_point"].str.strip() != ""].copy()
+            df_pontos = df[
+                df["collection_point"].fillna("").str.strip() != ""
+            ].copy()
             if not df_pontos.empty:
-                # Contamos as ocorrências e ordenamos do maior para o menor
                 contagem_pontos = (
                     df_pontos["collection_point"].value_counts().reset_index()
                 )
@@ -1036,7 +667,6 @@ def pagina_dashboard():
                     by="Quantidade", ascending=True
                 )
 
-                # Mudamos para orientação="h" (horizontal) para os nomes dos fluxos não ficarem cortados
                 fig_b = px.bar(
                     contagem_pontos,
                     y="collection_point",
@@ -1051,14 +681,14 @@ def pagina_dashboard():
                     plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(color="#333333"),
                     title_font=dict(size=14, color="#16857a"),
-                    xaxis=dict(title="Ocorrências", gridcolor="rgba(0,0,0,0.05)"),
+                    xaxis=dict(
+                        title="Ocorrências", gridcolor="rgba(0,0,0,0.05)"
+                    ),
                     yaxis=dict(title=""),
                 )
                 st.plotly_chart(fig_b, use_container_width=True)
 
-    # ========================================================
     # ABA 2: CONTROLE POR ÁREAS E TANQUES
-    # ========================================================
     with aba_tanques:
         st.subheader("🔍 Rastreabilidade e Auditoria por Setor")
         col_f1, col_f2 = st.columns(2)
@@ -1082,9 +712,10 @@ def pagina_dashboard():
             ]
 
         c1, c2, c3 = st.columns(3)
-        c1.metric("Amostras Evaluadas no Filtro", len(df_filtrado))
+        c1.metric("Amostras Avaliadas no Filtro", len(df_filtrado))
         c2.metric(
-            "Pontos Críticos Identificados", df_filtrado["collection_point"].nunique()
+            "Pontos Críticos Identificados",
+            df_filtrado["collection_point"].nunique(),
         )
         c3.metric(
             "Ocorrências Não Conformes",
@@ -1136,41 +767,38 @@ def pagina_dashboard():
 
         st.subheader("Lista Filtrada de Isolados")
         st.dataframe(
-            df_filtrado[
-                [
-                    "code",
-                    "origin",
-                    "area",
-                    "collection_point",
-                    "identification",
-                    "resultado_final",
-                    "data",
-                ]
-            ],
+            df_filtrado[[
+                "code",
+                "origin",
+                "area",
+                "collection_point",
+                "identification",
+                "resultado_final",
+                "data",
+            ]],
             use_container_width=True,
             hide_index=True,
         )
 
-    # ========================================================
-    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA (COM FILTRO TEMPORAL)
-    # ========================================================
+    # ABA 3: INDICADORES AVANÇADOS E AUDITORIA
     with aba_auditoria:
         st.subheader("🛡️ Gestão de Riscos e Validação de Processos")
 
-        # Criamos uma cópia dos dados para aplicar o filtro de data
         df_auditoria = df.copy()
-        df_auditoria["data"] = pd.to_datetime(df_auditoria["data"], errors="coerce")
+        df_auditoria["data"] = pd.to_datetime(
+            df_auditoria["data"], errors="coerce"
+        )
 
-        # Filtros temporais dinâmicos no topo da aba
         col_ano, col_mes = st.columns(2)
-
         with col_ano:
             anos_disponiveis = ["Todos"] + sorted(
                 list(df_auditoria["data"].dt.year.dropna().unique().astype(int)),
                 reverse=True,
             )
             ano_selecionado = st.selectbox(
-                "Filtrar Auditoria por Ano:", anos_disponiveis, key="auditoria_ano"
+                "Filtrar Auditoria por Ano:",
+                anos_disponiveis,
+                key="auditoria_ano",
             )
 
         with col_mes:
@@ -1191,56 +819,73 @@ def pagina_dashboard():
             meses_disponiveis = ["Todos"]
             if ano_selecionado != "Todos":
                 meses_numeros = (
-                    df_auditoria[df_auditoria["data"].dt.year == int(ano_selecionado)][
-                        "data"
-                    ]
+                    df_auditoria[
+                        df_auditoria["data"].dt.year == int(ano_selecionado)
+                    ]["data"]
                     .dt.month.dropna()
                     .unique()
                 )
-                meses_disponiveis += [meses_nomes[m] for m in sorted(meses_numeros)]
+                meses_disponiveis += [
+                    meses_nomes[m] for m in sorted(meses_numeros)
+                ]
             else:
                 meses_disponiveis += [
                     meses_nomes[m]
-                    for m in sorted(df_auditoria["data"].dt.month.dropna().unique())
+                    for m in sorted(
+                        df_auditoria["data"].dt.month.dropna().unique()
+                    )
                 ]
 
             mes_selecionado = st.selectbox(
-                "Filtrar Auditoria por Mês:", meses_disponiveis, key="auditoria_mes"
+                "Filtrar Auditoria por Mês:",
+                meses_disponiveis,
+                key="auditoria_mes",
             )
 
-        # Aplicando as regras dos filtros nos dados da aba
         if ano_selecionado != "Todos":
             df_auditoria = df_auditoria[
                 df_auditoria["data"].dt.year == int(ano_selecionado)
             ]
         if mes_selecionado != "Todos":
-            num_mes = [k for k, v in meses_nomes.items() if v == mes_selecionado][0]
-            df_auditoria = df_auditoria[df_auditoria["data"].dt.month == num_mes]
+            num_mes = [
+                k for k, v in meses_nomes.items() if v == mes_selecionado
+            ][0]
+            df_auditoria = df_auditoria[
+                df_auditoria["data"].dt.month == num_mes
+            ]
 
         st.write("---")
 
-        # 1. SISTEMA DE ALERTA DINÂMICO BASEADO NO PERÍODO SELECIONADO
-        nao_conformes_totais = (df_auditoria["resultado_final"] == "Não Conforme").sum()
+        nao_conformes_totais = (
+            df_auditoria["resultado_final"] == "Não Conforme"
+        ).sum()
 
         card_1, card_2 = st.columns(2)
         with card_1:
             if nao_conformes_totais <= 2:
                 st.markdown(
-                    '<div class="card-status" style="background-color: #28a745;">🟢 STATUS DO BIOBANCO: NORMAL<br><span style="font-size:12px; font-weight:normal;">Dentro do Limite de Alerta aceitável no período.</span></div>',
+                    '<div class="card-status" style="background-color:'
+                    " #28a745;'>🟢 STATUS DO BIOBANCO: NORMAL<br><span"
+                    ' style="font-size:12px; font-weight:normal;">Dentro do'
+                    " Limite de Alerta aceitável no período.</span></div>",
                     unsafe_allow_html=True,
                 )
             elif nao_conformes_totais <= 4:
                 st.markdown(
-                    '<div class="card-status" style="background-color: #ffc107; color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span style="font-size:12px; font-weight:normal;">Aumento de desvios no período. Revisar processos.</span></div>',
+                    '<div class="card-status" style="background-color: #ffc107;'
+                    ' color: #333;">🟡 STATUS DO BIOBANCO: ALERTA<br><span'
+                    ' style="font-size:12px; font-weight:normal;">Aumento de'
+                    " desvios no período. Revisar processos.</span></div>",
                     unsafe_allow_html=True,
                 )
             else:
                 st.markdown(
-                    '<div class="card-status" style="background-color: #dc3545;">🔴 STATUS DO BIOBANCO: CRÍTICO<br><span style="font-size:12px; font-weight:normal;">Limite de Ação violado no período. Exige sanitização!</span></div>',
+                    '<div class="card-status" style="background-color:'
+                    " #dc3545;'>🔴 STATUS DO BIOBANCO: CRÍTICO<br><span"
+                    ' style="font-size:12px; font-weight:normal;">Limite de'
+                    " Ação violado no período. Exige sanitização!</span></div>",
                     unsafe_allow_html=True,
                 )
-
-        # 2. ÍNDICE DE EFICIÊNCIA DE LIMPEZA DO PERÍODO
         with card_2:
             total_avaliadas = len(df_auditoria)
             conformes = (df_auditoria["resultado_final"] == "Conforme").sum()
@@ -1249,23 +894,29 @@ def pagina_dashboard():
                 if total_avaliadas > 0
                 else 100.0
             )
-            texto_html = f'<div class="card-status" style="background-color: #16857a;">🧼 EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span style="font-size:12px; font-weight:normal;">Pontos livres de contaminação no período filtrado.</span></div>'
+            texto_html = (
+                '<div class="card-status" style="background-color: #16857a;">🧼'
+                f" EFICIÊNCIA DE SANITIZAÇÃO: {taxa_eficiencia}%<br><span"
+                ' style="font-size:12px; font-weight:normal;">Pontos livres de'
+                " contaminação no período filtrado.</span></div>"
+            )
             st.markdown(texto_html, unsafe_allow_html=True)
 
         st.write("---")
 
-        # 3. MAPA DE CALOR DO PERÍODO SELECIONADO
         st.markdown(
-            "##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto Crítico"
+            "##### 🗺️ Mapa de Calor: Concentração de Microrganismos por Ponto"
+            " Crítico"
         )
         df_heatmap_raw = df_auditoria[
-            (df_auditoria["collection_point"].str.strip() != "")
-            & (df_auditoria["identification"].str.strip() != "")
+            (df_auditoria["collection_point"].fillna("").str.strip() != "")
+            & (df_auditoria["identification"].fillna("").str.strip() != "")
         ]
 
         if not df_heatmap_raw.empty:
             matriz_contagem = pd.crosstab(
-                df_heatmap_raw["identification"], df_heatmap_raw["collection_point"]
+                df_heatmap_raw["identification"],
+                df_heatmap_raw["collection_point"],
             )
             fig_heatmap = px.imshow(
                 matriz_contagem,
@@ -1287,39 +938,235 @@ def pagina_dashboard():
             )
             st.plotly_chart(fig_heatmap, use_container_width=True)
         else:
-            st.info("Nenhum dado biológico encontrado para o mês/ano selecionado.")
+            st.info(
+                "Nenhum dado biológico encontrado para o mês/ano selecionado."
+            )
 
         st.write("---")
 
-        # 4. EXPORTAÇÃO INTELIGENTE (GERA EXCEL APENAS DO PERÍODO FILTRADO)
         st.markdown("##### 📄 Central de Relatórios para Fiscais e Auditores")
         st.caption(
-            "Gere instantaneamente o arquivo consolidado contendo apenas o período selecionado acima."
+            "Gere instantaneamente o arquivo consolidado da base de dados."
         )
 
-        # Convertemos o DataFrame filtrado de volta para bytes de Excel usando a sua função interna
-        # Nota: Passe o df_auditoria para a sua função de gerar_excel se ela aceitar argumentos,
-        # caso contrário, ela baixará o arquivo completo mas a tela continuará perfeitamente filtrada.
-        try:
-            dados_excel = gerar_excel(df_auditoria)
-        except TypeError:
-            dados_excel = (
-                gerar_excel()
-            )  # Fallback caso sua função original não receba parâmetros
-
-        nome_arquivo = f"relatorio_auditoria_{ano_selecionado}_{mes_selecionado}.xlsx"
+        dados_excel = gerar_excel()
+        nome_arquivo = (
+            f"relatorio_auditoria_{ano_selecionado}_{mes_selecionado}.xlsx"
+        )
 
         st.download_button(
-            label="📥 Exportar Relatório do Período Selecionado",
+            label="📥 Exportar Relatório em Excel",
             data=dados_excel,
             file_name=nome_arquivo,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
 
+# ============================================================
+# PÁGINA 2: REGISTRO DE AMOSTRAS
+# ============================================================
+
+
+def pagina_registro():
+    st.title("Registro de Monitoramento")
+    df = obter_amostras()
+    codigos = df["code"].tolist() if not df.empty else []
+
+    modo = st.radio(
+        "Ação",
+        ["Novo registro", "Editar registro", "Excluir registro"],
+        horizontal=True,
+    )
+
+    reg = (
+        df[df["code"] == st.selectbox("Selecione o CODE", codigos)]
+        .iloc[0]
+        .fillna("")
+        .to_dict()
+        if modo in ["Editar registro", "Excluir registro"] and codigos
+        else {}
+    )
+
+    if modo == "Excluir registro":
+        if "msg_exclusao_ok" in st.session_state:
+            st.success(st.session_state.pop("msg_exclusao_ok"))
+
+        if not codigos:
+            st.info("Nenhum registro encontrado para excluir.")
+            return
+
+        st.warning(
+            "⚠️ Atenção: Você está prestes a excluir definitivamente a amostra"
+            f" {reg.get('code')}."
+        )
+        st.markdown(
+            f"""
+            * **Origem:** {reg.get('origin', '—')}
+            * **Área:** {reg.get('area', '—')}
+            * **Data de Coleta:** {reg.get('data', '—')}
+            * **Resultado:** {reg.get('resultado_final', '—')}
+            """
+        )
+
+        confirmar_exclusao = st.checkbox(
+            "Confirmo que quero deletar permanentemente a amostra"
+            f" {reg.get('code')}"
+        )
+
+        if st.button(
+            "❌ Deletar Registro Permanentemente",
+            type="primary",
+            disabled=not confirmar_exclusao,
+            use_container_width=True,
+        ):
+            code_deletado = reg.get("code")
+            excluir_amostra(code_deletado)
+            st.session_state["msg_exclusao_ok"] = (
+                f"Amostra {code_deletado} deletada com sucesso! ✅"
+            )
+            st.rerun()
+
+        st.divider()
+
+    else:
+        with st.form("form_amostra"):
+            col1, col2, col3, col4 = st.columns(4)
+
+            if modo == "Novo registro":
+                ultimo_registro = consultar(
+                    "SELECT code FROM amostras ORDER BY code DESC LIMIT 1"
+                )
+                if ultimo_registro and len(ultimo_registro) > 0:
+                    ultimo_code = ultimo_registro[0]["code"]
+                    try:
+                        prefixo, numero = ultimo_code.split("-")
+                        proximo_numero = int(numero) + 1
+                        code_sugerido = f"{prefixo}-{proximo_numero:03d}"
+                    except ValueError:
+                        code_sugerido = "B4-001"
+                else:
+                    code_sugerido = "B4-001"
+
+                code = col1.text_input("CODE *", value=code_sugerido)
+            else:
+                code = col1.text_input(
+                    "CODE *", reg.get("code", ""), disabled=True
+                )
+
+            sample_id = col2.text_input(
+                "ID",
+                value=reg.get("sample_id", ""),
+                placeholder="LIMS ou Micro Sample Number",
+            )
+            ponto = col3.text_input("OBSERVATION", reg.get("ponto", ""))
+            analista = col4.text_input("ANALYST", reg.get("analista", ""))
+
+            col5, col6, col7 = st.columns(3)
+            with col5:
+                origin = campo_selecao(
+                    "ORIGIN", "ORIGIN", reg.get("origin", "")
+                )
+            with col6:
+                sample = campo_selecao(
+                    "SAMPLE", "SAMPLE", reg.get("sample", "")
+                )
+            with col7:
+                sampling = campo_selecao(
+                    "SAMPLING", "SAMPLING", reg.get("sampling", "")
+                )
+
+            col8, col9, col10 = st.columns(3)
+            with col8:
+                area = campo_selecao("AREA", "AREA", reg.get("area", ""))
+            with col9:
+                collection_point = campo_selecao(
+                    "COLLECTION POINT",
+                    "COLLECTION POINT",
+                    reg.get("collection_point", ""),
+                )
+            with col10:
+                method = campo_selecao(
+                    "METHOD", "METHOD", reg.get("method", "")
+                )
+
+            col11, col12, col13 = st.columns(3)
+            with col11:
+                frequencia = st.selectbox(
+                    "FREQUENCY",
+                    ["", "Semanal", "Mensal"],
+                    index=["", "Semanal", "Mensal"].index(
+                        reg.get("frequencia", "")
+                    )
+                    if reg.get("frequencia", "") in ["", "Semanal", "Mensal"]
+                    else 0,
+                )
+            with col12:
+                dt_at = pd.to_datetime(reg.get("data", ""), errors="coerce")
+                data = st.date_input(
+                    "DATE",
+                    value=None if pd.isna(dt_at) else dt_at.date(),
+                    format="DD/MM/YYYY",
+                )
+            with col13:
+                resultado_final = st.selectbox(
+                    "RESULT",
+                    ["", "Conforme", "Não Conforme"],
+                    index=["", "Conforme", "Não Conforme"].index(
+                        reg.get("resultado_final", "")
+                    )
+                    if reg.get("resultado_final", "")
+                    in ["", "Conforme", "Não Conforme"]
+                    else 0,
+                )
+
+            enviado_reg = st.form_submit_button(
+                "Salvar Registro", type="primary"
+            )
+
+        if enviado_reg and code.strip():
+            salvar_amostra({
+                "code": code.strip(),
+                "sample_id": sample_id.strip(),
+                "ponto": ponto,
+                "origin": origin,
+                "area": area,
+                "sample": sample,
+                "collection_point": collection_point,
+                "sampling": sampling,
+                "method": method,
+                "frequencia": frequencia,
+                "analista": analista,
+                "data": data.isoformat() if data else "",
+                "resultado_final": resultado_final,
+            })
+            st.success("Registro Corretamente Salvo!")
+            st.rerun()
+
+    st.subheader("Amostras cadastradas")
+    config_colunas = {
+        "code": "CODE",
+        "sample_id": "ID",
+        "ponto": "OBSERVATION",
+        "origin": "ORIGIN",
+        "area": "AREA",
+        "sample": "SAMPLE",
+        "collection_point": "COLLECTION POINT",
+        "sampling": "SAMPLING",
+        "method": "METHOD",
+        "frequencia": "FREQUENCY",
+        "analista": "ANALYST",
+        "data": "DATE",
+        "resultado_final": "RESULT",
+    }
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config=config_colunas,
+    )
 
 # ============================================================
-# REGISTRO DE AMOSTRAS
+# PÁGINA 3: IDENTIFICAÇÃO MICROBIOLÓGICA
 # ============================================================
 
 
@@ -1329,13 +1176,10 @@ def pagina_identificacao():
     df = obter_identificacoes()
 
     if df.empty:
-        st.info("Cadastre uma amostra antes " "de preencher a identificação.")
+        st.info("Cadastre uma amostra antes de preencher a identificação.")
         return
 
-    code = st.selectbox(
-        "Selecione o CODE",
-        df["code"].tolist(),
-    )
+    code = st.selectbox("Selecione o CODE", df["code"].tolist())
 
     registro = df[df["code"] == code].iloc[0].fillna("").to_dict()
 
@@ -1350,73 +1194,58 @@ def pagina_identificacao():
 
         with coluna1:
             form = campo_selecao(
-                "MORPHOLOGY",
-                "FORM",
-                registro.get("form", ""),
+                "MORPHOLOGY", "FORM", registro.get("form", "")
             )
-
             gram_stain = campo_selecao(
-                "GRAM STAIN",
-                "AFFIRMATION",
-                registro.get("gram_stain", ""),
+                "GRAM STAIN", "AFFIRMATION", registro.get("gram_stain", "")
             )
-
             identification = st.text_input(
-                "IDENTIFICATION",
-                registro.get("identification", ""),
+                "IDENTIFICATION", registro.get("identification", "")
             )
 
-            # Lista suspensa de método terceirizado em inglês
             opcoes_metodo = ["", "NGS Sequencing", "Maldi TOF", "Others"]
             valor_salvo = registro.get("outsourced_method", "")
-
             if valor_salvo == "Sequenciamento NGS":
                 valor_salvo = "NGS Sequencing"
             if valor_salvo == "Outros":
                 valor_salvo = "Others"
-
             if valor_salvo not in opcoes_metodo:
                 opcoes_metodo.append(valor_salvo)
 
             indice_metodo = (
-                opcoes_metodo.index(valor_salvo) if valor_salvo in opcoes_metodo else 0
+                opcoes_metodo.index(valor_salvo)
+                if valor_salvo in opcoes_metodo
+                else 0
             )
-
             outsourced_method = st.selectbox(
                 "OUTSOURCED METHOD", opcoes_metodo, index=indice_metodo
             )
 
         with coluna2:
-            company = st.text_input(
-                "COMPANY",
-                registro.get("company", ""),
-            )
-
+            company = st.text_input("COMPANY", registro.get("company", ""))
             col_data1, col_data2 = st.columns(2)
 
             with col_data1:
                 data_inicio_atual = pd.to_datetime(
-                    registro.get("start_date", ""),
-                    errors="coerce",
+                    registro.get("start_date", ""), errors="coerce"
                 )
                 start_date = st.date_input(
                     "START DATE",
-                    value=(
-                        None if pd.isna(data_inicio_atual) else data_inicio_atual.date()
-                    ),
+                    value=None
+                    if pd.isna(data_inicio_atual)
+                    else data_inicio_atual.date(),
                     format="DD/MM/YYYY",
                 )
 
             with col_data2:
                 data_final_atual = pd.to_datetime(
-                    registro.get("end_date", ""),
-                    errors="coerce",
+                    registro.get("end_date", ""), errors="coerce"
                 )
                 end_date = st.date_input(
                     "END DATE",
-                    value=(
-                        None if pd.isna(data_final_atual) else data_final_atual.date()
-                    ),
+                    value=None
+                    if pd.isna(data_final_atual)
+                    else data_final_atual.date(),
                     format="DD/MM/YYYY",
                 )
 
@@ -1424,7 +1253,6 @@ def pagina_identificacao():
                 "ATTACH REPORT (Word, Excel, Foto ou PDF)",
                 type=["doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "pdf"],
             )
-
             remover_anexo = st.checkbox("❌ Remover anexo atual desta amostra")
 
         enviado = st.form_submit_button(
@@ -1442,7 +1270,8 @@ def pagina_identificacao():
         with conectar() as conexao:
             try:
                 _cursor = conexao.execute(
-                    "SELECT report_data FROM identificacoes WHERE code = ?", (code,)
+                    "SELECT report_data FROM identificacoes WHERE code = ?",
+                    (code,),
                 )
                 _linha = _cursor.fetchone()
                 if _linha and _linha["report_data"]:
@@ -1463,10 +1292,14 @@ def pagina_identificacao():
             )
         else:
             st.warning(
-                "⚠️ O arquivo antigo continha apenas metadados de texto. Faça um novo upload no campo acima para registrar o arquivo físico."
+                "⚠️ O arquivo antigo continha apenas metadados de texto. Faça"
+                " um novo upload no campo acima para registrar o arquivo"
+                " físico."
             )
     else:
-        st.caption("ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda.")
+        st.caption(
+            "ℹ️ Nenhum documento ou foto foi anexado para esta amostra ainda."
+        )
 
     if enviado:
         if remover_anexo:
@@ -1491,7 +1324,9 @@ def pagina_identificacao():
             except sqlite3.OperationalError:
                 pass
             try:
-                conexao.execute("ALTER TABLE identificacoes ADD COLUMN start_date TEXT")
+                conexao.execute(
+                    "ALTER TABLE identificacoes ADD COLUMN start_date TEXT"
+                )
                 conexao.commit()
             except sqlite3.OperationalError:
                 pass
@@ -1576,244 +1411,9 @@ def pagina_identificacao():
         },
     )
 
-
 # ============================================================
-# IDENTIFICAÇÃO MICROBIOLÓGICA
+# PÁGINA 4: ARMAZENAMENTO DE CEPAS E ETIQUETAS ZEBRA
 # ============================================================
-def campo_selecao(titulo, nome_lista, valor_atual=""):
-    opcoes = [""] + LISTAS.get(nome_lista, [])
-
-    if valor_atual and valor_atual not in opcoes:
-        opcoes.append(valor_atual)
-
-    indice = opcoes.index(valor_atual) if valor_atual in opcoes else 0
-
-    return st.selectbox(
-        titulo,
-        opcoes,
-        index=indice,
-    )
-
-
-# ============================================================
-# ABA REGISTRO ATIVADA DE VOLTA (RESOLVE O NAMEERROR)
-# ============================================================
-
-
-def pagina_registro():
-    st.title("Registro de Monitoramento")
-    df = obter_amostras()
-    codigos = df["code"].tolist() if not df.empty else []
-
-    # 🎛️ Adicionada a opção de Excluir de volta no menu de rádio
-    modo = st.radio(
-        "Ação",
-        ["Novo registro", "Editar registro", "Excluir registro"],
-        horizontal=True,
-    )
-
-    # 🩹 Carrega as informações se for editar ou excluir
-    reg = (
-        df[df["code"] == st.selectbox("Selecione o CODE", codigos)]
-        .iloc[0]
-        .fillna("")
-        .to_dict()
-        if modo in ["Editar registro", "Excluir registro"] and codigos
-        else {}
-    )
-
-    # ============================================================
-    # MODO EXCLUIR REGISTRO (TELA EXCLUSIVA)
-    # ============================================================
-    if modo == "Excluir registro":
-        if "msg_exclusao_ok" in st.session_state:
-            st.success(st.session_state.pop("msg_exclusao_ok"))
-
-        if not codigos:
-            st.info("Nenhum registro encontrado para excluir.")
-            return
-
-        st.warning(
-            f"⚠️ Atenção: Você está prestes a excluir definitivamente a amostra {reg.get('code')}."
-        )
-        st.markdown(f"""
-            * **Origem:** {reg.get('origin', '—')}
-            * **Área:** {reg.get('area', '—')}
-            * **Data de Coleta:** {reg.get('data', '—')}
-            * **Resultado:** {reg.get('resultado_final', '—')}
-            """)
-
-        confirmar_exclusao = st.checkbox(
-            f"Confirmo que quero deletar permanentemente a amostra {reg.get('code')}"
-        )
-
-        if st.button(
-            "❌ Deletar Registro Permanentemente",
-            type="primary",
-            disabled=not confirmar_exclusao,
-            use_container_width=True,
-        ):
-            code_deletado = reg.get("code")
-            excluir_amostra(code_deletado)
-            st.session_state["msg_exclusao_ok"] = (
-                f"Amostra {code_deletado} deletada com sucesso! ✅"
-            )
-            st.rerun()
-
-        st.divider()
-
-    # ============================================================
-    # MODO NOVO / EDITAR REGISTRO
-    # ============================================================
-    else:
-        with st.form("form_amostra"):
-            col1, col2, col3, col4 = st.columns(4)
-
-            # Geração automática do próximo CODE
-            if modo == "Novo registro":
-                ultimo_registro = consultar(
-                    "SELECT code FROM amostras ORDER BY code DESC LIMIT 1"
-                )
-                if ultimo_registro and len(ultimo_registro) > 0:
-                    ultimo_code = ultimo_registro[0]["code"]
-                    try:
-                        prefixo, numero = ultimo_code.split("-")
-                        proximo_numero = int(numero) + 1
-                        code_sugerido = f"{prefixo}-{proximo_numero:03d}"
-                    except ValueError:
-                        code_sugerido = "B4-006"
-                else:
-                    code_sugerido = "B4-001"
-
-                code = col1.text_input("CODE *", value=code_sugerido)
-            else:
-                code = col1.text_input("CODE *", reg.get("code", ""), disabled=True)
-
-            sample_id = col2.text_input(
-                "ID",
-                value=reg.get("sample_id", ""),
-                placeholder="LIMS ou Micro Sample Number",
-            )
-            ponto = col3.text_input("OBSERVATION", reg.get("ponto", ""))
-            analista = col4.text_input("ANALYST", reg.get("analista", ""))
-
-            col5, col6, col7 = st.columns(3)
-            with col5:
-                origin = campo_selecao("ORIGIN", "ORIGIN", reg.get("origin", ""))
-            with col6:
-                sample = campo_selecao("SAMPLE", "SAMPLE", reg.get("sample", ""))
-            with col7:
-                sampling = campo_selecao(
-                    "SAMPLING", "SAMPLING", reg.get("sampling", "")
-                )
-
-            col8, col9, col10 = st.columns(3)
-            with col8:
-                area = campo_selecao("AREA", "AREA", reg.get("area", ""))
-            with col9:
-                collection_point = campo_selecao(
-                    "COLLECTION POINT",
-                    "COLLECTION POINT",
-                    reg.get("collection_point", ""),
-                )
-            with col10:
-                method = campo_selecao("METHOD", "METHOD", reg.get("method", ""))
-
-            col11, col12, col13 = st.columns(3)
-            with col11:
-                frequencia = st.selectbox(
-                    "FREQUENCY",
-                    ["", "Semanal", "Mensal"],
-                    index=(
-                        ["", "Semanal", "Mensal"].index(reg.get("frequencia", ""))
-                        if reg.get("frequencia", "") in ["", "Semanal", "Mensal"]
-                        else 0
-                    ),
-                )
-            with col12:
-                dt_at = pd.to_datetime(reg.get("data", ""), errors="coerce")
-                data = st.date_input(
-                    "DATE",
-                    value=None if pd.isna(dt_at) else dt_at.date(),
-                    format="DD/MM/YYYY",
-                )
-            with col13:
-                resultado_final = st.selectbox(
-                    "RESULT",
-                    ["", "Conforme", "Não Conforme"],
-                    index=(
-                        ["", "Conforme", "Não Conforme"].index(
-                            reg.get("resultado_final", "")
-                        )
-                        if reg.get("resultado_final", "")
-                        in ["", "Conforme", "Não Conforme"]
-                        else 0
-                    ),
-                )
-
-            enviado_reg = st.form_submit_button("Salvar Registro", type="primary")
-
-        if enviado_reg and code.strip():
-            salvar_amostra(
-                {
-                    "code": code.strip(),
-                    "sample_id": sample_id.strip(),
-                    "ponto": ponto,
-                    "origin": origin,
-                    "area": area,
-                    "sample": sample,
-                    "collection_point": collection_point,
-                    "sampling": sampling,
-                    "method": method,
-                    "frequencia": frequencia,
-                    "analista": analista,
-                    "data": data.isoformat() if data else "",
-                    "resultado_final": resultado_final,
-                }
-            )
-            st.success("Registro Corretamente Salvo!")
-            st.rerun()
-
-    # ============================================================
-    # VISUALIZAÇÃO DA TABELA (COMUM A TODOS OS MODOS)
-    # ============================================================
-    st.subheader("Amostras cadastradas")
-    config_colunas = {
-        "code": "CODE",
-        "sample_id": "ID",
-        "ponto": "OBSERVATION",
-        "origin": "ORIGIN",
-        "area": "AREA",
-        "sample": "SAMPLE",
-        "collection_point": "COLLECTION POINT",
-        "sampling": "SAMPLING",
-        "method": "METHOD",
-        "frequencia": "FREQUENCY",
-        "analista": "ANALYST",
-        "data": "DATE",
-        "resultado_final": "RESULT",
-    }
-    st.dataframe(
-        df, use_container_width=True, hide_index=True, column_config=config_colunas
-    )
-
-
-# ============================================================
-# ARMAZENAMENTO
-# ============================================================
-
-
-def mapa_caixa():
-
-    st.markdown("##### Posições")
-
-    for linha in range(9):
-
-        texto = ""
-
-        for coluna in range(9):
-
-            pos = linha * 9 + coluna + 1
 
 
 def salvar_armazenamento(
@@ -1837,7 +1437,8 @@ def salvar_armazenamento(
             pass
         try:
             conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
+                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup"
+                " INTEGER"
             )
             conexao.commit()
         except sqlite3.OperationalError:
@@ -1866,7 +1467,9 @@ def salvar_armazenamento(
 
 def excluir_armazenamento(code):
     with conectar() as conexao:
-        conexao.execute("DELETE FROM armazenamento_cepas WHERE code = ?", (code,))
+        conexao.execute(
+            "DELETE FROM armazenamento_cepas WHERE code = ?", (code,)
+        )
 
 
 def obter_armazenamento():
@@ -1879,7 +1482,8 @@ def obter_armazenamento():
             pass
         try:
             conexao.execute(
-                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup INTEGER"
+                "ALTER TABLE armazenamento_cepas ADD COLUMN posicao_backup"
+                " INTEGER"
             )
         except sqlite3.OperationalError:
             pass
@@ -1895,7 +1499,9 @@ def pagina_armazenamento():
         st.info("Cadastre uma amostra antes de preencher a identificação.")
         return
 
-    df_filtrado = df[df["identification"].fillna("").str.strip() != ""].copy()
+    df_filtrado = df[
+        df["identification"].fillna("").str.strip() != ""
+    ].copy()
     if df_filtrado.empty:
         st.info("Nenhum microrganismo identificado disponível.")
         return
@@ -1914,10 +1520,9 @@ def pagina_armazenamento():
         codigo_selecionado = st.selectbox(
             "Selecione o CODE", dados["code"].tolist(), key="sb_code_edicao"
         )
-
         busca_filtrada = dados[dados["code"] == codigo_selecionado]
         if not busca_filtrada.empty:
-            registro = busca_filtrada.iloc[0].to_dict()
+            registro = busca_filtrada.iloc.to_dict()
         else:
             st.error("Erro interno: Registro não encontrado.")
             return
@@ -1928,12 +1533,15 @@ def pagina_armazenamento():
             return
 
         st.warning(
-            f"⚠️ O registro {registro.get('code','')} será removido permanentemente."
+            f"⚠️ O registro {registro.get('code','')} será removido"
+            " permanentemente."
         )
         confirmar = st.checkbox("Confirmo a exclusão deste registro")
 
         if st.button(
-            "🗑️ Excluir Registro", disabled=not confirmar, use_container_width=True
+            "🗑️ Excluir Registro",
+            disabled=not confirmar,
+            use_container_width=True,
         ):
             excluir_armazenamento(registro.get("code"))
             st.toast("Registro excluído com sucesso! ✅")
@@ -1982,25 +1590,26 @@ def pagina_armazenamento():
                 )
 
             st.markdown("---")
+            col_box_principal, col_espaco, col_box_backup = st.columns(
+                [1, 0.1, 1]
+            )
 
-            col_box_principal, col_espaco, col_box_backup = st.columns([1, 0.1, 1])
-
-            # --- 📦 CAIXA PRINCIPAL ---
+            # CAIXA PRINCIPAL
             with col_box_principal:
                 st.subheader("📦 Caixa Principal")
                 st.markdown(
-                    "<p style='font-size:12px; margin-top:-10px; color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴 Ocupado</p>",
+                    "<p style='font-size:12px; margin-top:-10px;"
+                    " color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴"
+                    " Ocupado</p>",
                     unsafe_allow_html=True,
                 )
 
                 box = st.selectbox(
                     "Box",
                     ["C1", "C2", "C3", "C4", "C5"],
-                    index=(
-                        ["C1", "C2", "C3", "C4", "C5"].index(valor_box)
-                        if valor_box in ["C1", "C2", "C3", "C4", "C5"]
-                        else 0
-                    ),
+                    index=["C1", "C2", "C3", "C4", "C5"].index(valor_box)
+                    if valor_box in ["C1", "C2", "C3", "C4", "C5"]
+                    else 0,
                     key="sb_box_main",
                 )
 
@@ -2044,14 +1653,16 @@ def pagina_armazenamento():
                     f"Posição na Caixa {box} *",
                     opcoes_pos_main,
                     index=idx_main,
-                    format_func=lambda x: (
-                        f"Posição {x:02d}" if x != "" else "Escolha uma posição..."
-                    ),
+                    format_func=lambda x: f"Posição {x:02d}"
+                    if x != ""
+                    else "Escolha uma posição...",
                     key="pos_main_select",
                 )
 
                 st.markdown(
-                    "<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>",
+                    "<p style='font-size:13px; font-weight:bold; color:#612147;"
+                    " margin-top:10px; margin-bottom:5px;'>Mapa de"
+                    " Ocupação:</p>",
                     unsafe_allow_html=True,
                 )
                 for i in range(0, 81, 9):
@@ -2075,26 +1686,28 @@ def pagina_armazenamento():
                             cor = "#2ecc71"
                             label_html = f"🟢 {pos:02d}"
                         cols_m[j].markdown(
-                            f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>",
+                            "<div style='text-align:center; font-size:11px;"
+                            f" font-weight:bold; color:{cor}; margin:2px"
+                            f" 0;'>{label_html}</div>",
                             unsafe_allow_html=True,
                         )
 
-            # --- 🛡️ CAIXA DE BACKUP ---
+            # CAIXA DE BACKUP
             with col_box_backup:
                 st.subheader("🛡️ Caixa de Backup")
                 st.markdown(
-                    "<p style='font-size:12px; margin-top:-10px; color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴 Ocupado</p>",
+                    "<p style='font-size:12px; margin-top:-10px;"
+                    " color:#7f8c8d;'>🟢 Livre | 🔵 Selecionado | 🔴"
+                    " Ocupado</p>",
                     unsafe_allow_html=True,
                 )
 
                 backup_box = st.selectbox(
                     "Backup Box",
                     ["C1", "C2", "C3", "C4", "C5"],
-                    index=(
-                        ["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box)
-                        if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"]
-                        else 0
-                    ),
+                    index=["C1", "C2", "C3", "C4", "C5"].index(valor_backup_box)
+                    if valor_backup_box in ["C1", "C2", "C3", "C4", "C5"]
+                    else 0,
                     key="sb_box_backup",
                 )
 
@@ -2137,14 +1750,16 @@ def pagina_armazenamento():
                     f"Posição na Caixa de Backup {backup_box} *",
                     opcoes_pos_backup,
                     index=idx_backup,
-                    format_func=lambda x: (
-                        f"Posição {x:02d}" if x != "" else "Escolha uma posição..."
-                    ),
+                    format_func=lambda x: f"Posição {x:02d}"
+                    if x != ""
+                    else "Escolha uma posição...",
                     key="pos_backup_select",
                 )
 
                 st.markdown(
-                    "<p style='font-size:13px; font-weight:bold; color:#612147; margin-top:10px; margin-bottom:5px;'>Mapa de Ocupação:</p>",
+                    "<p style='font-size:13px; font-weight:bold; color:#612147;"
+                    " margin-top:10px; margin-bottom:5px;'>Mapa de"
+                    " Ocupação:</p>",
                     unsafe_allow_html=True,
                 )
                 for i in range(0, 81, 9):
@@ -2158,9 +1773,8 @@ def pagina_armazenamento():
                             )
                         except (ValueError, TypeError):
                             check_backup = False
-                        if posicao_escolhida_backup != "" and pos == int(
-                            posicao_escolhida_backup
-                        ):
+
+                        if check_backup:
                             cor = "#3498db"
                             label_html = f"🔵 {pos:02d}"
                         elif pos in ocupadas_backup:
@@ -2170,7 +1784,9 @@ def pagina_armazenamento():
                             cor = "#2ecc71"
                             label_html = f"🟢 {pos:02d}"
                         cols_b[j].markdown(
-                            f"<div style='text-align:center; font-size:11px; font-weight:bold; color:{cor}; margin:2px 0;'>{label_html}</div>",
+                            "<div style='text-align:center; font-size:11px;"
+                            f" font-weight:bold; color:{cor}; margin:2px"
+                            f" 0;'>{label_html}</div>",
                             unsafe_allow_html=True,
                         )
 
@@ -2180,7 +1796,9 @@ def pagina_armazenamento():
                 if modo == "Editar Registro"
                 else "Gravar Armazenamento 💾"
             )
-            btn_enviar = st.form_submit_button(btn_texto, use_container_width=True)
+            btn_enviar = st.form_submit_button(
+                btn_texto, use_container_width=True
+            )
 
             if btn_enviar:
                 if (
@@ -2188,11 +1806,11 @@ def pagina_armazenamento():
                     or str(posicao_escolhida_backup) == ""
                 ):
                     st.error(
-                        "❌ Por favor, selecione as posições obrigatórias em ambas as caixas antes de gravar."
+                        "❌ Por favor, selecione as posições obrigatórias em"
+                        " ambas as caixas antes de gravar."
                     )
                 else:
                     dt_iso = storage_date.isoformat() if storage_date else ""
-                    # Chama a função real do banco passando os parâmetros corretos
                     salvar_armazenamento(
                         code,
                         box,
@@ -2211,7 +1829,9 @@ def pagina_armazenamento():
     dados = obter_armazenamento()
     if not dados.empty:
         total_isolados = len(dados)
-        st.metric("🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un")
+        st.metric(
+            "🦠 Total de Isolados Preservados no Banco", f"{total_isolados} un"
+        )
 
         colunas_existentes = dados.columns
         mapeamento = {
@@ -2240,12 +1860,12 @@ def pagina_armazenamento():
                 hide_index=True,
             )
 
-        # ============================================================
-        # 🏷️ GERADOR DE ETIQUETAS EM PDF (IMPRESSORA ZEBRA / TÉRMICA)
-        # ============================================================
+        # GERADOR DE ETIQUETAS ZEBRA
         st.divider()
         st.subheader("🏷️ Impressão de Etiquetas para Criotubos (Zebra)")
-        st.caption("Selecione uma cepa salva para gerar o PDF pronto para impressão.")
+        st.caption(
+            "Selecione uma cepa salva para gerar o PDF pronto para impressão."
+        )
 
         col_etq1, col_etq2, col_etq3 = st.columns([1.5, 1.5, 1])
 
@@ -2275,14 +1895,14 @@ def pagina_armazenamento():
                 key="sb_tipo_etiqueta",
             )
 
-        reg_etq = dados[dados["code"] == code_etiqueta].iloc[0]
+        reg_etq = dados[dados["code"] == code_etiqueta].iloc
 
         df_id_etq = obter_identificacoes()
         nome_microrganismo = "Não identificado"
         if not df_id_etq.empty and code_etiqueta in df_id_etq["code"].values:
             ident_val = df_id_etq[df_id_etq["code"] == code_etiqueta][
                 "identification"
-            ].iloc[0]
+            ].iloc
             if pd.notna(ident_val) and str(ident_val).strip() != "":
                 nome_microrganismo = str(ident_val).strip()
 
@@ -2303,11 +1923,14 @@ def pagina_armazenamento():
         data_etq = reg_etq.get("storage_date", "-")
 
         nome_imp_curto = (
-            impressora_selecionada.split(" ")[0] if impressora_selecionada else ""
+            impressora_selecionada.split(" ")
+            if impressora_selecionada
+            else ""
         )
         data_formatada = (
             str(data_etq).strip()
-            if pd.notna(data_etq) and str(data_etq).strip() not in ["", "None", "-"]
+            if pd.notna(data_etq)
+            and str(data_etq).strip() not in ["", "None", "-"]
             else "—"
         )
 
@@ -2342,25 +1965,19 @@ def pagina_armazenamento():
                     unsafe_allow_html=True,
                 )
 
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import mm
-        import io
-
         buffer_pdf = io.BytesIO()
         c = canvas.Canvas(buffer_pdf, pagesize=(35 * mm, 20 * mm))
-
         margem_esq = 4 * mm
 
         if tipo_etiqueta in ["Caixa Principal", "Ambas (2 etiquetas)"]:
             c.setFont("Helvetica-Bold", 6.5)
             c.drawString(margem_esq, 14.5 * mm, f"{code_etiqueta} | PRINCIPAL")
-
             c.setFont("Helvetica-Bold", 5.5)
             c.drawString(margem_esq, 11 * mm, f"{nome_microrganismo[:26]}")
-
             c.setFont("Helvetica", 5)
-            c.drawString(margem_esq, 7.5 * mm, f"Caixa: {box_etq} | Pos: {pos_etq}")
-
+            c.drawString(
+                margem_esq, 7.5 * mm, f"Caixa: {box_etq} | Pos: {pos_etq}"
+            )
             c.setFont("Helvetica", 4.5)
             c.drawString(
                 margem_esq, 4 * mm, f"Data: {data_formatada} | {nome_imp_curto}"
@@ -2370,13 +1987,12 @@ def pagina_armazenamento():
         if tipo_etiqueta in ["Caixa de Backup", "Ambas (2 etiquetas)"]:
             c.setFont("Helvetica-Bold", 6.5)
             c.drawString(margem_esq, 14.5 * mm, f"{code_etiqueta} | BACKUP")
-
             c.setFont("Helvetica-Bold", 5.5)
             c.drawString(margem_esq, 11 * mm, f"{nome_microrganismo[:26]}")
-
             c.setFont("Helvetica", 5)
-            c.drawString(margem_esq, 7.5 * mm, f"Caixa: {b_box_etq} | Pos: {b_pos_etq}")
-
+            c.drawString(
+                margem_esq, 7.5 * mm, f"Caixa: {b_box_etq} | Pos: {b_pos_etq}"
+            )
             c.setFont("Helvetica", 4.5)
             c.drawString(
                 margem_esq, 4 * mm, f"Data: {data_formatada} | {nome_imp_curto}"
@@ -2396,146 +2012,18 @@ def pagina_armazenamento():
             use_container_width=True,
         )
 
-
 # ============================================================
-# IMPORTAÇÃO DE EXCEL
+# PÁGINA 5: IMPORTAÇÃO E EXPORTAÇÃO DE EXCEL
 # ============================================================
-
-
-def normalizar_coluna(nome):
-    conversoes = {
-        "CODE": "code",
-        "PONTO": "ponto",
-        "ORIGIN": "origin",
-        "AREA": "area",
-        "SAMPLE": "sample",
-        "COLLECTION POINT": "collection_point",
-        "SAMPLING": "sampling",
-        "METHOD": "method",
-        "FREQUÊNCIA": "frequencia",
-        "FREQUENCIA": "frequencia",
-        "ANALISTA": "analista",
-        "DATA": "data",
-        "RESULTADO": "resultado",
-        "FORM": "form",
-        "MARGIN": "margin",
-        "PIGMENT": "pigment",
-        "GRAM STAIN": "gram_stain",
-        "CATALASE": "catalase",
-        "KOH": "koh",
-        "OXIDASE": "oxidase",
-        "OUTSOURCED METHOD": "outsourced_method",
-        "IDENTIFICATION": "identification",
-        "REPORT": "report",
-        "COMPANY": "company",
-        "END DATE": "end_date",
-    }
-
-    nome = str(nome).strip()
-
-    return conversoes.get(
-        nome.upper(),
-        nome.lower().replace(" ", "_"),
-    )
-
-
-def importar_excel(arquivo):
-    registro = pd.read_excel(
-        arquivo,
-        sheet_name="Registro",
-    )
-
-    arquivo.seek(0)
-
-    identificacao = pd.read_excel(
-        arquivo,
-        sheet_name="Identification",
-    )
-
-    registro.columns = [normalizar_coluna(coluna) for coluna in registro.columns]
-
-    identificacao.columns = [
-        normalizar_coluna(coluna) for coluna in identificacao.columns
-    ]
-
-    for coluna in COLUNAS_AMOSTRA:
-        if coluna not in registro.columns:
-            registro[coluna] = ""
-
-    for coluna in COLUNAS_IDENTIFICACAO:
-        if coluna not in identificacao.columns:
-            identificacao[coluna] = ""
-
-    registro = registro[COLUNAS_AMOSTRA].fillna("")
-
-    identificacao = identificacao[COLUNAS_IDENTIFICACAO].fillna("")
-
-    registro = registro[registro["code"].astype(str).str.strip() != ""]
-
-    identificacao = identificacao[identificacao["code"].astype(str).str.strip() != ""]
-
-    registro["data"] = (
-        pd.to_datetime(
-            registro["data"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-        .fillna("")
-    )
-
-    identificacao["end_date"] = (
-        pd.to_datetime(
-            identificacao["end_date"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-        .fillna("")
-    )
-
-    substituir_dados(
-        registro.to_dict("records"),
-        identificacao.to_dict("records"),
-    )
-
-
-def gerar_excel():
-
-    amostras = obter_amostras()
-
-    identificacoes = obter_identificacoes()
-
-    armazenamento = obter_armazenamento()
-
-    if not armazenamento.empty:
-        armazenamento = armazenamento.rename(
-            columns={
-                "code": "CODE",
-                "box": "BOX",
-                "backup_box": "BACKUP BOX",
-                "freezer": "FREEZER",
-                "storage_date": "STORAGE DATE",
-                "analyst": "ANALYST",
-                "backup_used": "BACKUP USED",
-            }
-        )
-
-    arquivo = BytesIO()
-
-    with pd.ExcelWriter(arquivo, engine="openpyxl") as writer:
-
-        amostras.to_excel(writer, sheet_name="Registro", index=False)
-
-        identificacoes.to_excel(writer, sheet_name="Identification", index=False)
-
-        armazenamento.to_excel(writer, sheet_name="Storage", index=False)
-
-    return arquivo.getvalue()
 
 
 def normalizar_coluna_sistema(nome):
     conversoes = {
         "CODE": "code",
+        "ID": "sample_id",
+        "SAMPLE_ID": "sample_id",
         "PONTO": "ponto",
+        "OBSERVATION": "ponto",
         "ORIGIN": "origin",
         "AREA": "area",
         "SAMPLE": "sample",
@@ -2544,10 +2032,16 @@ def normalizar_coluna_sistema(nome):
         "METHOD": "method",
         "FREQUÊNCIA": "frequencia",
         "FREQUENCIA": "frequencia",
+        "FREQUENCY": "frequencia",
         "ANALISTA": "analista",
+        "ANALYST": "analista",
         "DATA": "data",
-        "RESULTADO": "resultado",
+        "DATE": "data",
+        "RESULTADO": "resultado_final",
+        "RESULT": "resultado_final",
+        "RESULTADO_FINAL": "resultado_final",
         "FORM": "form",
+        "MORPHOLOGY": "form",
         "MARGIN": "margin",
         "PIGMENT": "pigment",
         "GRAM STAIN": "gram_stain",
@@ -2557,90 +2051,163 @@ def normalizar_coluna_sistema(nome):
         "OUTSOURCED METHOD": "outsourced_method",
         "IDENTIFICATION": "identification",
         "REPORT": "report",
+        "ATTACH REPORT": "report",
         "COMPANY": "company",
+        "START DATE": "start_date",
         "END DATE": "end_date",
         "TSB": "tsb",
+        "VALIDADE TSB": "tsb_val",
+        "TSB_VAL": "tsb_val",
         "GLICERINA": "glicerina",
         "TSA": "tsa",
+        "VALIDADE TSA": "tsa_val",
+        "TSA_VAL": "tsa_val",
         "CRIOTUBO": "criotubo",
         "PLACA DE PETRI": "placa_de_petri",
+        "PLACA PETRI": "placa_de_petri",
         "FLUXO LAMINAR": "fluxo_laminar",
         "ULTRAFREEZER": "ultrafreezer",
     }
-    return conversoes.get(
-        str(nome).strip().upper(), str(nome).strip().lower().replace(" ", "_")
-    )
+    chave = str(nome).strip().upper()
+    return conversoes.get(chave, str(nome).strip().lower().replace(" ", "_"))
+
+
+def gerar_excel(df_filtrado=None):
+    arquivo = BytesIO()
+    with pd.ExcelWriter(arquivo, engine="openpyxl") as writer:
+        if df_filtrado is not None:
+            df_export = df_filtrado.copy()
+            if "data" in df_export.columns:
+                df_export["data"] = df_export["data"].astype(str).replace("NaT", "")
+            df_export.to_excel(writer, sheet_name="Auditoria_Filtrada", index=False)
+        else:
+            amostras = obter_amostras()
+            identificacoes = obter_identificacoes()
+            armazenamento = obter_armazenamento()
+
+            if not armazenamento.empty:
+                armazenamento = armazenamento.rename(
+                    columns={
+                        "code": "CODE",
+                        "box": "BOX",
+                        "posicao": "POSITION",
+                        "backup_box": "BACKUP BOX",
+                        "posicao_backup": "BACKUP POSITION",
+                        "freezer": "FREEZER",
+                        "storage_date": "STORAGE DATE",
+                        "analyst": "ANALYST",
+                        "backup_used": "BACKUP USED",
+                    }
+                )
+
+            amostras.to_excel(writer, sheet_name="Registro", index=False)
+            identificacoes.to_excel(writer, sheet_name="Identification", index=False)
+            armazenamento.to_excel(writer, sheet_name="Storage", index=False)
+
+    return arquivo.getvalue()
 
 
 def importar_excel(arquivo):
+    xl = pd.ExcelFile(arquivo)
+    abas = xl.sheet_names
+
     with conectar() as conexao:
         try:
-            df_brutos = pd.read_excel(arquivo, sheet_name="Dados Brutos")
-            df_brutos.columns = [
-                normalizar_coluna_sistema(col) for col in df_brutos.columns
-            ]
-            colunas_obrigatorias = [
-                "tsb",
-                "glicerina",
-                "tsa",
-                "criotubo",
-                "placa_de_petri",
-                "fluxo_laminar",
-                "ultrafreezer",
-            ]
-            for col in colunas_obrigatorias:
-                if col not in df_brutos.columns:
-                    df_brutos[col] = ""
-            df_brutos = df_brutos.fillna("")
+            if "Dados Brutos" in abas:
+                df_brutos = pd.read_excel(xl, sheet_name="Dados Brutos")
+                df_brutos.columns = [
+                    normalizar_coluna_sistema(col) for col in df_brutos.columns
+                ]
+                colunas_obrigatorias = [
+                    "tsb",
+                    "tsb_val",
+                    "glicerina",
+                    "tsa",
+                    "tsa_val",
+                    "criotubo",
+                    "placa_de_petri",
+                    "fluxo_laminar",
+                    "ultrafreezer",
+                ]
+                for col in colunas_obrigatorias:
+                    if col not in df_brutos.columns:
+                        df_brutos[col] = ""
+                df_brutos = df_brutos.fillna("")
 
-            conexao.execute("DELETE FROM dados_brutos")
-            for _, linha in df_brutos.iterrows():
-                conexao.execute(
-                    "INSERT INTO dados_brutos (tsb, glicerina, tsa, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        str(linha.get("tsb", "")),
-                        str(linha.get("glicerina", "")),
-                        str(linha.get("tsa", "")),
-                        str(linha.get("criotubo", "")),
-                        str(linha.get("placa_de_petri", "")),
-                        str(linha.get("fluxo_laminar", "")),
-                        str(linha.get("ultrafreezer", "")),
-                    ),
-                )
+                conexao.execute("DELETE FROM dados_brutos")
+                for _, linha in df_brutos.iterrows():
+                    conexao.execute(
+                        """
+                        INSERT INTO dados_brutos (
+                            tsb, tsb_val, glicerina, tsa, tsa_val,
+                            criotubo, placa_de_petri, fluxo_laminar, ultrafreezer
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        tuple(str(linha.get(c, "")) for c in colunas_obrigatorias),
+                    )
         except Exception:
             pass
 
         try:
-            arquivo.seek(0)
-            registro = pd.read_excel(arquivo, sheet_name="Registro")
-            arquivo.seek(0)
-            identificacao = pd.read_excel(arquivo, sheet_name="Identification")
-
-            registro.columns = [normalizar_coluna_sistema(c) for c in registro.columns]
-            identificacao.columns = [
-                normalizar_coluna_sistema(c) for c in identificacao.columns
-            ]
-
-            registro = registro.fillna("").loc[
-                lambda d: d["code"].astype(str).str.strip().ne("")
-            ]
-            identificacao = identificacao.fillna("").loc[
-                lambda d: d["code"].astype(str).str.strip().ne("")
-            ]
-
-            conexao.execute("DELETE FROM identificacoes")
-            conexao.execute("DELETE FROM amostras")
-
-            for _, r in registro.iterrows():
-                conexao.execute(
-                    f"INSERT INTO amostras ({','.join(COLUNAS_AMOSTRA)}) VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})",
-                    [r.get(c, "") for c in COLUNAS_AMOSTRA],
+            if "Registro" in abas:
+                registro = pd.read_excel(xl, sheet_name="Registro")
+                registro.columns = [
+                    normalizar_coluna_sistema(c) for c in registro.columns
+                ]
+                for col in COLUNAS_AMOSTRA:
+                    if col not in registro.columns:
+                        registro[col] = ""
+                registro = registro[COLUNAS_AMOSTRA].fillna("")
+                registro = registro[
+                    registro["code"].astype(str).str.strip().ne("")
+                ]
+                registro["data"] = (
+                    pd.to_datetime(registro["data"], errors="coerce")
+                    .dt.strftime("%Y-%m-%d")
+                    .fillna("")
                 )
-            for _, i in identificacao.iterrows():
-                conexao.execute(
-                    f"INSERT INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})",
-                    [i[c] for c in COLUNAS_IDENTIFICACAO],
-                )
+
+                conexao.execute("DELETE FROM identificacoes")
+                conexao.execute("DELETE FROM amostras")
+
+                for _, r in registro.iterrows():
+                    conexao.execute(
+                        f"INSERT INTO amostras ({','.join(COLUNAS_AMOSTRA)}) "
+                        f"VALUES ({','.join('?' for _ in COLUNAS_AMOSTRA)})",
+                        [str(r.get(c, "")) for c in COLUNAS_AMOSTRA],
+                    )
+
+            if "Identification" in abas:
+                identificacao = pd.read_excel(xl, sheet_name="Identification")
+                identificacao.columns = [
+                    normalizar_coluna_sistema(c) for c in identificacao.columns
+                ]
+                for col in COLUNAS_IDENTIFICACAO:
+                    if col not in identificacao.columns:
+                        identificacao[col] = ""
+                identificacao = identificacao[COLUNAS_IDENTIFICACAO].fillna("")
+                identificacao = identificacao[
+                    identificacao["code"].astype(str).str.strip().ne("")
+                ]
+
+                for col_dt in ["start_date", "end_date"]:
+                    identificacao[col_dt] = (
+                        pd.to_datetime(identificacao[col_dt], errors="coerce")
+                        .dt.strftime("%Y-%m-%d")
+                        .fillna("")
+                    )
+
+                codigos_validos = {
+                    row["code"]
+                    for row in conexao.execute("SELECT code FROM amostras").fetchall()
+                }
+                for _, i in identificacao.iterrows():
+                    if str(i["code"]).strip() in codigos_validos:
+                        conexao.execute(
+                            f"INSERT OR REPLACE INTO identificacoes ({','.join(COLUNAS_IDENTIFICACAO)}) "
+                            f"VALUES ({','.join('?' for _ in COLUNAS_IDENTIFICACAO)})",
+                            [str(i.get(c, "")) for c in COLUNAS_IDENTIFICACAO],
+                        )
         except Exception as e:
             st.error(f"Erro nas planilhas padrão: {e}")
 
@@ -2673,16 +2240,21 @@ def pagina_dados():
         except Exception as erro:
             st.error(f"Erro na importação: {erro}")
 
+# ============================================================
+# PÁGINA 6: DADOS BRUTOS
+# ============================================================
+
 
 def pagina_dados_brutos():
     st.title("🗃️ Registro de Dados Brutos (Raw Data)")
     st.caption(
-        "Gerenciamento e monitoramento automático de validades de insumos e meios de cultura."
+        "Gerenciamento e monitoramento automático de validades de insumos e"
+        " meios de cultura."
     )
 
-    # Garante a existência da tabela com suporte a formato de data nativo
     with conectar() as conexao:
-        conexao.execute("""
+        conexao.execute(
+            """
             CREATE TABLE IF NOT EXISTS dados_brutos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tsb TEXT, tsb_val TEXT,
@@ -2691,11 +2263,14 @@ def pagina_dados_brutos():
                 criotubo TEXT, placa_de_petri TEXT, fluxo_laminar TEXT, ultrafreezer TEXT,
                 criado_em TEXT DEFAULT CURRENT_TIMESTAMP
             );
-        """)
+            """
+        )
 
     try:
         linhas = consultar(
-            "SELECT id, tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos ORDER BY id DESC"
+            "SELECT id, tsb, tsb_val, glicerina, tsa, tsa_val, criotubo,"
+            " placa_de_petri, fluxo_laminar, ultrafreezer FROM dados_brutos"
+            " ORDER BY id DESC"
         )
     except Exception:
         linhas = []
@@ -2715,25 +2290,22 @@ def pagina_dados_brutos():
     )
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ============================================================
-    # MODO 1: VISUALIZAR PLANILHA COM ALERTAS COLORIDOS
-    # ============================================================
     if modo == "📋 Visualizar Planilha & Alertas":
         if df_brutos.empty:
             st.info(
-                "Nenhum dado bruto encontrado. Cadastre manualmente ou via importação."
+                "Nenhum dado bruto encontrado. Cadastre manualmente ou via"
+                " importação."
             )
         else:
             st.markdown("### 🚦 Status e Alertas de Validade")
 
             def mapear_status_validade(data_texto):
-                if not data_texto or data_texto == "—":
+                if not data_texto or str(data_texto).strip() in ["", "—", "None"]:
                     return "⚪ Sem Data"
                 try:
                     data_val = pd.to_datetime(data_texto).date()
                     hoje = pd.Timestamp.now().date()
                     dias_restantes = (data_val - hoje).days
-
                     if dias_restantes < 0:
                         return "🔴 VENCIDO"
                     elif dias_restantes <= 30:
@@ -2784,35 +2356,32 @@ def pagina_dados_brutos():
                 },
             )
 
-    # ============================================================
-    # MODO 2: EXCLUIR REGISTRO
-    # ============================================================
     elif modo == "❌ Excluir Linha":
         if not lista_ids:
+            st.info("Nenhum registro para excluir.")
             return
         id_sel = st.selectbox("Selecione o ID para remover:", lista_ids)
         if st.button(
-            "❌ Deletar Permanentemente", type="primary", use_container_width=True
+            "❌ Deletar Permanentemente",
+            type="primary",
+            use_container_width=True,
         ):
             with conectar() as conexao:
-                conexao.execute("DELETE FROM dados_brutos WHERE id = ?", (id_sel,))
+                conexao.execute(
+                    "DELETE FROM dados_brutos WHERE id = ?", (id_sel,)
+                )
             st.success("Deletado com sucesso!")
             st.rerun()
 
-    # ============================================================
-    # MODO 3: INSERIR OU EDITAR COM SELETOR DE CALENDÁRIO
-    # ============================================================
     else:
-        reg = (
-            df_brutos[
-                df_brutos["id"]
-                == st.selectbox("Selecione o ID para editar:", lista_ids)
-            ]
-            .iloc[0]
-            .to_dict()
-            if modo == "✏️ Editar Linha" and lista_ids
-            else {}
-        )
+        id_sel = None
+        reg = {}
+        if modo == "✏️ Editar Linha":
+            if not lista_ids:
+                st.info("Nenhum registro disponível para editar.")
+                return
+            id_sel = st.selectbox("Selecione o ID para editar:", lista_ids)
+            reg = df_brutos[df_brutos["id"] == id_sel].iloc[0].fillna("").to_dict()
 
         with st.form("form_brutos_validades"):
             st.markdown("##### 🧫 Meios de Cultura (Lote e Validade)")
@@ -2837,10 +2406,16 @@ def pagina_dados_brutos():
             st.markdown("---")
             st.markdown("##### 📦 Outros Insumos e Equipamentos")
             c1, c2, c3, c4 = st.columns(4)
-            glicerina = c1.text_input("GLICERINA", value=reg.get("glicerina", ""))
+            glicerina = c1.text_input(
+                "GLICERINA", value=reg.get("glicerina", "")
+            )
             criotubo = c2.text_input("CRIOTUBO", value=reg.get("criotubo", ""))
-            placa = c3.text_input("PLACA DE PETRI", value=reg.get("placa_de_petri", ""))
-            fluxo = c4.text_input("FLUXO LAMINAR", value=reg.get("fluxo_laminar", ""))
+            placa = c3.text_input(
+                "PLACA DE PETRI", value=reg.get("placa_de_petri", "")
+            )
+            fluxo = c4.text_input(
+                "FLUXO LAMINAR", value=reg.get("fluxo_laminar", "")
+            )
 
             ultrafreezer = st.text_input(
                 "ULTRAFREEZER", value=reg.get("ultrafreezer", "")
@@ -2853,7 +2428,6 @@ def pagina_dados_brutos():
                 a_val = tsa_val.isoformat() if tsa_val else ""
 
                 with conectar() as conexao:
-                    # 🩹 SEGURANÇA INTERNA AUTOMÁTICA CONTRA ERROS DE SQLITE
                     try:
                         conexao.execute(
                             "ALTER TABLE dados_brutos ADD COLUMN tsb_val TEXT"
@@ -2867,13 +2441,13 @@ def pagina_dados_brutos():
                     except sqlite3.OperationalError:
                         pass
 
-                    if modo == "✏️ Editar Linha":
+                    if modo == "✏️ Editar Linha" and id_sel is not None:
                         conexao.execute(
                             """
-                            UPDATE dados_brutos 
-                            SET tsb=?, tsb_val=?, glicerina=?, tsa=?, tsa_val=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=? 
+                            UPDATE dados_brutos
+                            SET tsb=?, tsb_val=?, glicerina=?, tsa=?, tsa_val=?, criotubo=?, placa_de_petri=?, fluxo_laminar=?, ultrafreezer=?
                             WHERE id=?
-                        """,
+                            """,
                             (
                                 tsb,
                                 t_val,
@@ -2890,9 +2464,9 @@ def pagina_dados_brutos():
                     else:
                         conexao.execute(
                             """
-                            INSERT INTO dados_brutos (tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer) 
+                            INSERT INTO dados_brutos (tsb, tsb_val, glicerina, tsa, tsa_val, criotubo, placa_de_petri, fluxo_laminar, ultrafreezer)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
+                            """,
                             (
                                 tsb,
                                 t_val,
@@ -2908,20 +2482,11 @@ def pagina_dados_brutos():
                 st.success("Dados salvos e monitoramento ativado!")
                 st.rerun()
 
-
 # ============================================================
-# INICIALIZAÇÃO DO SISTEMA
+# INICIALIZAÇÃO DO SISTEMA E MENU LATERAL
 # ============================================================
-
-if not mostrar_login():
-    st.stop()
 
 criar_banco()
-
-
-# ============================================================
-# MENU LATERAL (CORRIGIDO PARA SINTAXE NATIVA)
-# ============================================================
 
 st.sidebar.markdown(
     """
@@ -2933,9 +2498,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-st.sidebar.caption(f"Conectado como " f"{st.session_state.get('usuario', 'Natalia')}")
-
-# Definição das opções em português para bater com a lógica do seu app
 pagina = st.sidebar.radio(
     "Navegação",
     [
@@ -2949,140 +2511,108 @@ pagina = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-
-if st.sidebar.button(
-    "Sair",
-    use_container_width=True,
-):
-    st.session_state.autenticado = False
-    st.session_state.pop("usuario", None)
-    st.rerun()
-
 st.sidebar.caption("Banco SQLite • dados persistentes")
 
 
-# ============================================================
-# CABEÇALHO
-# ============================================================
+============================================================
 
-# ==========================================
-# CABEÇALHO DO BIOBANK
-# ==========================================
+
+CABEÇALHO DO BIOBANK
+
+
+============================================================
 
 st.markdown(
-    """
-    <style>
-    /* Reduz as margens e amplia a área principal */
-    .block-container {
-        max-width: 100% !important;
-        padding-top: 1rem !important;
-        padding-right: 1rem !important;
-        padding-bottom: 1rem !important;
-        padding-left: 1rem !important;
-    }
+"""
 
-    /* Evita espaços laterais desnecessários */
-    [data-testid="stMainBlockContainer"] {
-        max-width: 100% !important;
-    }
-
-    /* Banner ocupa toda a largura disponível */
-    .biobank-banner {
-        width: 100%;
-        min-height: 150px;
-        box-sizing: border-box;
-        background-image:
-            linear-gradient(
-                90deg,
-                rgba(75, 20, 60, 0.12),
-                rgba(100, 20, 85, 0.18)
-            ),
-            url("https://raw.githubusercontent.com/projetonah-jpg/biobanco-empresa/main/banner_novo.png.jpg");
-        background-size: cover;
-        background-position: center;
-        border-radius: 0 0 18px 18px;
-        margin: 0 0 24px 0;
-        padding: 28px 32px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: center;
-        text-align: right;
-        color: white;
-        box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
-    }
-
-    .biobank-banner h1 {
-        margin: 0;
-        font-size: clamp(24px, 2.5vw, 36px);
-        font-weight: 750;
-        color: white;
-        text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
-    }
-
-    .biobank-banner p {
-        margin: 8px 0 0 0;
-        font-size: 15px;
-        color: white;
-    }
-
-    /* Cartões e gráficos aproveitam a largura */
-    [data-testid="stMetric"],
-    [data-testid="stPlotlyChart"],
-    [data-testid="stDataFrame"],
-    [data-testid="stTable"] {
-        width: 100%;
-    }
-
-    /* Ajustes para telas menores */
-    @media (max-width: 768px) {
-        .block-container {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-        }
-
-        .biobank-banner {
-            min-height: 125px;
-            padding: 22px 18px;
-            background-position: center;
-        }
-
-        .biobank-banner h1 {
-            font-size: 24px;
-        }
-
-        .biobank-banner p {
-            font-size: 13px;
-        }
-    }
-    </style>
-
-    <div class="biobank-banner">
-        <h1>BIOBANK - NATALIA</h1>
-        <p>Gestão integrada de cepas, identificação e armazenamento.</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
+.block-container {
+max-width: 100% !important;
+padding-top: 1rem !important;
+padding-right: 1rem !important;
+padding-bottom: 1rem !important;
+padding-left: 1rem !important;
+}
+[data-testid="stMainBlockContainer"] {
+max-width: 100% !important;
+}
+.biobank-banner {
+width: 100%;
+min-height: 150px;
+box-sizing: border-box;
+background-image:
+linear-gradient(
+90deg,
+rgba(75, 20, 60, 0.12),
+rgba(100, 20, 85, 0.18)
+),
+url("githubusercontent.com");
+background-size: cover;
+background-position: center;
+border-radius: 0 0 18px 18px;
+margin: 0 0 24px 0;
+padding: 28px 32px;
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+justify-content: center;
+text-align: right;
+color: white;
+box-shadow: 0 8px 24px rgba(74, 43, 117, 0.12);
+}
+.biobank-banner h1 {
+margin: 0;
+font-size: clamp(24px, 2.5vw, 36px);
+font-weight: 750;
+color: white;
+text-shadow: 1px 2px 5px rgba(0, 0, 0, 0.3);
+}
+.biobank-banner p {
+margin: 8px 0 0 0;
+font-size: 15px;
+color: white;
+}
+[data-testid="stMetric"],
+[data-testid="stPlotlyChart"],
+[data-testid="stDataFrame"],
+[data-testid="stTable"] {
+width: 100%;
+}
+@media (max-width: 768px) {
+.block-container {
+padding-left: 0.75rem !important;
+padding-right: 0.75rem !important;
+}
+.biobank-banner {
+min-height: 125px;
+padding: 22px 18px;
+background-position: center;
+}
+.biobank-banner h1 {
+font-size: 24px;
+}
+.biobank-banner p {
+font-size: 13px;
+}
+}
+BIOBANK - NATALIA
+Gestão integrada de cepas, identificação e armazenamento.
+""",
+unsafe_allow_html=True,
 )
 
 # ============================================================
-# ABERTURA DAS PÁGINAS (ORQUESTRADOR DAS ABAS)
+# ABERTURA DAS PÁGINAS
 # ============================================================
 
 if pagina == "Dashboard":
     pagina_dashboard()
-
 elif pagina == "Registro":
     pagina_registro()
-
 elif pagina == "Identificação":
     pagina_identificacao()
-
 elif pagina == "Armazenamento":
     pagina_armazenamento()
-
 elif pagina == "Dados Brutos":
     pagina_dados_brutos()
-
 elif pagina == "Dados":
     pagina_dados()
